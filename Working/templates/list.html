@@ -1,0 +1,66 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh sách dữ liệu đã nhập</title>
+    <link rel="stylesheet" href="{% static 'working/css/list.css' %}">
+</head>
+<body>
+    <div class="container">
+        <div class="top-bar">
+            <h2>Dữ liệu bạn đã nhập</h2>
+            <div style="display:flex; gap:8px;">
+                <a class="back-btn" href="{% url 'web' %}">+ Nhập mới</a>
+                <a class="back-btn" style="background:#c0392b;" href="{% url 'logout' %}">Đăng xuất</a>
+            </div>
+        </div>
+
+        {% if table_rows %}
+            <!-- Bảng cho màn hình rộng -->
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            {% for h in headers %}
+                                <th>{{ h }}</th>
+                            {% endfor %}
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in table_rows %}
+                        <tr>
+                            {% for value in row.values %}
+                                <td>{{ value }}</td>
+                            {% endfor %}
+                            <td><a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Card cho màn hình hẹp (điện thoại) -->
+            <div class="card-list">
+                {% for row in table_rows %}
+                <div class="data-card">
+                    <div class="card-header">
+                        <span class="card-title">{{ row.values.1 }} — {{ row.values.2 }} / {{ row.values.3 }}</span>
+                        <a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a>
+                    </div>
+                    {% for label, value in row.pairs %}
+                        <div class="card-row">
+                            <span class="label">{{ label }}</span>
+                            <span class="value">{{ value }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty">Chưa có dữ liệu nào được ghi nhận.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

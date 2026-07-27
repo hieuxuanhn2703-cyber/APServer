@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sửa dữ liệu</title>
+    <link rel="stylesheet" href="{% static 'working/css/edit.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h2>Sửa dữ liệu</h2>
+        <p class="meta">Thời gian ghi nhận gốc: {{ thoi_gian }}</p>
+
+        {{ config|json_script:"config-data" }}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="row">
+                <div class="form-group">
+                    <label for="id_ma_hang">Mã hàng</label>
+                    <select id="id_ma_hang" name="ma_hang" data-initial="{{ form.ma_hang.value|default:'' }}"></select>
+                    {{ form.ma_hang.errors }}
+                </div>
+                <div class="form-group">
+                    <label for="id_mau">Màu</label>
+                    <select id="id_mau" name="mau" data-initial="{{ form.mau.value|default:'' }}"></select>
+                    {{ form.mau.errors }}
+                </div>
+                <div class="form-group">
+                    <label for="id_co">Cỡ</label>
+                    <select id="id_co" name="co" data-initial="{{ form.co.value|default:'' }}"></select>
+                    {{ form.co.errors }}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">{{ form.nhan_btp.label_tag }} {{ form.nhan_btp }}</div>
+                <div class="form-group">{{ form.vao_chuyen.label_tag }} {{ form.vao_chuyen }}</div>
+                <div class="form-group">{{ form.giua_chuyen.label_tag }} {{ form.giua_chuyen }}</div>
+                <div class="form-group">{{ form.ra_chuyen.label_tag }} {{ form.ra_chuyen }}</div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">{{ form.thu_hoa.label_tag }} {{ form.thu_hoa }}</div>
+                <div class="form-group">{{ form.la_thanh_pham.label_tag }} {{ form.la_thanh_pham }}</div>
+                <div class="form-group">{{ form.kcs.label_tag }} {{ form.kcs }}</div>
+                <div class="form-group">{{ form.nhap_hoan_thien.label_tag }} {{ form.nhap_hoan_thien }}</div>
+            </div>
+
+            <div class="btn-row">
+                <a class="cancel-btn" href="{% url 'list' %}">Hủy</a>
+                <button type="submit">Cập nhật</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="{% static 'working/js/cascade_select.js' %}"></script>
+    <script src="{% static 'working/js/numeric_input.js' %}"></script>
+</body>
+</html>

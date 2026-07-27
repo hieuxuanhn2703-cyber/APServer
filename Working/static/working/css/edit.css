@@ -1,0 +1,113 @@
+* { box-sizing: border-box; }
+
+html, body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    padding: 12px;
+}
+
+.container {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+h2 {
+    text-align: center;
+    color: #333;
+    font-size: 1.15rem;
+    margin: 0 0 6px 0;
+}
+
+.meta {
+    text-align: center;
+    color: #888;
+    margin-bottom: 16px;
+    font-size: 0.8rem;
+}
+
+.row { display: block; }
+
+.form-group {
+    margin-bottom: 14px;
+    width: 100%;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+    color: #444;
+    font-size: 0.95rem;
+}
+
+input[type=text], input[type=number], select {
+    width: 100%;
+    padding: 14px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    line-height: 1.3;
+}
+
+select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3cpath fill='%23555' d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 20px;
+    padding-right: 36px;
+}
+
+.btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+button, a.cancel-btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+}
+button { background: #2d6cdf; color: white; }
+button:active { background: #1e54b7; }
+a.cancel-btn { background: #ddd; color: #333; }
+a.cancel-btn:active { background: #bbb; }
+
+.errorlist {
+    color: #c0392b;
+    font-size: 0.85rem;
+    margin: 4px 0 0 0;
+    padding-left: 18px;
+    list-style: none;
+}
+
+/* ---- Từ đây trở lên là màn hình rộng ---- */
+@media (min-width: 700px) {
+    body { padding: 30px; }
+    .container { padding: 25px; }
+    h2 { font-size: 1.3rem; }
+
+    .row { display: flex; gap: 15px; }
+    .row .form-group { flex: 1; min-width: 150px; }
+
+    .btn-row { flex-direction: row; }
+}

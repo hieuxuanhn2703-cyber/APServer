@@ -1,0 +1,119 @@
+* { box-sizing: border-box; }
+
+html, body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    padding: 10px;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 14px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+h2 { color: #333; margin: 0; font-size: 1.05rem; }
+
+a.back-btn {
+    padding: 10px 14px;
+    background: #2d6cdf;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+a.back-btn:active { background: #1e54b7; }
+
+a.edit-btn {
+    display: inline-block;
+    padding: 8px 14px;
+    background: #ffa500;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+a.edit-btn:active { background: #cc8400; }
+
+.empty { text-align: center; color: #888; margin-top: 30px; }
+
+/* ---- Mặc định (điện thoại dọc): hiển thị dạng card, ẨN bảng ---- */
+.table-wrapper { display: none; }
+
+.card-list { display: block; }
+
+.data-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    background: #fafbfc;
+}
+.data-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e5e5;
+    gap: 8px;
+}
+.data-card .card-title {
+    font-weight: bold;
+    color: #2d6cdf;
+    font-size: 0.95rem;
+    word-break: break-word;
+}
+.data-card .card-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 0.88rem;
+    gap: 8px;
+}
+.data-card .card-row .label { color: #777; flex-shrink: 0; }
+.data-card .card-row .value { font-weight: 600; color: #333; text-align: right; word-break: break-word; }
+
+/* ---- Từ đây trở lên là màn hình rộng: chuyển sang bảng ---- */
+@media (min-width: 900px) {
+    body { padding: 25px; }
+    .container { padding: 22px; }
+    h2 { font-size: 1.2rem; }
+
+    .table-wrapper {
+        display: block;
+        overflow-x: auto;
+    }
+    .card-list { display: none; }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 14px;
+    }
+    th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: center; white-space: nowrap; }
+    th { background: #2d6cdf; color: white; }
+    tr:nth-child(even) { background: #f9f9f9; }
+}
