@@ -6,7 +6,7 @@ from .models import ProcessReport
 from .auth_utils import verify_credentials, get_current_user, login_required, SESSION_KEY
 
 HEADERS = [
-    "Thời gian", "Mã hàng", "Màu", "Cỡ", "Nhận BTP", "Vào chuyền",
+    "Thời gian", "Mã hàng", "Màu", "Cỡ", "Tổ", "Nhận BTP", "Vào chuyền",
     "Giữa chuyền", "Ra chuyền", "Thu hóa", "Là thành phẩm", "KCS",
     "Nhập hoàn thiện", "Người nhập",
 ]
@@ -19,6 +19,7 @@ def _report_to_row(report: ProcessReport):
         report.ma_hang,
         report.mau,
         report.size,
+        report.to,
         report.nhan_btp,
         report.vao_chuyen,
         report.giua_chuyen,
@@ -75,6 +76,7 @@ def web_view(request):
                 ma_hang=data["ma_hang"],
                 mau=data["mau"],
                 size=data["co"],
+                to=data.get("to") or 0,
                 nhan_btp=data.get("nhan_btp") or 0,
                 vao_chuyen=data.get("vao_chuyen") or 0,
                 giua_chuyen=data.get("giua_chuyen") or 0,
@@ -131,6 +133,7 @@ def edit_view(request, row_id):
             report.ma_hang = data["ma_hang"]
             report.mau = data["mau"]
             report.size = data["co"]
+            report.to = data.get("to") or 0
             report.nhan_btp = data.get("nhan_btp") or 0
             report.vao_chuyen = data.get("vao_chuyen") or 0
             report.giua_chuyen = data.get("giua_chuyen") or 0
@@ -146,6 +149,7 @@ def edit_view(request, row_id):
             "ma_hang": report.ma_hang,
             "mau": report.mau,
             "co": report.size,
+            "to": report.to,
             "nhan_btp": report.nhan_btp,
             "vao_chuyen": report.vao_chuyen,
             "giua_chuyen": report.giua_chuyen,

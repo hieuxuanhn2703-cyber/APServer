@@ -17,6 +17,8 @@ class ProcessForm(forms.Form):
     ma_hang = forms.ChoiceField(label="Mã hàng")
     mau = forms.ChoiceField(label="Màu")
     co = forms.ChoiceField(label="Cỡ")
+    to = forms.IntegerField(label="Tổ", required=True, min_value=1,
+                            widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
 
     nhan_btp = forms.IntegerField(label="Nhận BTP", required=False, min_value=0, initial=0,
                                    widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))

@@ -6,6 +6,7 @@ class ProcessReport(models.Model):
     ma_hang = models.CharField("Mã hàng", max_length=255, null=False)
     mau = models.CharField("Màu", max_length=255, null=False)
     size = models.CharField("Cỡ", max_length=50, null=False)
+    to = models.PositiveIntegerField("Tổ", default=0)
 
     # Các công đoạn sản xuất — mặc định 0, không cho âm
     nhan_btp = models.PositiveIntegerField("Nhận BTP", default=0)
