@@ -12,7 +12,7 @@
     <div class="container">
         <div class="top-bar">
             <h2>Danh sách dữ liệu đã nhập</h2>
-            <div style="display:flex; gap:8px;">
+            <div style="display:flex; gap:8px; flex-wrap: wrap;">
                 {% if is_premium %}
                 <a class="back-btn" style="background:#e67e22;" href="{% url 'export_excel' %}">Xuất Excel</a>
                 <a class="back-btn" style="background:#8e44ad;" href="{% url 'config_list' %}">Quản lý Mã hàng</a>
