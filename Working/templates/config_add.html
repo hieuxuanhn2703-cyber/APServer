@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm cấu hình</title>
+    <link rel="stylesheet" href="{% static 'working/css/login.css' %}">
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>
+            {% if type == 'product' %}Thêm Mã Hàng Mới
+            {% elif type == 'color' %}Thêm Màu cho {{ parent.name }}
+            {% elif type == 'size' %}Thêm Cỡ cho màu {{ parent.name }} ({{ parent.product.name }})
+            {% endif %}
+        </h2>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="name">
+                    {% if type == 'product' %}Tên Mã Hàng (VD: AT1)
+                    {% elif type == 'color' %}Tên Màu (VD: Đen)
+                    {% elif type == 'size' %}Cỡ (Nhập nhiều cỡ cách nhau bằng dấu phẩy, VD: S, M, L)
+                    {% endif %}
+                </label>
+                <input type="text" id="name" name="name" required autocomplete="off">
+            </div>
+
+            {% if type == 'product' %}
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="colors">Các Màu (Cách nhau bằng dấu phẩy, VD: Xanh, Đỏ, Tím)</label>
+                <input type="text" id="colors" name="colors" autocomplete="off" placeholder="Để trống nếu chưa muốn thêm màu">
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Các Cỡ chung cho các Màu trên</label>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
+                    {% for s in default_sizes %}
+                    <label style="cursor: pointer;">
+                        <input type="checkbox" name="sizes" value="{{ s }}" style="display:none;" onchange="this.nextElementSibling.style.backgroundColor = this.checked ? '#007bff' : '#ffffff'; this.nextElementSibling.style.color = this.checked ? 'white' : '#333333'; this.nextElementSibling.style.borderColor = this.checked ? '#007bff' : '#cccccc';">
+                        <span style="display: inline-block; padding: 6px 12px; background-color: #ffffff; border-radius: 4px; border: 1px solid #cccccc; user-select: none; transition: 0.2s; color: #333333;">{{ s }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            <button type="submit" style="background:#2ecc71;">Lưu</button>
+            <div style="margin-top: 15px; text-align: center;">
+                <a href="{% url 'config_list' %}" style="color: #e74c3c; text-decoration: none;">Huỷ bỏ</a>
+            </div>
+        </form>
+    </div>
+</body>
+
+</html>

@@ -46,9 +46,16 @@ class AppUser(models.Model):
     để giữ nguyên logic đăng nhập tự viết (account/password) bạn đã có,
     chỉ đổi nơi lưu trữ từ CSV sang MySQL.
     """
+    ROLE_CHOICES = (
+        ("BASIC", "Cơ bản"),
+        ("PREMIUM", "Cao cấp"),
+    )
+
     name = models.CharField("Họ tên", max_length=255)
     account = models.CharField("Tài khoản", max_length=150, unique=True)
     password = models.CharField("Mật khẩu", max_length=255)  # nên lưu dạng hash, xem lưu ý bên dưới
+    role = models.CharField("Quyền hạn", max_length=20, choices=ROLE_CHOICES, default="BASIC")
+    is_approved = models.BooleanField("Đã duyệt", default=False)
 
     class Meta:
         verbose_name = "Tài khoản người dùng"
@@ -56,3 +63,43 @@ class AppUser(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.account})"
+
+
+class Product(models.Model):
+    name = models.CharField("Mã hàng", max_length=255, unique=True)
+
+    class Meta:
+        verbose_name = "Mã hàng"
+        verbose_name_plural = "Mã hàng"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class ProductColor(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='colors', verbose_name="Mã hàng")
+    name = models.CharField("Màu sắc", max_length=255)
+
+    class Meta:
+        verbose_name = "Màu sắc"
+        verbose_name_plural = "Màu sắc"
+        unique_together = ('product', 'name')
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.product.name} - {self.name}"
+
+
+class ProductSize(models.Model):
+    color = models.ForeignKey(ProductColor, on_delete=models.CASCADE, related_name='sizes', verbose_name="Màu sắc")
+    name = models.CharField("Cỡ", max_length=50)
+
+    class Meta:
+        verbose_name = "Cỡ"
+        verbose_name_plural = "Cỡ"
+        unique_together = ('color', 'name')
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.color.product.name} - {self.color.name} - {self.name}"

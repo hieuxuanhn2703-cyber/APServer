@@ -1,0 +1,79 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duyệt tài khoản mới</title>
+    <link rel="stylesheet" href="{% static 'working/css/list.css' %}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="top-bar">
+            <h2>Duyệt tài khoản mới</h2>
+            <div style="display:flex; gap:8px;">
+                <a class="back-btn" href="{% url 'list' %}">Quay lại</a>
+                <a class="back-btn" style="background:#c0392b;" href="{% url 'logout' %}">Đăng xuất</a>
+            </div>
+        </div>
+
+        {% if pending_users %}
+        <!-- Bảng cho màn hình rộng -->
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Họ tên</th>
+                        <th>Tài khoản</th>
+                        <th>Quyền hạn</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in pending_users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.account }}</td>
+                        <td>{{ user.get_role_display }}</td>
+                        <td>
+                            <form action="{% url 'approve_account' user.id %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="edit-btn" style="background:#2ecc71; color:white; border:none; cursor:pointer;">Phê duyệt</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Card cho màn hình hẹp (điện thoại) -->
+        <div class="card-list">
+            {% for user in pending_users %}
+            <div class="data-card">
+                <div class="card-header">
+                    <span class="card-title">{{ user.name }} ({{ user.account }})</span>
+                </div>
+                <div class="card-row">
+                    <span class="label">Quyền hạn</span>
+                    <span class="value">{{ user.get_role_display }}</span>
+                </div>
+                <div class="card-row" style="margin-top: 10px; display: flex; justify-content: flex-end;">
+                    <form action="{% url 'approve_account' user.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="edit-btn" style="background:#2ecc71; color:white; border:none; padding: 6px 12px; border-radius: 4px; cursor:pointer;">Phê duyệt</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty">Hiện tại không có tài khoản nào cần phê duyệt.</p>
+        {% endif %}
+    </div>
+</body>
+
+</html>

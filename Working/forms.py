@@ -9,8 +9,19 @@ NUMERIC_FIELD_ATTRS = {"class": "numeric-input", "inputmode": "numeric"}
 
 
 def load_config():
-    with open(CONFIG_PATH, encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        from .models import Product
+        config = {}
+        for product in Product.objects.all():
+            config[product.name] = {"colors": {}}
+            for color in product.colors.all():
+                config[product.name]["colors"][color.name] = []
+                for size in color.sizes.all():
+                    config[product.name]["colors"][color.name].append(size.name)
+        return config
+    except Exception:
+        # Fallback in case models are not ready during initial load
+        return {}
 
 
 class ProcessForm(forms.Form):

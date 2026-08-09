@@ -3,6 +3,13 @@
 from django.db import migrations, models
 
 
+def convert_to_field_to_zero(apps, schema_editor):
+    ProcessReport = apps.get_model('Working', 'ProcessReport')
+    # Cập nhật các bản ghi có `to` là chuỗi rỗng hoặc NULL thành '0'
+    ProcessReport.objects.filter(to='').update(to='0')
+    ProcessReport.objects.filter(to__isnull=True).update(to='0')
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,11 +17,11 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Chuẩn hoá dữ liệu cũ: đổi '' (chuỗi rỗng) thành '0' trước khi
-        # MySQL chuyển kiểu cột từ VARCHAR sang INT (tránh lỗi 1366)
-        migrations.RunSQL(
-            sql="UPDATE working_processreport SET `to` = '0' WHERE `to` = '' OR `to` IS NULL;",
-            reverse_sql=migrations.RunSQL.noop,
+        # Chuẩn hoá dữ liệu cũ bằng ORM thay vì SQL thuần để tránh lỗi sai tên bảng
+        # do phân biệt hoa/thường trên các hệ điều hành khác nhau
+        migrations.RunPython(
+            convert_to_field_to_zero,
+            reverse_code=migrations.RunPython.noop,
         ),
         migrations.AlterField(
             model_name='processreport',
