@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sửa Màu</title>
+    <link rel="stylesheet" href="{% static 'working/css/login.css' %}">
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>Sửa Màu {{ color.name }}</h2>
+
+        {% if error %}
+        <div style="background-color: #f8d7da; color: #721c24; padding: 10px; margin-bottom: 15px; border: 1px solid #f5c6cb; border-radius: 4px; font-size: 14px;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="name">Tên Màu</label>
+                <input type="text" id="name" name="name" value="{{ color.name }}" required autocomplete="off">
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="quantity">Số lượng (*)</label>
+                <input type="number" id="quantity" name="quantity" value="{{ color.quantity }}" min="0" autocomplete="off" required>
+            </div>
+
+            <button type="submit" style="background:#2ecc71;">Cập nhật</button>
+            <div style="margin-top: 15px; text-align: center;">
+                <a href="{% url 'config_list' %}" style="color: #e74c3c; text-decoration: none;">Huỷ bỏ</a>
+            </div>
+        </form>
+    </div>
+</body>
+
+</html>

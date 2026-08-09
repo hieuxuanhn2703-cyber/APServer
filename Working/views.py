@@ -9,20 +9,36 @@ from .models import ProcessReport, AppUser, Product, ProductColor, ProductSize
 from .auth_utils import verify_credentials, get_current_user, login_required, SESSION_KEY
 
 HEADERS = [
-    "Thời gian", "Mã hàng", "Màu", "Cỡ", "Tổ", "Nhận BTP", "Vào chuyền",
-    "Giữa chuyền", "Ra chuyền", "Thu hóa", "Là thành phẩm", "KCS",
-    "Nhập hoàn thiện", "Người nhập",
+    "Người nhập",
+    "Ngày làm việc",
+    "Thời gian",
+    "Xưởng",
+    "Tổ",
+    "Mã hàng",
+    "Màu",
+    "Cỡ",
+    "Nhận BTP",
+    "Vào chuyền",
+    "Giữa chuyền",
+    "Ra chuyền",
+    "Thu hóa",
+    "Là thành phẩm",
+    "KCS",
+    "Nhập hoàn thiện",
 ]
 
 
 def _report_to_row(report: ProcessReport):
     """Chuyển 1 đối tượng ProcessReport thành dict phù hợp với template list.html hiện có."""
     values = [
+        report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+        report.ngay_lam_viec.strftime("%Y-%m-%d") if report.ngay_lam_viec else "",
         report.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        report.xuong,
+        report.to,
         report.ma_hang,
         report.mau,
         "N/A",  # Tạm thời ép hiển thị cỡ là N/A
-        report.to,
         report.nhan_btp,
         report.vao_chuyen,
         report.giua_chuyen,
@@ -31,7 +47,6 @@ def _report_to_row(report: ProcessReport):
         report.la_thanh_pham,
         report.kcs,
         report.nhap_hoan_thien,
-        report.nguoi_nhap.name,
     ]
     return {
         "row_id": report.id,
@@ -57,7 +72,9 @@ def login_view(request):
                 request.session["display_name"] = user.name
                 
                 if user.role == "PREMIUM":
-                    return redirect("list")
+                    return redirect("premium_dashboard")
+                elif user.role == "HOAN_THIEN":
+                    return redirect("finishing_web")
                 return redirect("web")
         else:
             error = "Tài khoản hoặc mật khẩu không đúng."
@@ -117,8 +134,16 @@ def toggle_account_view(request, user_id):
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền duyệt tài khoản.")
         
     user_to_toggle = get_object_or_404(AppUser, id=user_id)
-    user_to_toggle.is_approved = not user_to_toggle.is_approved
-    user_to_toggle.save()
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "change_role":
+            new_role = request.POST.get("new_role")
+            if new_role in ["BASIC", "HOAN_THIEN", "PREMIUM"]:
+                user_to_toggle.role = new_role
+                user_to_toggle.save()
+        elif action == "toggle_status" or not action:
+            user_to_toggle.is_approved = not user_to_toggle.is_approved
+            user_to_toggle.save()
     return redirect("manage_accounts")
 
 
@@ -220,6 +245,33 @@ def config_add_color_view(request, product_id):
     return render(request, "config_add.html", {"type": "color", "parent": product})
 
 @login_required
+def config_edit_color_view(request, color_id):
+    current_user = get_current_user(request)
+    if current_user.role != "PREMIUM":
+        raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
+        
+    color = get_object_or_404(ProductColor, pk=color_id)
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        quantity_str = request.POST.get("quantity", "").strip()
+        
+        if not quantity_str:
+            return render(request, "config_edit_color.html", {"color": color, "error": "Vui lòng nhập số lượng."})
+            
+        try:
+            qty = int(quantity_str)
+        except ValueError:
+            return render(request, "config_edit_color.html", {"color": color, "error": "Số lượng không hợp lệ."})
+            
+        if name:
+            color.name = name
+            color.quantity = qty
+            color.save()
+            return redirect("config_list")
+            
+    return render(request, "config_edit_color.html", {"color": color})
+
+@login_required
 def config_add_size_view(request, color_id):
     current_user = get_current_user(request)
     if current_user.role != "PREMIUM":
@@ -303,16 +355,20 @@ def export_excel_view(request):
 def web_view(request):
     success = False
     current_user = get_current_user(request)
+    if current_user.role not in ['BASIC', 'PREMIUM']:
+        raise PermissionDenied("Bạn không có quyền truy cập trang Sản xuất.")
 
     if request.method == "POST":
         form = ProcessForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
             ProcessReport.objects.create(
+                ngay_lam_viec=data["ngay_lam_viec"],
+                xuong=data.get("xuong") or 1,
+                to=data.get("to") or 0,
                 ma_hang=data["ma_hang"],
                 mau=data["mau"],
                 size="N/A",  # Ép kiểu cỡ là N/A
-                to=data.get("to") or 0,
                 nhan_btp=data.get("nhan_btp") or 0,
                 vao_chuyen=data.get("vao_chuyen") or 0,
                 giua_chuyen=data.get("giua_chuyen") or 0,
@@ -342,6 +398,8 @@ def web_view(request):
 @login_required
 def list_view(request):
     current_user = get_current_user(request)
+    if current_user.role not in ['BASIC', 'PREMIUM']:
+        raise PermissionDenied("Bạn không có quyền truy cập trang Sản xuất.")
 
     if current_user.role == "PREMIUM":
         reports = ProcessReport.objects.all()
@@ -372,10 +430,12 @@ def edit_view(request, row_id):
         form = ProcessForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
+            report.ngay_lam_viec = data["ngay_lam_viec"]
+            report.xuong = data.get("xuong") or 1
+            report.to = data.get("to") or 0
             report.ma_hang = data["ma_hang"]
             report.mau = data["mau"]
             report.size = "N/A"  # Ép kiểu cỡ là N/A
-            report.to = data.get("to") or 0
             report.nhan_btp = data.get("nhan_btp") or 0
             report.vao_chuyen = data.get("vao_chuyen") or 0
             report.giua_chuyen = data.get("giua_chuyen") or 0
@@ -385,13 +445,17 @@ def edit_view(request, row_id):
             report.kcs = data.get("kcs") or 0
             report.nhap_hoan_thien = data.get("nhap_hoan_thien") or 0
             report.save()
+            if current_user.role == "PREMIUM":
+                return redirect("premium_dashboard")
             return redirect("list")
     else:
         initial = {
+            "ngay_lam_viec": report.ngay_lam_viec,
+            "xuong": report.xuong,
+            "to": report.to,
             "ma_hang": report.ma_hang,
             "mau": report.mau,
             "co": "N/A", # Ép kiểu cỡ là N/A
-            "to": report.to,
             "nhan_btp": report.nhan_btp,
             "vao_chuyen": report.vao_chuyen,
             "giua_chuyen": report.giua_chuyen,
@@ -421,6 +485,8 @@ def delete_report_view(request, row_id):
     if request.method == "POST":
         report.delete()
         
+    if current_user.role == "PREMIUM":
+        return redirect("premium_dashboard")
     return redirect("list")
 
 def get_tracking_data():
@@ -561,3 +627,227 @@ def tracking_export_excel_view(request):
     response["Content-Disposition"] = 'attachment; filename="tracking_data.xlsx"'
     wb.save(response)
     return response
+
+# ---------- QUY TRÌNH HOÀN THIỆN ----------
+
+from .models import FinishingReport
+from .forms import FinishingForm
+
+@login_required
+def finishing_web_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ['HOAN_THIEN', 'PREMIUM']:
+        raise PermissionDenied("Bạn không có quyền truy cập trang Hoàn thiện.")
+
+    success = False
+    if request.method == "POST":
+        form = FinishingForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            FinishingReport.objects.create(
+                ngay_lam_viec=data["ngay_lam_viec"],
+                ma_hang=data["ma_hang"],
+                mau=data["mau"],
+                nhan_hang_hoan_thien=data.get("nhan_hang_hoan_thien") or 0,
+                the_bai=data.get("the_bai") or 0,
+                gap_hang=data.get("gap_hang") or 0,
+                treo_dong_thung=data.get("treo_dong_thung") or 0,
+                nguoi_nhap=current_user
+            )
+            success = True
+            form = FinishingForm()
+    else:
+        form = FinishingForm()
+
+    return render(request, "finishing_web.html", {
+        "form": form,
+        "success": success,
+        "config": load_config(),
+        "display_name": current_user.name if current_user else "",
+    })
+
+FINISHING_HEADERS = [
+    "Người nhập",
+    "Ngày làm việc",
+    "Ngày nhập",
+    "Mã hàng",
+    "Màu",
+    "Nhận hàng hoàn thiện",
+    "Thẻ bài",
+    "Gấp hàng",
+    "Treo/Đóng thùng",
+]
+
+def _finishing_report_to_row(report: FinishingReport):
+    values = [
+        report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+        report.ngay_lam_viec.strftime("%Y-%m-%d") if report.ngay_lam_viec else "",
+        report.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        report.ma_hang,
+        report.mau,
+        report.nhan_hang_hoan_thien,
+        report.the_bai,
+        report.gap_hang,
+        report.treo_dong_thung,
+    ]
+    return {
+        "row_id": report.id,
+        "values": values,
+        "pairs": list(zip(FINISHING_HEADERS, values)),
+    }
+
+@login_required
+def finishing_list_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ['HOAN_THIEN', 'PREMIUM']:
+        raise PermissionDenied("Bạn không có quyền truy cập trang Hoàn thiện.")
+
+    if current_user.role == "PREMIUM":
+        qs = FinishingReport.objects.select_related('nguoi_nhap').all()
+    else:
+        qs = FinishingReport.objects.filter(nguoi_nhap=current_user).select_related('nguoi_nhap')
+    
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    if start_date:
+        qs = qs.filter(created_at__date__gte=start_date)
+    if end_date:
+        qs = qs.filter(created_at__date__lte=end_date)
+        
+    table_rows = [_finishing_report_to_row(r) for r in qs]
+    return render(request, "finishing_list.html", {
+        "table_rows": table_rows,
+        "headers": FINISHING_HEADERS,
+        "display_name": current_user.name if current_user else "",
+        "start_date": start_date or '',
+        "end_date": end_date or '',
+        "user": current_user
+    })
+
+@login_required
+def finishing_edit_view(request, row_id):
+    current_user = get_current_user(request)
+    report = get_object_or_404(FinishingReport, pk=row_id)
+
+    if report.nguoi_nhap_id != current_user.id and current_user.role != "PREMIUM":
+        raise PermissionDenied("Bạn không có quyền sửa dữ liệu này.")
+
+    if request.method == "POST":
+        form = FinishingForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            report.ngay_lam_viec = data["ngay_lam_viec"]
+            report.ma_hang = data["ma_hang"]
+            report.mau = data["mau"]
+            report.nhan_hang_hoan_thien = data.get("nhan_hang_hoan_thien") or 0
+            report.the_bai = data.get("the_bai") or 0
+            report.gap_hang = data.get("gap_hang") or 0
+            report.treo_dong_thung = data.get("treo_dong_thung") or 0
+            report.save()
+            if current_user.role == "PREMIUM":
+                return redirect("premium_dashboard")
+            return redirect("finishing_list")
+    else:
+        initial = {
+            "ngay_lam_viec": report.ngay_lam_viec,
+            "ma_hang": report.ma_hang,
+            "mau": report.mau,
+            "nhan_hang_hoan_thien": report.nhan_hang_hoan_thien,
+            "the_bai": report.the_bai,
+            "gap_hang": report.gap_hang,
+            "treo_dong_thung": report.treo_dong_thung,
+        }
+        form = FinishingForm(initial=initial)
+
+    return render(request, "finishing_edit.html", {
+        "form": form,
+        "thoi_gian": report.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        "config": load_config(),
+        "display_name": current_user.name if current_user else "",
+    })
+
+@login_required
+def finishing_delete_report_view(request, row_id):
+    current_user = get_current_user(request)
+    report = get_object_or_404(FinishingReport, pk=row_id)
+
+    if report.nguoi_nhap_id != current_user.id and current_user.role != "PREMIUM":
+        raise PermissionDenied("Bạn không có quyền xoá dữ liệu này.")
+
+    if request.method == "POST":
+        report.delete()
+        
+    if current_user.role == "PREMIUM":
+        return redirect("premium_dashboard")
+    return redirect("finishing_list")
+
+@login_required
+def finishing_export_excel_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ['HOAN_THIEN', 'PREMIUM']:
+        raise PermissionDenied("Bạn không có quyền truy cập.")
+
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Du lieu hoan thien"
+    
+    ws.append(FINISHING_HEADERS)
+    
+    qs = FinishingReport.objects.select_related('nguoi_nhap').all()
+    for report in qs:
+        row_data = _finishing_report_to_row(report)
+        ws.append(row_data["values"])
+        
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="du_lieu_hoan_thien.xlsx"'
+    wb.save(response)
+    return response
+
+
+
+from django.core.paginator import Paginator
+
+@login_required
+def premium_dashboard_view(request):
+    current_user = get_current_user(request)
+    if current_user.role != 'PREMIUM':
+        raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
+        
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    prod_qs = ProcessReport.objects.select_related('nguoi_nhap').all()
+    fin_qs = FinishingReport.objects.select_related('nguoi_nhap').all()
+    
+    if start_date:
+        prod_qs = prod_qs.filter(created_at__date__gte=start_date)
+        fin_qs = fin_qs.filter(created_at__date__gte=start_date)
+    if end_date:
+        prod_qs = prod_qs.filter(created_at__date__lte=end_date)
+        fin_qs = fin_qs.filter(created_at__date__lte=end_date)
+        
+    prod_rows = [_report_to_row(r) for r in prod_qs]
+    fin_rows = [_finishing_report_to_row(r) for r in fin_qs]
+    
+    prod_paginator = Paginator(prod_rows, 20)
+    page_prod_num = request.GET.get('p1')
+    page_prod = prod_paginator.get_page(page_prod_num)
+    
+    fin_paginator = Paginator(fin_rows, 20)
+    page_fin_num = request.GET.get('p2')
+    page_fin = fin_paginator.get_page(page_fin_num)
+    
+    return render(request, "premium_dashboard.html", {
+        "prod_headers": HEADERS,
+        "fin_headers": FINISHING_HEADERS,
+        "page_prod": page_prod,
+        "page_fin": page_fin,
+        "display_name": current_user.name if current_user else "",
+        "start_date": start_date or '',
+        "end_date": end_date or '',
+        "user": current_user
+    })

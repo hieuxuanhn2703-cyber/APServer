@@ -1,0 +1,207 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Quản Trị Viên (Premium)</title>
+    <link rel="stylesheet" href="{% static 'working/css/list.css' %}">
+</head>
+<body>
+    <div class="container" style="max-width: 1400px;">
+        <div class="top-bar">
+            <h2>Dashboard Dữ Liệu</h2>
+            <div style="display:flex; gap:8px; flex-wrap: wrap;">
+                <a class="back-btn" style="background:#8e44ad;" href="{% url 'config_list' %}">Quản lý Mã hàng</a>
+                <a class="back-btn" style="background:#2ecc71;" href="{% url 'manage_accounts' %}">Quản lý Tài khoản</a>
+                <a class="back-btn" style="background:#c0392b;" href="{% url 'logout' %}">Đăng xuất</a>
+            </div>
+        </div>
+        
+        <!-- Form lọc thời gian chung -->
+        <form method="GET" class="filter-form" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; background: #f9f9f9; padding: 15px; border-radius: 8px;">
+            <div>
+                <label for="start_date" style="font-size: 0.9em; font-weight: bold; display: block; margin-bottom: 5px;">Từ ngày:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div>
+                <label for="end_date" style="font-size: 0.9em; font-weight: bold; display: block; margin-bottom: 5px;">Đến ngày:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 5px;">
+                <button type="submit" style="padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Lọc dữ liệu</button>
+                <a href="{% url 'premium_dashboard' %}" style="padding: 8px 15px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block;">Xóa lọc</a>
+            </div>
+        </form>
+
+        <div style="display: flex; flex-direction: column; gap: 25px;">
+            
+            <!-- BẢNG DỮ LIỆU SẢN XUẤT -->
+            <div style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
+                    <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">Danh sách Sản xuất</h3>
+                    <a href="{% url 'export_excel' %}?start_date={{ start_date }}&end_date={{ end_date }}" style="background: #e67e22; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
+                </div>
+
+                <!-- Bảng cho màn hình rộng (Desktop) -->
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                {% for header in prod_headers %}
+                                <th>{{ header }}</th>
+                                {% endfor %}
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in page_prod %}
+                            <tr>
+                                {% for cell in row.values %}
+                                <td>{{ cell }}</td>
+                                {% endfor %}
+                                <td>
+                                    <div style="display: flex; gap: 5px; justify-content: center;">
+                                        <a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a>
+                                        <form action="{% url 'delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="17" class="empty">Chưa có dữ liệu nào được nhập.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Card cho màn hình hẹp (Điện thoại) -->
+                <div class="card-list">
+                    {% for row in page_prod %}
+                    <div class="data-card">
+                        <div class="card-header">
+                            <span class="card-title">{{ row.values.5 }} — {{ row.values.6 }} (X{{ row.values.3 }} - T{{ row.values.4 }})</span>
+                            <div style="display: flex; gap: 5px;">
+                                <a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a>
+                                <form action="{% url 'delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% for label, val in row.pairs %}
+                        <div class="card-row">
+                            <span class="label">{{ label }}</span>
+                            <span class="value">{{ val }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% empty %}
+                    <p class="empty">Chưa có dữ liệu nào được nhập.</p>
+                    {% endfor %}
+                </div>
+                
+                <!-- Phân trang Sản xuất -->
+                <div style="margin-top: 15px; text-align: center;">
+                    {% if page_prod.has_previous %}
+                        <a href="?p1=1&p2={{ page_fin.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Đầu</a>
+                        <a href="?p1={{ page_prod.previous_page_number }}&p2={{ page_fin.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Trước</a>
+                    {% endif %}
+                    <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_prod.number }} / {{ page_prod.paginator.num_pages }}</span>
+                    {% if page_prod.has_next %}
+                        <a href="?p1={{ page_prod.next_page_number }}&p2={{ page_fin.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Sau</a>
+                        <a href="?p1={{ page_prod.paginator.num_pages }}&p2={{ page_fin.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Cuối</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- BẢNG DỮ LIỆU HOÀN THIỆN -->
+            <div style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
+                    <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">Danh sách Hoàn thiện</h3>
+                    <a href="{% url 'finishing_export_excel' %}?start_date={{ start_date }}&end_date={{ end_date }}" style="background: #27ae60; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
+                </div>
+
+                <!-- Bảng cho màn hình rộng (Desktop) -->
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                {% for header in fin_headers %}
+                                <th>{{ header }}</th>
+                                {% endfor %}
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in page_fin %}
+                            <tr>
+                                {% for cell in row.values %}
+                                <td>{{ cell }}</td>
+                                {% endfor %}
+                                <td>
+                                    <div style="display: flex; gap: 5px; justify-content: center;">
+                                        <a class="edit-btn" href="{% url 'finishing_edit' row.row_id %}">Sửa</a>
+                                        <form action="{% url 'finishing_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="10" class="empty">Chưa có dữ liệu nào được nhập.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Card cho màn hình hẹp (Điện thoại) -->
+                <div class="card-list">
+                    {% for row in page_fin %}
+                    <div class="data-card">
+                        <div class="card-header">
+                            <span class="card-title">{{ row.values.3 }} — {{ row.values.4 }} ({{ row.values.1 }})</span>
+                            <div style="display: flex; gap: 5px;">
+                                <a class="edit-btn" href="{% url 'finishing_edit' row.row_id %}">Sửa</a>
+                                <form action="{% url 'finishing_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% for label, val in row.pairs %}
+                        <div class="card-row">
+                            <span class="label">{{ label }}</span>
+                            <span class="value">{{ val }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% empty %}
+                    <p class="empty">Chưa có dữ liệu nào được nhập.</p>
+                    {% endfor %}
+                </div>
+                
+                <!-- Phân trang Hoàn thiện -->
+                <div style="margin-top: 15px; text-align: center;">
+                    {% if page_fin.has_previous %}
+                        <a href="?p2=1&p1={{ page_prod.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Đầu</a>
+                        <a href="?p2={{ page_fin.previous_page_number }}&p1={{ page_prod.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Trước</a>
+                    {% endif %}
+                    <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_fin.number }} / {{ page_fin.paginator.num_pages }}</span>
+                    {% if page_fin.has_next %}
+                        <a href="?p2={{ page_fin.next_page_number }}&p1={{ page_prod.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Sau</a>
+                        <a href="?p2={{ page_fin.paginator.num_pages }}&p1={{ page_prod.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Cuối</a>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

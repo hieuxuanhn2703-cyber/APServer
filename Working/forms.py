@@ -1,5 +1,6 @@
 import json
 import os
+import datetime
 from django import forms
 from django.conf import settings
 
@@ -23,11 +24,26 @@ def load_config():
 
 
 class ProcessForm(forms.Form):
+    ngay_lam_viec = forms.DateField(
+        label="Ngày làm việc",
+        initial=datetime.date.today,
+        required=True,
+        error_messages={'required': 'Vui lòng chọn ngày làm việc.'},
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+    xuong = forms.IntegerField(
+        label="Xưởng", required=True, min_value=1, initial=0,
+        error_messages={'min_value': 'Vui lòng nhập số xưởng khác 0.', 'required': 'Vui lòng nhập số xưởng.'},
+        widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS)
+    )
+    to = forms.IntegerField(
+        label="Tổ", required=True, min_value=1, initial=0,
+        error_messages={'min_value': 'Vui lòng nhập số tổ khác 0.', 'required': 'Vui lòng nhập số tổ.'},
+        widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS)
+    )
     ma_hang = forms.ChoiceField(label="Mã hàng")
     mau = forms.ChoiceField(label="Màu")
-    co = forms.ChoiceField(label="Cỡ")
-    to = forms.IntegerField(label="Tổ", required=True, min_value=1,
-                            widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+    co = forms.CharField(label="Cỡ", required=False, initial="N/A")
 
     nhan_btp = forms.IntegerField(label="Nhận BTP", required=False, min_value=0, initial=0,
                                    widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
@@ -54,20 +70,17 @@ class ProcessForm(forms.Form):
             (ma, ma) for ma in self.config.keys()
         ]
 
-        all_colors, all_sizes = set(), set()
+        all_colors = set()
         for data in self.config.values():
-            for color, sizes in data["colors"].items():
+            for color in data["colors"].keys():
                 all_colors.add(color)
-                all_sizes.update(sizes)
 
         self.fields["mau"].choices = [("", "-- Chọn màu --")] + [(c, c) for c in sorted(all_colors)]
-        self.fields["co"].choices = [("", "-- Chọn cỡ --")] + [(s, s) for s in sorted(all_sizes)]
 
     def clean(self):
         cleaned_data = super().clean()
         ma_hang = cleaned_data.get("ma_hang")
         mau = cleaned_data.get("mau")
-        co = cleaned_data.get("co")
 
         if ma_hang and ma_hang not in self.config:
             self.add_error("ma_hang", "Mã hàng không hợp lệ.")
@@ -79,7 +92,52 @@ class ProcessForm(forms.Form):
                 self.add_error("mau", f"Màu '{mau}' không thuộc mã hàng '{ma_hang}'.")
                 return cleaned_data
 
-            if co and co not in colors[mau]:
-                self.add_error("co", f"Cỡ '{co}' không thuộc màu '{mau}' của mã hàng '{ma_hang}'.")
+        return cleaned_data
+
+class FinishingForm(forms.Form):
+    ngay_lam_viec = forms.DateField(
+        label="Ngày làm việc",
+        initial=datetime.date.today,
+        required=True,
+        error_messages={'required': 'Vui lòng chọn ngày làm việc.'},
+        widget=forms.DateInput(attrs={'type': 'date'})
+    )
+    ma_hang = forms.ChoiceField(label="Mã hàng")
+    mau = forms.ChoiceField(label="Màu")
+
+    nhan_hang_hoan_thien = forms.IntegerField(label="Nhận hàng hoàn thiện", required=False, min_value=0, initial=0, widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+    the_bai = forms.IntegerField(label="Thẻ bài", required=False, min_value=0, initial=0, widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+    gap_hang = forms.IntegerField(label="Gấp hàng", required=False, min_value=0, initial=0, widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+    treo_dong_thung = forms.IntegerField(label="Treo/Đóng thùng", required=False, min_value=0, initial=0, widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config = load_config()
+
+        self.fields["ma_hang"].choices = [("", "-- Chọn mã hàng --")] + [
+            (ma, ma) for ma in self.config.keys()
+        ]
+
+        all_colors = set()
+        for data in self.config.values():
+            for color in data["colors"].keys():
+                all_colors.add(color)
+
+        self.fields["mau"].choices = [("", "-- Chọn màu --")] + [(c, c) for c in sorted(all_colors)]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        ma_hang = cleaned_data.get("ma_hang")
+        mau = cleaned_data.get("mau")
+
+        if ma_hang and ma_hang not in self.config:
+            self.add_error("ma_hang", "Mã hàng không hợp lệ.")
+            return cleaned_data
+
+        if ma_hang and mau:
+            colors = self.config[ma_hang]["colors"]
+            if mau not in colors:
+                self.add_error("mau", f"Màu '{mau}' không thuộc mã hàng '{ma_hang}'.")
+                return cleaned_data
 
         return cleaned_data

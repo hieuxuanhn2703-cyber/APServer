@@ -13,8 +13,7 @@
         <div class="top-bar">
             <h2>Quản lý tài khoản</h2>
             <div style="display:flex; gap:8px;">
-                <a class="back-btn" href="{% url 'list' %}">Quay lại</a>
-                <a class="back-btn" style="background:#c0392b;" href="{% url 'logout' %}">Đăng xuất</a>
+                <a class="back-btn" href="{% url 'premium_dashboard' %}">Quay lại</a>
             </div>
         </div>
 
@@ -38,7 +37,18 @@
                         <td>{{ user.id }}</td>
                         <td>{{ user.name }}</td>
                         <td>{{ user.account }}</td>
-                        <td>{{ user.get_role_display }}</td>
+                        <td>
+                            <form action="{% url 'toggle_account' user.id %}" method="post" style="display:flex; gap: 5px;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="change_role">
+                                <select name="new_role" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                                    <option value="BASIC" {% if user.role == 'BASIC' %}selected{% endif %}>Cơ bản (Sản xuất)</option>
+                                    <option value="HOAN_THIEN" {% if user.role == 'HOAN_THIEN' %}selected{% endif %}>Hoàn thiện</option>
+                                    <option value="PREMIUM" {% if user.role == 'PREMIUM' %}selected{% endif %}>Cao cấp (Admin)</option>
+                                </select>
+                                <button type="submit" style="padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Lưu</button>
+                            </form>
+                        </td>
                         <td>
                             {% if user.is_approved %}
                                 <span style="color: #2ecc71; font-weight: bold;">Đã duyệt</span>
@@ -49,6 +59,7 @@
                         <td>
                             <form action="{% url 'toggle_account' user.id %}" method="post" style="display:inline;">
                                 {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_status">
                                 {% if user.is_approved %}
                                     <button type="submit" class="edit-btn" style="background:#e74c3c; color:white; border:none; cursor:pointer;">Khóa TK</button>
                                 {% else %}
@@ -69,9 +80,18 @@
                 <div class="card-header">
                     <span class="card-title">{{ user.name }} ({{ user.account }})</span>
                 </div>
-                <div class="card-row">
-                    <span class="label">Quyền hạn</span>
-                    <span class="value">{{ user.get_role_display }}</span>
+                <div class="card-row" style="align-items: center;">
+                    <span class="label">Quyền</span>
+                    <form action="{% url 'toggle_account' user.id %}" method="post" style="display:flex; gap: 5px; margin: 0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="change_role">
+                        <select name="new_role" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9em;">
+                            <option value="BASIC" {% if user.role == 'BASIC' %}selected{% endif %}>SX</option>
+                            <option value="HOAN_THIEN" {% if user.role == 'HOAN_THIEN' %}selected{% endif %}>HT</option>
+                            <option value="PREMIUM" {% if user.role == 'PREMIUM' %}selected{% endif %}>Admin</option>
+                        </select>
+                        <button type="submit" style="padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Lưu</button>
+                    </form>
                 </div>
                 <div class="card-row">
                     <span class="label">Trạng thái</span>
@@ -86,6 +106,7 @@
                 <div class="card-row" style="margin-top: 10px; display: flex; justify-content: flex-end;">
                     <form action="{% url 'toggle_account' user.id %}" method="post">
                         {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_status">
                         {% if user.is_approved %}
                             <button type="submit" class="edit-btn" style="background:#e74c3c; color:white; border:none; padding: 6px 12px; border-radius: 4px; cursor:pointer;">Khóa TK</button>
                         {% else %}

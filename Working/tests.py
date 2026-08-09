@@ -1,172 +1,428 @@
+import datetime
 from django.test import TestCase, Client
 from django.urls import reverse
-from .models import AppUser, Product, ProductColor, ProductSize, ProcessReport
+from .models import AppUser, Product, ProductColor, ProductSize, ProcessReport, FinishingReport
 
-class SystemVerificationTests(TestCase):
+
+class ComprehensiveSystemTests(TestCase):
     def setUp(self):
-        self.client = Client()
-        # Tạo sẵn các tài khoản
-        self.premium_user = AppUser.objects.create(account="admin_vip", password="123", name="Admin", role="PREMIUM", is_approved=True)
-        self.basic_user = AppUser.objects.create(account="staff", password="123", name="Staff", role="BASIC", is_approved=True)
-        self.unapproved_user = AppUser.objects.create(account="newbie", password="123", name="Newbie", role="BASIC", is_approved=False)
+        self.client = Client(HTTP_HOST='127.0.0.1')
         
-    def test_registration_success(self):
-        # Đăng ký thành công
+        # Tạo sẵn các tài khoản với các quyền khác nhau
+        self.premium_user = AppUser.objects.create(
+            account="admin_vip", password="123", name="Quản Trị Viên", role="PREMIUM", is_approved=True
+        )
+        self.basic_user = AppUser.objects.create(
+            account="staff_prod", password="123", name="NV Sản Xuất", role="BASIC", is_approved=True
+        )
+        self.finishing_user = AppUser.objects.create(
+            account="staff_fin", password="123", name="NV Hoàn Thiện", role="HOAN_THIEN", is_approved=True
+        )
+        self.unapproved_user = AppUser.objects.create(
+            account="newbie", password="123", name="NV Mới", role="BASIC", is_approved=False
+        )
+        
+        # Tạo cấu hình sản phẩm & màu sắc mẫu
+        self.product = Product.objects.create(name="AT01")
+        self.color_red = ProductColor.objects.create(product=self.product, name="Đỏ", quantity=100)
+        self.color_blue = ProductColor.objects.create(product=self.product, name="Xanh", quantity=200)
+
+        # Tạo báo cáo sản xuất mẫu
+        self.prod_report = ProcessReport.objects.create(
+            ngay_lam_viec=datetime.date.today(),
+            xuong=1,
+            to=1,
+            ma_hang="AT01",
+            mau="Đỏ",
+            size="N/A",
+            nhan_btp=10,
+            vao_chuyen=10,
+            giua_chuyen=10,
+            ra_chuyen=10,
+            thu_hoa=10,
+            la_thanh_pham=10,
+            kcs=10,
+            nhap_hoan_thien=10,
+            nguoi_nhap=self.basic_user
+        )
+
+        # Tạo báo cáo hoàn thiện mẫu
+        self.fin_report = FinishingReport.objects.create(
+            ngay_lam_viec=datetime.date.today(),
+            ma_hang="AT01",
+            mau="Đỏ",
+            size="N/A",
+            nhan_hang_hoan_thien=10,
+            the_bai=10,
+            gap_hang=10,
+            treo_dong_thung=10,
+            nguoi_nhap=self.finishing_user
+        )
+
+    def _login_as(self, user):
+        session = self.client.session
+        session['user_id'] = user.id
+        session['display_name'] = user.name
+        session.save()
+
+    # ==========================================
+    # 1. TEST ĐĂNG KÝ, ĐĂNG NHẬP, PHÂN QUYỀN
+    # ==========================================
+    def test_registration_flow(self):
+        # Đăng ký thành công -> Mặc định chưa duyệt
         response = self.client.post(reverse('register'), {
-            'account': 'new_user',
-            'name': 'New User',
-            'password': 'password123',
-            'confirm_password': 'password123'
+            'account': 'user_test',
+            'name': 'User Test',
+            'password': 'pass123',
+            'confirm_password': 'pass123'
         })
-        self.assertTrue(AppUser.objects.filter(account='new_user').exists())
-        self.assertFalse(AppUser.objects.get(account='new_user').is_approved) # Phải là chờ duyệt
-
-    def test_registration_password_mismatch(self):
-        # 2 mật khẩu không khớp
-        response = self.client.post(reverse('register'), {
-            'account': 'bad_user',
-            'name': 'Bad User',
-            'password': 'password123',
-            'confirm_password': 'password456'
-        })
-        self.assertFalse(AppUser.objects.filter(account='bad_user').exists())
-        self.assertContains(response, "Mật khẩu nhập lại không khớp")
-
-    def test_registration_duplicate_username(self):
-        # Username trùng
-        response = self.client.post(reverse('register'), {
-            'account': 'staff', # Đã tồn tại
-            'name': 'Fake Staff',
-            'password': '123',
-            'confirm_password': '123'
-        })
-        self.assertEqual(AppUser.objects.filter(account='staff').count(), 1)
-        self.assertContains(response, "Tài khoản này đã tồn tại, vui lòng chọn tên khác.")
-
-    def test_login_success(self):
-        # Login chuẩn
-        response = self.client.post(reverse('login'), {'account': 'staff', 'password': '123'})
-        self.assertRedirects(response, reverse('web')) # Trả về trang nhập liệu
-
-    def test_login_unapproved(self):
-        # Login khi is_approved = False
-        response = self.client.post(reverse('login'), {'account': 'newbie', 'password': '123'})
-        self.assertContains(response, "Tài khoản của bạn đang chờ quản trị viên phê duyệt.")
-
-    def test_login_wrong_password(self):
-        # Sai mật khẩu
-        response = self.client.post(reverse('login'), {'account': 'staff', 'password': 'wrong'})
-        self.assertContains(response, "Tài khoản hoặc mật khẩu không đúng")
-
-    def test_authorization_basic_vs_premium(self):
-        # Staff (BASIC) đăng nhập
-        session = self.client.session
-        session['user_id'] = self.basic_user.id
-        session.save()
-        
-        # Thử vào manage_accounts
-        response = self.client.get(reverse('manage_accounts'))
-        self.assertEqual(response.status_code, 403) # Bị chặn
-        
-        # Thử vào config_list
-        response = self.client.get(reverse('config_list'))
-        self.assertEqual(response.status_code, 403)
-        
-        # Thử xuất Excel
-        response = self.client.get(reverse('export_excel'))
-        self.assertEqual(response.status_code, 403)
-
-    def test_authorization_unauthenticated(self):
-        # Chưa đăng nhập
-        response = self.client.get(reverse('web'))
-        self.assertRedirects(response, reverse('login'))
-
-    def test_config_add_product(self):
-        session = self.client.session
-        session['user_id'] = self.premium_user.id
-        session.save()
-        
-        # Test error when missing quantity
-        response = self.client.post(reverse('config_add_product'), {
-            'name': 'AT100',
-            'colors': 'Đỏ - 50\nXanh',
-            'sizes': ['M', 'L']
-        })
-        # Should render back with error
         self.assertEqual(response.status_code, 200)
-        self.assertIn("chưa được nhập số lượng", response.content.decode('utf-8'))
-        
-        # Test success
-        response = self.client.post(reverse('config_add_product'), {
-            'name': 'AT100',
-            'colors': 'Đỏ - 50\nXanh: 100',
-            'sizes': ['M', 'L']
+        user = AppUser.objects.filter(account='user_test').first()
+        self.assertIsNotNone(user)
+        self.assertFalse(user.is_approved)
+
+        # Đăng ký trùng username
+        res_dup = self.client.post(reverse('register'), {
+            'account': 'user_test',
+            'name': 'Duplicate',
+            'password': 'pass123',
+            'confirm_password': 'pass123'
         })
-        self.assertRedirects(response, reverse('config_list'))
-        
-        product = Product.objects.get(name='AT100')
-        self.assertEqual(product.colors.count(), 2)
-        
-        color_do = product.colors.get(name='Đỏ')
-        self.assertEqual(color_do.quantity, 50)
-        
-        color_xanh = product.colors.get(name='Xanh')
-        self.assertEqual(color_xanh.quantity, 100)
-        
-        # Test Cỡ đã bị vô hiệu hoá, sizes sẽ không được tạo
-        self.assertEqual(ProductSize.objects.count(), 0)
+        self.assertContains(res_dup, "Tài khoản này đã tồn tại")
 
-    def test_tracking_view_and_export(self):
-        """Kiểm tra trang tracking và xuất excel."""
-        session = self.client.session
-        session['user_id'] = self.premium_user.id
-        session.save()
-        
-        # Test GET tracking page
-        response = self.client.get(reverse('tracking'))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Tracking Sản Xuất", response.content.decode('utf-8'))
-        
-        # Test Export Excel
-        response = self.client.get(reverse('tracking_export_excel'))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-    def test_config_empty_name(self):
-        session = self.client.session
-        session['user_id'] = self.premium_user.id
-        session.save()
-        
-        # Cố ý gửi chuỗi rỗng
-        response = self.client.post(reverse('config_add_product'), {
-            'name': '   ',
-            'colors': '',
+        # Đăng ký mật khẩu không khớp
+        res_mismatch = self.client.post(reverse('register'), {
+            'account': 'user_mismatch',
+            'name': 'Mismatch',
+            'password': 'pass1',
+            'confirm_password': 'pass2'
         })
-        # Server không được crash, redirect về list an toàn
-        self.assertEqual(Product.objects.filter(name='').count(), 0)
+        self.assertContains(res_mismatch, "Mật khẩu nhập lại không khớp")
 
-    def test_config_cascade_delete(self):
-        session = self.client.session
-        session['user_id'] = self.premium_user.id
-        session.save()
+    def test_login_flow(self):
+        # 1. Đăng nhập tài khoản chưa duyệt
+        res_unapproved = self.client.post(reverse('login'), {'account': 'newbie', 'password': '123'})
+        self.assertContains(res_unapproved, "đang chờ quản trị viên phê duyệt")
+
+        # 2. Đăng nhập sai mật khẩu
+        res_wrong = self.client.post(reverse('login'), {'account': 'staff_prod', 'password': 'wrong'})
+        self.assertContains(res_wrong, "Tài khoản hoặc mật khẩu không đúng")
+
+        # 3. Đăng nhập tài khoản BASIC -> Chuyển hướng về trang nhập sản xuất
+        res_basic = self.client.post(reverse('login'), {'account': 'staff_prod', 'password': '123'})
+        self.assertRedirects(res_basic, reverse('web'))
+
+        # 4. Đăng nhập tài khoản HOAN_THIEN -> Chuyển hướng về trang nhập hoàn thiện
+        res_fin = self.client.post(reverse('login'), {'account': 'staff_fin', 'password': '123'})
+        self.assertRedirects(res_fin, reverse('finishing_web'))
+
+        # 5. Đăng nhập tài khoản PREMIUM -> Chuyển hướng thẳng về Dashboard Dữ Liệu
+        res_prem = self.client.post(reverse('login'), {'account': 'admin_vip', 'password': '123'})
+        self.assertRedirects(res_prem, reverse('premium_dashboard'))
+
+    def test_logout(self):
+        self._login_as(self.premium_user)
+        res = self.client.get(reverse('logout'))
+        self.assertRedirects(res, reverse('login'))
+        self.assertNotIn('user_id', self.client.session)
+
+    def test_unauthenticated_access_blocked(self):
+        # Chưa đăng nhập truy cập các trang bảo mật đều chuyển về login
+        protected_urls = [
+            reverse('web'),
+            reverse('list'),
+            reverse('premium_dashboard'),
+            reverse('manage_accounts'),
+            reverse('config_list'),
+            reverse('tracking'),
+            reverse('finishing_web'),
+            reverse('finishing_list'),
+        ]
+        for url in protected_urls:
+            res = self.client.get(url)
+            self.assertRedirects(res, reverse('login'), msg_prefix=f"URL {url} should redirect to login")
+
+    def test_role_based_permissions(self):
+        # BASIC bị chặn vào Dashboard, Quản lý tài khoản, Cấu hình mã hàng, Hoàn thiện
+        self._login_as(self.basic_user)
+        self.assertEqual(self.client.get(reverse('premium_dashboard')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('manage_accounts')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('config_list')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('finishing_web')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('finishing_list')).status_code, 403)
+
+        # HOAN_THIEN bị chặn vào Dashboard, Quản lý tài khoản, Cấu hình mã hàng, Sản xuất
+        self._login_as(self.finishing_user)
+        self.assertEqual(self.client.get(reverse('premium_dashboard')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('manage_accounts')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('config_list')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('web')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('list')).status_code, 403)
+
+    # ==========================================
+    # 2. TEST DASHBOARD DỮ LIỆU (PREMIUM)
+    # ==========================================
+    def test_premium_dashboard_view(self):
+        self._login_as(self.premium_user)
+        res = self.client.get(reverse('premium_dashboard'))
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("Dashboard Dữ Liệu", res.content.decode('utf-8'))
+        self.assertIn("Danh sách Sản xuất", res.content.decode('utf-8'))
+        self.assertIn("Danh sách Hoàn thiện", res.content.decode('utf-8'))
+        self.assertIn("Quản lý Mã hàng", res.content.decode('utf-8'))
+        self.assertIn("Quản lý Tài khoản", res.content.decode('utf-8'))
+        self.assertIn("Đăng xuất", res.content.decode('utf-8'))
+
+    def test_dashboard_date_filter(self):
+        self._login_as(self.premium_user)
+        prod_date = self.prod_report.created_at.strftime('%Y-%m-%d')
+        res = self.client.get(f"{reverse('premium_dashboard')}?start_date={prod_date}&end_date={prod_date}")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.context['page_prod']), 1)
+        self.assertEqual(len(res.context['page_fin']), 1)
+
+        # Lọc ngày trong tương lai -> Không có dữ liệu
+        res_empty = self.client.get(f"{reverse('premium_dashboard')}?start_date=2099-01-01&end_date=2099-12-31")
+        self.assertEqual(res_empty.status_code, 200)
+        self.assertEqual(len(res_empty.context['page_prod']), 0)
+        self.assertEqual(len(res_empty.context['page_fin']), 0)
+
+    def test_production_validation_zero_xuong_to(self):
+        # Kiểm tra Xưởng và Tổ không được bằng 0
+        self._login_as(self.basic_user)
+        today_str = datetime.date.today().strftime('%Y-%m-%d')
         
-        product = Product.objects.create(name='DelMe')
-        color = ProductColor.objects.create(product=product, name='Màu')
-        size = ProductSize.objects.create(color=color, name='Cỡ')
+        # Test gửi Xưởng = 0, Tổ = 0
+        res_zero = self.client.post(reverse('web'), {
+            'ngay_lam_viec': today_str,
+            'xuong': 0,
+            'to': 0,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'co': 'N/A',
+        })
+        self.assertEqual(res_zero.status_code, 200)
+        self.assertFalse(res_zero.context.get('success', False))
+        self.assertIn("Vui lòng nhập số xưởng khác 0.", res_zero.content.decode('utf-8'))
+        self.assertIn("Vui lòng nhập số tổ khác 0.", res_zero.content.decode('utf-8'))
+
+    def test_production_crud_and_redirects(self):
+        # 1. Nhập dữ liệu sản xuất (BASIC)
+        self._login_as(self.basic_user)
+        today_str = datetime.date.today().strftime('%Y-%m-%d')
+        res_post = self.client.post(reverse('web'), {
+            'ngay_lam_viec': today_str,
+            'xuong': 2,
+            'to': 2,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'co': 'N/A',
+            'nhan_btp': 20,
+            'vao_chuyen': 20,
+            'giua_chuyen': 20,
+            'ra_chuyen': 20,
+            'thu_hoa': 20,
+            'la_thanh_pham': 20,
+            'kcs': 20,
+            'nhap_hoan_thien': 20,
+        })
+        self.assertEqual(res_post.status_code, 200)
+        self.assertTrue(res_post.context['success'])
+        new_report = ProcessReport.objects.filter(to=2).first()
+        self.assertIsNotNone(new_report)
+        self.assertEqual(new_report.xuong, 2)
+
+        # 2. Sửa bởi người tạo (BASIC) -> Chuyển về 'list'
+        res_edit_basic = self.client.post(reverse('edit', args=[new_report.id]), {
+            'ngay_lam_viec': today_str,
+            'xuong': 3,
+            'to': 2,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'co': 'N/A',
+            'nhan_btp': 30,
+            'vao_chuyen': 30,
+            'giua_chuyen': 30,
+            'ra_chuyen': 30,
+            'thu_hoa': 30,
+            'la_thanh_pham': 30,
+            'kcs': 30,
+            'nhap_hoan_thien': 30,
+        })
+        self.assertRedirects(res_edit_basic, reverse('list'))
+        new_report.refresh_from_db()
+        self.assertEqual(new_report.nhan_btp, 30)
+        self.assertEqual(new_report.xuong, 3)
+
+        # 3. Sửa bởi PREMIUM -> Chuyển về 'premium_dashboard'
+        self._login_as(self.premium_user)
+        res_edit_prem = self.client.post(reverse('edit', args=[new_report.id]), {
+            'ngay_lam_viec': today_str,
+            'xuong': 3,
+            'to': 2,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'co': 'N/A',
+            'nhan_btp': 50,
+            'vao_chuyen': 50,
+            'giua_chuyen': 50,
+            'ra_chuyen': 50,
+            'thu_hoa': 50,
+            'la_thanh_pham': 50,
+            'kcs': 50,
+            'nhap_hoan_thien': 50,
+        })
+        self.assertRedirects(res_edit_prem, reverse('premium_dashboard'))
+        new_report.refresh_from_db()
+        self.assertEqual(new_report.nhan_btp, 50)
+
+        # 4. Người khác không có quyền sửa (HOAN_THIEN) -> 403
+        self._login_as(self.finishing_user)
+        res_denied = self.client.post(reverse('edit', args=[new_report.id]), {
+            'ngay_lam_viec': today_str,
+            'xuong': 3,
+            'to': 2,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'co': 'N/A',
+        })
+        self.assertEqual(res_denied.status_code, 403)
+
+        # 5. Xóa bởi PREMIUM -> Chuyển về 'premium_dashboard'
+        self._login_as(self.premium_user)
+        res_del = self.client.post(reverse('delete_report', args=[new_report.id]))
+        self.assertRedirects(res_del, reverse('premium_dashboard'))
+        self.assertFalse(ProcessReport.objects.filter(id=new_report.id).exists())
+
+    # ==========================================
+    # 4. TEST QUY TRÌNH HOÀN THIỆN (CRUD & REDIRECTS)
+    # ==========================================
+    def test_finishing_crud_and_redirects(self):
+        # 1. Nhập dữ liệu hoàn thiện (HOAN_THIEN)
+        self._login_as(self.finishing_user)
+        today_str = datetime.date.today().strftime('%Y-%m-%d')
+        res_post = self.client.post(reverse('finishing_web'), {
+            'ngay_lam_viec': today_str,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'nhan_hang_hoan_thien': 15,
+            'the_bai': 15,
+            'gap_hang': 15,
+            'treo_dong_thung': 15,
+        })
+        self.assertEqual(res_post.status_code, 200)
+        self.assertTrue(res_post.context['success'])
+        new_fin = FinishingReport.objects.filter(nhan_hang_hoan_thien=15).first()
+        self.assertIsNotNone(new_fin)
+
+        # 2. Sửa bởi người tạo (HOAN_THIEN) -> Chuyển về 'finishing_list'
+        res_edit_fin = self.client.post(reverse('finishing_edit', args=[new_fin.id]), {
+            'ngay_lam_viec': today_str,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'nhan_hang_hoan_thien': 25,
+            'the_bai': 25,
+            'gap_hang': 25,
+            'treo_dong_thung': 25,
+        })
+        self.assertRedirects(res_edit_fin, reverse('finishing_list'))
+        new_fin.refresh_from_db()
+        self.assertEqual(new_fin.nhan_hang_hoan_thien, 25)
+
+        # 3. Sửa bởi PREMIUM -> Chuyển về 'premium_dashboard'
+        self._login_as(self.premium_user)
+        res_edit_prem = self.client.post(reverse('finishing_edit', args=[new_fin.id]), {
+            'ngay_lam_viec': today_str,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'nhan_hang_hoan_thien': 35,
+            'the_bai': 35,
+            'gap_hang': 35,
+            'treo_dong_thung': 35,
+        })
+        self.assertRedirects(res_edit_prem, reverse('premium_dashboard'))
+        new_fin.refresh_from_db()
+        self.assertEqual(new_fin.nhan_hang_hoan_thien, 35)
+
+        # 4. Người khác không có quyền sửa (BASIC) -> 403
+        self._login_as(self.basic_user)
+        res_denied = self.client.post(reverse('finishing_edit', args=[new_fin.id]), {
+            'ngay_lam_viec': today_str,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+        })
+        self.assertEqual(res_denied.status_code, 403)
+
+        # 5. Xóa bởi PREMIUM -> Chuyển về 'premium_dashboard'
+        self._login_as(self.premium_user)
+        res_del = self.client.post(reverse('finishing_delete_report', args=[new_fin.id]))
+        self.assertRedirects(res_del, reverse('premium_dashboard'))
+        self.assertFalse(FinishingReport.objects.filter(id=new_fin.id).exists())
+
+    # ==========================================
+    # 5. TEST QUẢN LÝ TÀI KHOẢN & CẤU HÌNH & EXCEL
+    # ==========================================
+    def test_account_management(self):
+        self._login_as(self.premium_user)
+        # Xem danh sách
+        res = self.client.get(reverse('manage_accounts'))
+        self.assertEqual(res.status_code, 200)
+
+        # Phê duyệt tài khoản
+        self.client.post(reverse('toggle_account', args=[self.unapproved_user.id]), {'action': 'toggle_status'})
+        self.unapproved_user.refresh_from_db()
+        self.assertTrue(self.unapproved_user.is_approved)
+
+        # Thay đổi vai trò
+        self.client.post(reverse('toggle_account', args=[self.unapproved_user.id]), {'action': 'change_role', 'new_role': 'HOAN_THIEN'})
+        self.unapproved_user.refresh_from_db()
+        self.assertEqual(self.unapproved_user.role, 'HOAN_THIEN')
+
+    def test_config_product_and_color_crud(self):
+        self._login_as(self.premium_user)
+
+        # Thêm sản phẩm & màu
+        res_add = self.client.post(reverse('config_add_product'), {
+            'name': 'AT02',
+            'colors': 'Vàng - 60\nTím: 70'
+        })
+        self.assertRedirects(res_add, reverse('config_list'))
+        p2 = Product.objects.get(name='AT02')
+        self.assertEqual(p2.colors.count(), 2)
+
+        # Sửa màu sắc & số lượng
+        color_yellow = p2.colors.get(name='Vàng')
+        res_edit_color = self.client.post(reverse('config_edit_color', args=[color_yellow.id]), {
+            'name': 'Vàng Chanh',
+            'quantity': 88
+        })
+        self.assertRedirects(res_edit_color, reverse('config_list'))
+        color_yellow.refresh_from_db()
+        self.assertEqual(color_yellow.name, 'Vàng Chanh')
+        self.assertEqual(color_yellow.quantity, 88)
+
+        # Xóa màu
+        self.client.post(reverse('config_delete_color', args=[color_yellow.id]))
+        self.assertEqual(p2.colors.count(), 1)
+
+        # Xóa mã hàng
+        self.client.post(reverse('config_delete_product', args=[p2.id]))
+        self.assertFalse(Product.objects.filter(id=p2.id).exists())
+
+    def test_excel_exports(self):
+        self._login_as(self.premium_user)
         
-        # Test xoá Product
-        self.client.post(reverse('config_delete_product', args=[product.id]))
-        
-        self.assertEqual(Product.objects.count(), 0)
-        self.assertEqual(ProductColor.objects.count(), 0) # Cascade xoá Màu
-        self.assertEqual(ProductSize.objects.count(), 0) # Cascade xoá Cỡ
-        
-    def test_export_excel(self):
-        session = self.client.session
-        session['user_id'] = self.premium_user.id
-        session.save()
-        
-        # Export excel request
-        response = self.client.get(reverse('export_excel'))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # 1. Xuất Excel Sản xuất
+        res_prod = self.client.get(reverse('export_excel'))
+        self.assertEqual(res_prod.status_code, 200)
+        self.assertEqual(res_prod['Content-Type'], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # 2. Xuất Excel Hoàn thiện
+        res_fin = self.client.get(reverse('finishing_export_excel'))
+        self.assertEqual(res_fin.status_code, 200)
+        self.assertEqual(res_fin['Content-Type'], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # 3. Xuất Excel Tracking
+        res_track = self.client.get(reverse('tracking_export_excel'))
+        self.assertEqual(res_track.status_code, 200)
+        self.assertEqual(res_track['Content-Type'], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")

@@ -72,7 +72,7 @@
             <div style="display:flex; gap:8px;">
                 <a class="back-btn" style="background:#e67e22;" href="{% url 'tracking' %}">Xem Tracking</a>
                 <a class="back-btn" style="background:#3498db;" href="{% url 'config_add_product' %}">+ Thêm Mã hàng</a>
-                <a class="back-btn" href="{% url 'list' %}">Quay lại</a>
+                <a class="back-btn" href="{% url 'premium_dashboard' %}">Quay lại</a>
             </div>
         </div>
 
@@ -98,9 +98,10 @@
                             <!-- TẠM ẨN NÚT THÊM CỠ
                             <a href="{% url 'config_add_size' color.id %}" class="btn-small btn-add">+ Thêm Cỡ</a>
                             -->
+                            <a href="{% url 'config_edit_color' color.id %}" class="btn-small" style="background-color: #f39c12;">Sửa</a>
                             <form action="{% url 'config_delete_color' color.id %}" method="post" style="display:inline;" onsubmit="return confirm('Xoá màu này?');">
                                 {% csrf_token %}
-                                <button type="submit" class="btn-small btn-delete">Xoá Màu</button>
+                                <button type="submit" class="btn-small btn-delete">Xoá</button>
                             </form>
                         </div>
                     </div>
