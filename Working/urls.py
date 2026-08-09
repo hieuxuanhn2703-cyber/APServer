@@ -21,4 +21,5 @@ urlpatterns = [
     path("", views.web_view, name="web"),
     path("list/", views.list_view, name="list"),
     path("edit/<int:row_id>/", views.edit_view, name="edit"),
+    path("delete/<int:row_id>/", views.delete_report_view, name="delete_report"),
 ]

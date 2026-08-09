@@ -41,7 +41,15 @@
                         {% for value in row.values %}
                         <td>{{ value }}</td>
                         {% endfor %}
-                        <td><a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a></td>
+                        <td>
+                            <div style="display: flex; gap: 5px;">
+                                <a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a>
+                                <form action="{% url 'delete_report' row.row_id %}" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa báo cáo này không?');" style="margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -54,7 +62,13 @@
             <div class="data-card">
                 <div class="card-header">
                     <span class="card-title">{{ row.values.1 }} — {{ row.values.2 }} / {{ row.values.3 }}</span>
-                    <a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a>
+                    <div style="display: flex; gap: 5px;">
+                        <a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a>
+                        <form action="{% url 'delete_report' row.row_id %}" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa báo cáo này không?');" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
+                        </form>
+                    </div>
                 </div>
                 {% for label, value in row.pairs %}
                 <div class="card-row">

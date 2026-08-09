@@ -368,3 +368,16 @@ def edit_view(request, row_id):
         "config": load_config(),
         "display_name": current_user.name if current_user else "",
     })
+
+@login_required
+def delete_report_view(request, row_id):
+    current_user = get_current_user(request)
+    report = get_object_or_404(ProcessReport, pk=row_id)
+
+    if report.nguoi_nhap_id != current_user.id and current_user.role != "PREMIUM":
+        raise PermissionDenied("Bạn không có quyền xoá dữ liệu này.")
+
+    if request.method == "POST":
+        report.delete()
+        
+    return redirect("list")

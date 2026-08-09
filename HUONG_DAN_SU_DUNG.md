@@ -33,9 +33,9 @@ Nhân viên là người trực tiếp nhập liệu trên hệ thống.
 - Với quyền BASIC, bạn **chỉ nhìn thấy các báo cáo do chính bạn nhập**.
 - Trên máy tính, danh sách hiển thị dưới dạng Bảng. Trên điện thoại, danh sách sẽ hiển thị dưới dạng Thẻ (Card) rất dễ nhìn và có thể vuốt ngang để xem.
 
-### 3. Sửa Báo Cáo (Nếu nhập sai)
-- Tại bảng danh sách, bấm vào nút **Sửa** (Màu cam) ở cuối mỗi dòng.
-- Sửa lại các số liệu bị sai và ấn **Cập nhật**.
+### 3. Sửa / Xoá Báo Cáo (Nếu nhập sai)
+- Tại bảng danh sách, bấm vào nút **Sửa** (Màu cam) ở cuối mỗi dòng để sửa lại các số liệu bị sai và ấn **Cập nhật**.
+- Hoặc bấm nút **Xóa** (Màu đỏ) để xóa hẳn dòng báo cáo đó đi. Hệ thống sẽ hỏi lại một lần nữa để tránh việc bạn bấm nhầm.
 
 ---
 
