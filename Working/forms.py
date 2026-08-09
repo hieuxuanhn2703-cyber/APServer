@@ -15,9 +15,7 @@ def load_config():
         for product in Product.objects.all():
             config[product.name] = {"colors": {}}
             for color in product.colors.all():
-                config[product.name]["colors"][color.name] = []
-                for size in color.sizes.all():
-                    config[product.name]["colors"][color.name].append(size.name)
+                config[product.name]["colors"][color.name] = ["N/A"]
         return config
     except Exception:
         # Fallback in case models are not ready during initial load

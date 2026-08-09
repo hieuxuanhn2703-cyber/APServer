@@ -80,6 +80,7 @@ class Product(models.Model):
 class ProductColor(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='colors', verbose_name="Mã hàng")
     name = models.CharField("Màu sắc", max_length=255)
+    quantity = models.PositiveIntegerField("Tổng số lượng", default=0)
 
     class Meta:
         verbose_name = "Màu sắc"

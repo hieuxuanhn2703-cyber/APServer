@@ -17,6 +17,12 @@
             {% endif %}
         </h2>
 
+        {% if error %}
+        <div style="background-color: #f8d7da; color: #721c24; padding: 10px; margin-bottom: 15px; border: 1px solid #f5c6cb; border-radius: 4px; font-size: 14px;">
+            {{ error }}
+        </div>
+        {% endif %}
+
         <form method="post">
             {% csrf_token %}
             <div class="form-group">
@@ -29,12 +35,20 @@
                 <input type="text" id="name" name="name" required autocomplete="off">
             </div>
 
+            {% if type == 'color' %}
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="quantity">Số lượng (*)</label>
+                <input type="number" id="quantity" name="quantity" min="0" autocomplete="off" required>
+            </div>
+            {% endif %}
+
             {% if type == 'product' %}
             <div class="form-group" style="margin-top: 15px;">
-                <label for="colors">Các Màu (Cách nhau bằng dấu phẩy, VD: Xanh, Đỏ, Tím)</label>
-                <input type="text" id="colors" name="colors" autocomplete="off" placeholder="Để trống nếu chưa muốn thêm màu">
+                <label for="colors">Các Màu (Bắt buộc phải có số lượng, VD: Đỏ - 100)</label>
+                <textarea id="colors" name="colors" autocomplete="off" placeholder="Đỏ - 150&#10;Xanh&#10;Vàng - 50" style="width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; resize: vertical;"></textarea>
             </div>
             
+            <!-- TẠM ẨN CẤU HÌNH CỠ
             <div class="form-group" style="margin-top: 15px;">
                 <label>Các Cỡ chung cho các Màu trên</label>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
@@ -46,6 +60,7 @@
                     {% endfor %}
                 </div>
             </div>
+            -->
             {% endif %}
             <button type="submit" style="background:#2ecc71;">Lưu</button>
             <div style="margin-top: 15px; text-align: center;">

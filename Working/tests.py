@@ -86,10 +86,20 @@ class SystemVerificationTests(TestCase):
         session['user_id'] = self.premium_user.id
         session.save()
         
-        # Gửi form tạo Product + Colors + Sizes
+        # Test error when missing quantity
         response = self.client.post(reverse('config_add_product'), {
             'name': 'AT100',
-            'colors': 'Đỏ, Xanh',
+            'colors': 'Đỏ - 50\nXanh',
+            'sizes': ['M', 'L']
+        })
+        # Should render back with error
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("chưa được nhập số lượng", response.content.decode('utf-8'))
+        
+        # Test success
+        response = self.client.post(reverse('config_add_product'), {
+            'name': 'AT100',
+            'colors': 'Đỏ - 50\nXanh: 100',
             'sizes': ['M', 'L']
         })
         self.assertRedirects(response, reverse('config_list'))
@@ -98,8 +108,29 @@ class SystemVerificationTests(TestCase):
         self.assertEqual(product.colors.count(), 2)
         
         color_do = product.colors.get(name='Đỏ')
-        self.assertEqual(color_do.sizes.count(), 2)
-        self.assertTrue(color_do.sizes.filter(name='M').exists())
+        self.assertEqual(color_do.quantity, 50)
+        
+        color_xanh = product.colors.get(name='Xanh')
+        self.assertEqual(color_xanh.quantity, 100)
+        
+        # Test Cỡ đã bị vô hiệu hoá, sizes sẽ không được tạo
+        self.assertEqual(ProductSize.objects.count(), 0)
+
+    def test_tracking_view_and_export(self):
+        """Kiểm tra trang tracking và xuất excel."""
+        session = self.client.session
+        session['user_id'] = self.premium_user.id
+        session.save()
+        
+        # Test GET tracking page
+        response = self.client.get(reverse('tracking'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Tracking Sản Xuất", response.content.decode('utf-8'))
+        
+        # Test Export Excel
+        response = self.client.get(reverse('tracking_export_excel'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     def test_config_empty_name(self):
         session = self.client.session

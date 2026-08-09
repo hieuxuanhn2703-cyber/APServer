@@ -70,6 +70,7 @@
         <div class="top-bar">
             <h2>Quản lý cấu hình Mã hàng</h2>
             <div style="display:flex; gap:8px;">
+                <a class="back-btn" style="background:#e67e22;" href="{% url 'tracking' %}">Xem Tracking</a>
                 <a class="back-btn" style="background:#3498db;" href="{% url 'config_add_product' %}">+ Thêm Mã hàng</a>
                 <a class="back-btn" href="{% url 'list' %}">Quay lại</a>
             </div>
@@ -92,28 +93,32 @@
                 {% for color in product.colors.all %}
                 <div class="color-group">
                     <div class="color-header">
-                        <span>Màu: {{ color.name }}</span>
+                        <span>Màu: {{ color.name }} (SL: {{ color.quantity }})</span>
                         <div class="flex-center">
+                            <!-- TẠM ẨN NÚT THÊM CỠ
                             <a href="{% url 'config_add_size' color.id %}" class="btn-small btn-add">+ Thêm Cỡ</a>
+                            -->
                             <form action="{% url 'config_delete_color' color.id %}" method="post" style="display:inline;" onsubmit="return confirm('Xoá màu này?');">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-small btn-delete">Xoá Màu</button>
                             </form>
                         </div>
                     </div>
+                    <!-- TẠM ẨN TÍNH NĂNG CỠ
                     <div class="size-list">
                         {% for size in color.sizes.all %}
                         <div class="size-tag">
                             {{ size.name }}
                             <form action="{% url 'config_delete_size' size.id %}" method="post" style="display:inline;">
                                 {% csrf_token %}
-                                <button type="submit" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-weight:bold; padding:0;">×</button>
+                                <button type="submit" class="btn-remove-size" onclick="return confirm('Bạn có chắc muốn xoá cỡ này không?');">×</button>
                             </form>
                         </div>
                         {% empty %}
                         <span style="color:#7f8c8d; font-size:0.9em; font-style:italic;">Chưa có cỡ nào</span>
                         {% endfor %}
                     </div>
+                    -->
                 </div>
                 {% empty %}
                 <p style="color:#7f8c8d; font-style:italic; margin-left:20px;">Chưa có màu nào.</p>

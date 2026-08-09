@@ -22,4 +22,6 @@ urlpatterns = [
     path("list/", views.list_view, name="list"),
     path("edit/<int:row_id>/", views.edit_view, name="edit"),
     path("delete/<int:row_id>/", views.delete_report_view, name="delete_report"),
+    path("tracking/", views.tracking_view, name="tracking"),
+    path("tracking/export/", views.tracking_export_excel_view, name="tracking_export_excel"),
 ]
