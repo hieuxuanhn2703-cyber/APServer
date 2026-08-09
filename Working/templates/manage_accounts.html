@@ -1,0 +1,105 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý tài khoản</title>
+    <link rel="stylesheet" href="{% static 'working/css/list.css' %}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="top-bar">
+            <h2>Quản lý tài khoản</h2>
+            <div style="display:flex; gap:8px;">
+                <a class="back-btn" href="{% url 'list' %}">Quay lại</a>
+                <a class="back-btn" style="background:#c0392b;" href="{% url 'logout' %}">Đăng xuất</a>
+            </div>
+        </div>
+
+        {% if users %}
+        <!-- Bảng cho màn hình rộng -->
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Họ tên</th>
+                        <th>Tài khoản</th>
+                        <th>Quyền hạn</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.account }}</td>
+                        <td>{{ user.get_role_display }}</td>
+                        <td>
+                            {% if user.is_approved %}
+                                <span style="color: #2ecc71; font-weight: bold;">Đã duyệt</span>
+                            {% else %}
+                                <span style="color: #e67e22; font-weight: bold;">Chờ duyệt</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form action="{% url 'toggle_account' user.id %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                {% if user.is_approved %}
+                                    <button type="submit" class="edit-btn" style="background:#e74c3c; color:white; border:none; cursor:pointer;">Khóa TK</button>
+                                {% else %}
+                                    <button type="submit" class="edit-btn" style="background:#2ecc71; color:white; border:none; cursor:pointer;">Phê duyệt</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Card cho màn hình hẹp (điện thoại) -->
+        <div class="card-list">
+            {% for user in users %}
+            <div class="data-card">
+                <div class="card-header">
+                    <span class="card-title">{{ user.name }} ({{ user.account }})</span>
+                </div>
+                <div class="card-row">
+                    <span class="label">Quyền hạn</span>
+                    <span class="value">{{ user.get_role_display }}</span>
+                </div>
+                <div class="card-row">
+                    <span class="label">Trạng thái</span>
+                    <span class="value">
+                        {% if user.is_approved %}
+                            <span style="color: #2ecc71; font-weight: bold;">Đã duyệt</span>
+                        {% else %}
+                            <span style="color: #e67e22; font-weight: bold;">Chờ duyệt</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="card-row" style="margin-top: 10px; display: flex; justify-content: flex-end;">
+                    <form action="{% url 'toggle_account' user.id %}" method="post">
+                        {% csrf_token %}
+                        {% if user.is_approved %}
+                            <button type="submit" class="edit-btn" style="background:#e74c3c; color:white; border:none; padding: 6px 12px; border-radius: 4px; cursor:pointer;">Khóa TK</button>
+                        {% else %}
+                            <button type="submit" class="edit-btn" style="background:#2ecc71; color:white; border:none; padding: 6px 12px; border-radius: 4px; cursor:pointer;">Phê duyệt</button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty">Hiện tại không có tài khoản nào trên hệ thống.</p>
+        {% endif %}
+    </div>
+</body>
+
+</html>

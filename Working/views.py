@@ -97,29 +97,28 @@ def register_view(request):
 
 
 @login_required
-def pending_accounts_view(request):
+def manage_accounts_view(request):
     current_user = get_current_user(request)
     if current_user.role != "PREMIUM":
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
-    pending_users = AppUser.objects.filter(is_approved=False).order_by("-id")
-    return render(request, "pending_accounts.html", {
-        "pending_users": pending_users,
+    all_users = AppUser.objects.exclude(id=current_user.id).order_by("-id")
+    return render(request, "manage_accounts.html", {
+        "users": all_users,
         "display_name": current_user.name
     })
 
 
 @login_required
-def approve_account_view(request, user_id):
+def toggle_account_view(request, user_id):
     current_user = get_current_user(request)
     if current_user.role != "PREMIUM":
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền duyệt tài khoản.")
         
-    user_to_approve = get_object_or_404(AppUser, pk=user_id)
-    user_to_approve.is_approved = True
-    user_to_approve.save()
-    
-    return redirect("pending_accounts")
+    user_to_toggle = get_object_or_404(AppUser, id=user_id)
+    user_to_toggle.is_approved = not user_to_toggle.is_approved
+    user_to_toggle.save()
+    return redirect("manage_accounts")
 
 
 # ---------- Quản lý Cấu hình (PREMIUM) ----------

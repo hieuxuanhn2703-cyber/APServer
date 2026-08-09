@@ -5,8 +5,8 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register_view, name="register"),
-    path("pending-accounts/", views.pending_accounts_view, name="pending_accounts"),
-    path("approve/<int:user_id>/", views.approve_account_view, name="approve_account"),
+    path("manage-accounts/", views.manage_accounts_view, name="manage_accounts"),
+    path("toggle-account/<int:user_id>/", views.toggle_account_view, name="toggle_account"),
     
     path("config/", views.config_list_view, name="config_list"),
     path("config/product/add/", views.config_add_product_view, name="config_add_product"),

@@ -64,8 +64,8 @@ class SystemVerificationTests(TestCase):
         session['user_id'] = self.basic_user.id
         session.save()
         
-        # Thử vào pending_accounts
-        response = self.client.get(reverse('pending_accounts'))
+        # Thử vào manage_accounts
+        response = self.client.get(reverse('manage_accounts'))
         self.assertEqual(response.status_code, 403) # Bị chặn
         
         # Thử vào config_list
