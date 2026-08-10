@@ -1,71 +1,73 @@
-# HƯỚNG DẪN SỬ DỤNG HỆ THỐNG QUẢN LÝ TIẾN ĐỘ SẢN XUẤT
+# HƯỚNG DẪN SỬ DỤNG HỆ THỐNG QUẢN LÝ TIẾN ĐỘ SẢN XUẤT VÀ HOÀN THIỆN
 
-Chào mừng bạn đến với Hệ thống Quản lý và Theo dõi Tiến độ Sản xuất. Hệ thống được chia làm 2 cấp độ quyền hạn (Role) với các chức năng tương ứng nhằm đảm bảo tính bảo mật và thuận tiện trong quá trình làm việc.
+Chào mừng bạn đến với Hệ thống Quản lý và Theo dõi Tiến độ. Hệ thống được chia làm 4 cấp độ quyền hạn (Role) với các chức năng tương ứng nhằm đảm bảo tính bảo mật và thuận tiện trong quá trình làm việc.
 
 ---
 
 ## I. DÀNH CHO TẤT CẢ NGƯỜI DÙNG
 
-### 1. Đăng ký tài khoản
-- Truy cập vào trang Đăng nhập, chọn **"Chưa có tài khoản? Đăng ký ngay"**.
-- Điền đầy đủ thông tin: Họ tên, Tên tài khoản, Mật khẩu (yêu cầu nhập 2 lần để xác nhận).
-- Ấn nút **Đăng ký**.
-- **Lưu ý:** Tài khoản mới tạo ra sẽ ở trạng thái *Chờ duyệt*. Bạn cần báo cho Quản lý (người có quyền PREMIUM) để họ phê duyệt tài khoản của bạn trước khi có thể đăng nhập.
+### 1. Đăng ký & Đăng nhập
+- **Đăng ký:** Truy cập vào trang Đăng nhập, chọn **"Chưa có tài khoản? Đăng ký ngay"**. Điền Họ tên, Tên tài khoản, Mật khẩu và chọn đúng Vai trò (Sản xuất, Hoàn thiện, hoặc Quản lý). 
+- **Lưu ý:** Tài khoản mới tạo ra sẽ ở trạng thái *Chờ duyệt*. Bạn cần báo cho Admin (quyền PREMIUM) phê duyệt thì mới có thể đăng nhập.
+- **Đăng nhập:** Nhập Tên tài khoản và Mật khẩu. Bạn sẽ được tự động chuyển hướng vào màn hình làm việc tương ứng với quyền của mình.
 
-### 2. Đăng nhập
-- Nhập Tên tài khoản và Mật khẩu.
-- Nếu tài khoản đã được quản lý duyệt, bạn sẽ được tự động chuyển hướng vào màn hình làm việc chính.
-
----
-
-## II. HƯỚNG DẪN DÀNH CHO NHÂN VIÊN (Quyền BASIC)
-
-Nhân viên là người trực tiếp nhập liệu trên hệ thống. 
-
-### 1. Thêm Báo Cáo Sản Lượng Mới
-- Tại trang chính (Danh sách), ấn nút **+ Nhập mới**.
-- Chọn lần lượt: **Mã Hàng** -> **Màu** -> **Cỡ**. *(Hệ thống sẽ tự động lọc danh sách Màu và Cỡ tương ứng với Mã hàng bạn vừa chọn)*.
-- Nhập chính xác số lượng cho từng công đoạn tương ứng (Ví dụ: Tổ cắt, Nhận BTP, KCS...). Các ô không có số lượng có thể để trống (mặc định là 0).
-- Ấn nút **Lưu dữ liệu** màu xanh lá. Dữ liệu sẽ lập tức được lưu và hiển thị ra bảng.
-
-### 2. Xem Báo Cáo Của Mình
-- Ngay khi đăng nhập thành công, bạn sẽ thấy **Danh sách dữ liệu đã nhập**.
-- Với quyền BASIC, bạn **chỉ nhìn thấy các báo cáo do chính bạn nhập**.
-- Trên máy tính, danh sách hiển thị dưới dạng Bảng. Trên điện thoại, danh sách sẽ hiển thị dưới dạng Thẻ (Card) rất dễ nhìn và có thể vuốt ngang để xem.
-
-### 3. Sửa / Xoá Báo Cáo (Nếu nhập sai)
-- Tại bảng danh sách, bấm vào nút **Sửa** (Màu cam) ở cuối mỗi dòng để sửa lại các số liệu bị sai và ấn **Cập nhật**.
-- Hoặc bấm nút **Xóa** (Màu đỏ) để xóa hẳn dòng báo cáo đó đi. Hệ thống sẽ hỏi lại một lần nữa để tránh việc bạn bấm nhầm.
+### 2. Đổi mật khẩu
+- Khi đã đăng nhập, ở tất cả các trang làm việc chính, bạn sẽ thấy nút **"Đổi mật khẩu"** màu xanh (bên cạnh nút Đăng xuất). 
+- Bạn có thể vào đó để tự đổi mật khẩu cá nhân bất cứ lúc nào.
 
 ---
 
-## III. HƯỚNG DẪN DÀNH CHO QUẢN LÝ (Quyền PREMIUM)
+## II. HƯỚNG DẪN DÀNH CHO NHÂN VIÊN SẢN XUẤT (Quyền BASIC)
 
-Tài khoản Quản lý được cấp quyền cao nhất, cho phép theo dõi toàn bộ tiến độ, quản trị danh mục sản phẩm và nhân sự.
+Nhân viên Sản xuất là người trực tiếp nhập liệu số lượng các công đoạn sản xuất.
 
-### 1. Theo dõi & Quản lý Dữ liệu Toàn hệ thống
-- Khác với nhân viên, Quản lý khi truy cập vào **Danh sách dữ liệu** sẽ nhìn thấy **toàn bộ báo cáo của tất cả công nhân viên** đã nhập lên hệ thống.
-- Quản lý có quyền ấn nút **Sửa** hoặc **Xoá** bất kỳ dòng báo cáo nào nếu phát hiện có sai sót.
-
-### 2. Quản Lý Tài Khoản (Duyệt & Khóa)
-- Ấn nút **Quản lý TK** (Màu xanh lá) trên thanh công cụ.
-- Hệ thống sẽ hiển thị danh sách tất cả các tài khoản đang có trên hệ thống (Bao gồm cả các tài khoản đang chờ duyệt và đã duyệt).
-- Để cấp quyền cho nhân viên đăng nhập, bạn ấn nút **Phê duyệt** màu xanh lá.
-- Để tạm khoá quyền truy cập của một nhân viên đã nghỉ hoặc có vấn đề, bạn ấn nút **Khóa TK** màu đỏ. Nhân viên đó sẽ ngay lập tức không thể đăng nhập được nữa.
-
-### 3. Quản Lý Danh Mục Mã Hàng (Cấu hình)
-- Ấn nút **Quản lý Mã hàng** (Màu tím) trên thanh công cụ.
-- **Thêm siêu tốc**: Ấn nút **+ Thêm Mã Hàng**. Tại đây, bạn có thể nhập:
-  - Tên Mã Hàng (VD: `AT99`)
-  - Các Màu: Nhập nhiều màu cùng lúc cách nhau bằng dấu phẩy (VD: `Xanh, Đỏ, Trắng`)
-  - Các Cỡ: Chọn nhanh các cỡ chung (XS, S, M, L, XL...) bằng cách nhấp chuột (Nút sẽ hiện màu xanh nước biển khi được chọn).
-- Khi ấn **Lưu**, hệ thống sẽ tự tạo ra cấu trúc phân nhánh cho nhân viên chọn.
-- **Quản lý chi tiết**: Tại trang danh sách, bạn cũng có thể bấm các nút **+ Thêm Màu** / **+ Thêm Cỡ** lẻ tẻ cho từng dòng, hoặc ấn **Xoá** để dọn dẹp các mã hàng cũ không còn sản xuất. *(Việc xoá sẽ không làm mất các báo cáo lịch sử)*.
-
-### 4. Xuất Báo Cáo Ra Excel
-- Tại trang Danh sách, ấn nút **Xuất Excel** (Màu cam).
-- Hệ thống sẽ tổng hợp toàn bộ dữ liệu báo cáo của tất cả mọi người và lập tức tải về máy của bạn dưới định dạng tệp tin `DuLieuBaoCao.xlsx`. File này tương thích 100% với phần mềm Microsoft Excel.
+- **Thêm Báo Cáo:** Tại trang chính, chọn **Mã Hàng -> Màu -> Cỡ**. Nhập chính xác số lượng cho từng công đoạn (Tổ cắt, Nhận BTP, Vào chuyền...). (Tổ và Xưởng mặc định là 0, yêu cầu phải nhập khác 0). Ấn nút **Lưu dữ liệu**.
+- **Xem Dữ liệu:** Bạn chỉ được phép nhìn thấy những dữ liệu **Sản xuất** do chính bạn đã nhập. Bạn không thể xem dữ liệu Hoàn thiện hay dữ liệu của người khác.
+- **Lưu ý:** Để đảm bảo tính toàn vẹn dữ liệu, nhân viên Sản xuất **không có quyền Sửa hay Xóa** dữ liệu sau khi đã ấn Lưu. Nếu nhập sai, vui lòng báo lại cho Quản lý.
 
 ---
 
-*Hệ thống được thiết kế tối ưu hoá riêng biệt, đảm bảo tính thuận tiện, không yêu cầu người dùng phải hiểu biết sâu về máy tính vẫn có thể sử dụng dễ dàng trên cả Điện thoại di động lẫn Máy tính bảng / PC.*
+## III. HƯỚNG DẪN DÀNH CHO NHÂN VIÊN HOÀN THIỆN (Quyền HOAN_THIEN)
+
+Tương tự như Sản xuất, nhưng dành riêng cho quy trình Hoàn thiện.
+
+- **Thêm Báo Cáo:** Nhập số lượng cho các công đoạn: Nhận chuyền, Nhặt chỉ, Ủi, Gập bao gói, KCS. Ấn nút **Lưu dữ liệu**.
+- **Xem Dữ liệu:** Bạn chỉ được phép xem các báo cáo **Hoàn thiện** do chính bạn nhập. 
+- **Lưu ý:** Nhân viên Hoàn thiện **không có quyền Sửa hay Xóa** dữ liệu sau khi đã ấn Lưu. Nếu nhập sai, vui lòng báo lại cho Quản lý.
+
+---
+
+## IV. HƯỚNG DẪN DÀNH CHO QUẢN LÝ (Quyền QUAN_LY)
+
+Tài khoản Quản lý được cấp quyền xem và chỉnh sửa dữ liệu toàn hệ thống, cũng như xem báo cáo tổng hợp.
+
+### 1. Bảng Điều Khiển (Dashboard) & Thống Kê
+- Ngay khi đăng nhập, Quản lý sẽ thấy **Dashboard Dữ Liệu**, nơi hiển thị hai bảng lớn: **Danh sách Sản xuất** và **Danh sách Hoàn thiện** của toàn bộ công nhân viên.
+- **Lọc Dữ Liệu:** Quản lý có thể lọc dữ liệu theo khoảng thời gian (Từ ngày - Đến ngày) độc lập cho từng bảng Sản xuất và bảng Hoàn thiện.
+- **Xuất Excel:** Ấn nút **Xuất Excel** để tải dữ liệu về máy. Hệ thống sẽ chỉ xuất các dữ liệu nằm trong khoảng thời gian đã lọc.
+
+### 2. Quản Lý Dữ Liệu
+- Quản lý có thể ấn nút **Nhập DL Sản xuất** hoặc **Nhập DL Hoàn thiện** ngay trên Dashboard để tự mình nhập số liệu nếu cần.
+- Quản lý có toàn quyền **Sửa** hoặc **Xóa** bất kỳ báo cáo nào của bất kỳ ai nếu phát hiện có sai sót.
+- Quản lý có thể thêm mới, sửa, xóa cấu trúc **Mã hàng - Màu - Cỡ** (Cấu hình mã hàng).
+
+*(Lưu ý: Quản lý không có quyền tác động đến các Tài khoản trên hệ thống).*
+
+---
+
+## V. HƯỚNG DẪN DÀNH CHO ADMIN (Quyền PREMIUM)
+
+Admin (Cao cấp) là người quản trị cao nhất của hệ thống, nắm giữ quyền hạn về mặt nhân sự và cấu hình.
+
+### 1. Dashboard Dành Riêng Cho Admin
+- Admin cũng có quyền truy cập **Dashboard** để xem, Sửa, Xóa, Lọc ngày và Xuất Excel toàn bộ dữ liệu Sản xuất & Hoàn thiện giống như Quản lý.
+- Tuy nhiên, Admin sẽ không có nút tự nhập liệu (để tránh nhầm lẫn vai trò).
+
+### 2. Quản Lý Tài Khoản
+- Chỉ Admin mới thấy nút **Quản lý Tài khoản**.
+- **Phê duyệt / Khóa:** Admin duyệt các tài khoản mới đăng ký để họ có thể đăng nhập, hoặc khóa các tài khoản vi phạm/nghỉ việc.
+- **Xóa Vĩnh Viễn:** Admin có quyền ấn nút **Xóa** để loại bỏ vĩnh viễn một tài khoản khỏi hệ thống.
+
+---
+
+*Hệ thống được thiết kế tối ưu hoá riêng biệt, đảm bảo tính thuận tiện, không yêu cầu người dùng phải hiểu biết sâu về máy tính vẫn có thể sử dụng dễ dàng trên cả Điện thoại di động lẫn PC.*

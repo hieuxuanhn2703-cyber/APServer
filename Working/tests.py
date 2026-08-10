@@ -179,29 +179,64 @@ class ComprehensiveSystemTests(TestCase):
             res = self.client.get(url)
             self.assertRedirects(res, reverse('login'), msg_prefix=f"URL {url} should redirect to login")
 
-    def test_role_based_permissions(self):
-        # BASIC bị chặn vào Dashboard, Quản lý tài khoản, Cấu hình mã hàng, Hoàn thiện
-        self._login_as(self.basic_user)
-        self.assertEqual(self.client.get(reverse('premium_dashboard')).status_code, 403)
-        self.assertEqual(self.client.get(reverse('manage_accounts')).status_code, 403)
-        self.assertEqual(self.client.get(reverse('config_list')).status_code, 403)
-        self.assertEqual(self.client.get(reverse('finishing_web')).status_code, 403)
-        self.assertEqual(self.client.get(reverse('finishing_list')).status_code, 403)
+    def test_exhaustive_role_permissions(self):
+        # Định nghĩa các route cần test
+        routes = {
+            'web': reverse('web'),
+            'list': reverse('list'),
+            'finishing_web': reverse('finishing_web'),
+            'finishing_list': reverse('finishing_list'),
+            'premium_dashboard': reverse('premium_dashboard'),
+            'tracking': reverse('tracking'),
+            'config_list': reverse('config_list'),
+            'manage_accounts': reverse('manage_accounts'),
+            'change_password': reverse('change_password'),
+        }
 
-        # HOAN_THIEN bị chặn vào Dashboard, Quản lý tài khoản, Cấu hình mã hàng, Sản xuất
-        self._login_as(self.finishing_user)
-        self.assertEqual(self.client.get(reverse('premium_dashboard')).status_code, 403)
-        self.assertEqual(self.client.get(reverse('manage_accounts')).status_code, 403)
-        self.assertEqual(self.client.get(reverse('config_list')).status_code, 403)
-        self.assertEqual(self.client.get(reverse('web')).status_code, 403)
-        self.assertEqual(self.client.get(reverse('list')).status_code, 403)
+        # Cấu hình mong đợi HTTP Status Code cho từng Role
+        expected_status = {
+            self.basic_user: {
+                'web': 200, 'list': 200,
+                'finishing_web': 403, 'finishing_list': 403,
+                'premium_dashboard': 403, 'tracking': 403,
+                'config_list': 403, 'manage_accounts': 403,
+                'change_password': 200
+            },
+            self.finishing_user: {
+                'web': 403, 'list': 403,
+                'finishing_web': 200, 'finishing_list': 200,
+                'premium_dashboard': 403, 'tracking': 403,
+                'config_list': 403, 'manage_accounts': 403,
+                'change_password': 200
+            },
+            self.quanly_user: {
+                'web': 200, 'list': 200,
+                'finishing_web': 200, 'finishing_list': 200,
+                'premium_dashboard': 200, 'tracking': 200,
+                'config_list': 200, 'manage_accounts': 403,
+                'change_password': 200
+            },
+            self.premium_user: {
+                'web': 200, 'list': 200,
+                'finishing_web': 200, 'finishing_list': 200,
+                'premium_dashboard': 200, 'tracking': 200,
+                'config_list': 200, 'manage_accounts': 200,
+                'change_password': 200
+            }
+        }
 
-        # QUAN_LY truy cập Dashboard, Cấu hình, Hoàn thiện OK.
-        # Nhưng bị chặn ở Manage Accounts
-        self._login_as(self.quanly_user)
-        self.assertEqual(self.client.get(reverse('premium_dashboard')).status_code, 200)
-        self.assertEqual(self.client.get(reverse('config_list')).status_code, 200)
-        self.assertEqual(self.client.get(reverse('manage_accounts')).status_code, 403)
+        # Chạy kiểm thử vét cạn
+        for user, permissions in expected_status.items():
+            self._login_as(user)
+            for route_name, expected_code in permissions.items():
+                url = routes[route_name]
+                response = self.client.get(url)
+                self.assertEqual(
+                    response.status_code, 
+                    expected_code, 
+                    f"User {user.role} accessing {url} returned {response.status_code}, expected {expected_code}"
+                )
+
 
 
     # ==========================================
