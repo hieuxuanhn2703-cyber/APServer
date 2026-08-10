@@ -42,8 +42,9 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="change_role">
                                 <select name="new_role" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
-                                    <option value="BASIC" {% if user.role == 'BASIC' %}selected{% endif %}>Cơ bản (Sản xuất)</option>
+                                    <option value="BASIC" {% if user.role == 'BASIC' %}selected{% endif %}>Sản xuất</option>
                                     <option value="HOAN_THIEN" {% if user.role == 'HOAN_THIEN' %}selected{% endif %}>Hoàn thiện</option>
+                                    <option value="QUAN_LY" {% if user.role == 'QUAN_LY' %}selected{% endif %}>Quản lý</option>
                                     <option value="PREMIUM" {% if user.role == 'PREMIUM' %}selected{% endif %}>Cao cấp (Admin)</option>
                                 </select>
                                 <button type="submit" style="padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Lưu</button>
@@ -57,15 +58,21 @@
                             {% endif %}
                         </td>
                         <td>
-                            <form action="{% url 'toggle_account' user.id %}" method="post" style="display:inline;">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="toggle_status">
-                                {% if user.is_approved %}
-                                    <button type="submit" class="edit-btn" style="background:#e74c3c; color:white; border:none; cursor:pointer;">Khóa TK</button>
-                                {% else %}
-                                    <button type="submit" class="edit-btn" style="background:#2ecc71; color:white; border:none; cursor:pointer;">Phê duyệt</button>
-                                {% endif %}
-                            </form>
+                            <div style="display: flex; gap: 5px;">
+                                <form action="{% url 'toggle_account' user.id %}" method="post" style="display:inline; margin: 0;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="toggle_status">
+                                    {% if user.is_approved %}
+                                        <button type="submit" class="edit-btn" style="background:#e74c3c; color:white; border:none; cursor:pointer;">Khóa TK</button>
+                                    {% else %}
+                                        <button type="submit" class="edit-btn" style="background:#2ecc71; color:white; border:none; cursor:pointer;">Phê duyệt</button>
+                                    {% endif %}
+                                </form>
+                                <form action="{% url 'delete_account' user.id %}" method="post" style="display:inline; margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xóa vĩnh viễn tài khoản này khỏi hệ thống không?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="edit-btn" style="background:#c0392b; color:white; border:none; cursor:pointer;">Xóa</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -86,8 +93,9 @@
                         {% csrf_token %}
                         <input type="hidden" name="action" value="change_role">
                         <select name="new_role" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9em;">
-                            <option value="BASIC" {% if user.role == 'BASIC' %}selected{% endif %}>SX</option>
-                            <option value="HOAN_THIEN" {% if user.role == 'HOAN_THIEN' %}selected{% endif %}>HT</option>
+                            <option value="BASIC" {% if user.role == 'BASIC' %}selected{% endif %}>Sản xuất</option>
+                            <option value="HOAN_THIEN" {% if user.role == 'HOAN_THIEN' %}selected{% endif %}>Hoàn thiện</option>
+                            <option value="QUAN_LY" {% if user.role == 'QUAN_LY' %}selected{% endif %}>Quản lý</option>
                             <option value="PREMIUM" {% if user.role == 'PREMIUM' %}selected{% endif %}>Admin</option>
                         </select>
                         <button type="submit" style="padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Lưu</button>
@@ -103,8 +111,8 @@
                         {% endif %}
                     </span>
                 </div>
-                <div class="card-row" style="margin-top: 10px; display: flex; justify-content: flex-end;">
-                    <form action="{% url 'toggle_account' user.id %}" method="post">
+                <div class="card-row" style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 5px;">
+                    <form action="{% url 'toggle_account' user.id %}" method="post" style="margin: 0;">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="toggle_status">
                         {% if user.is_approved %}
@@ -112,6 +120,10 @@
                         {% else %}
                             <button type="submit" class="edit-btn" style="background:#2ecc71; color:white; border:none; padding: 6px 12px; border-radius: 4px; cursor:pointer;">Phê duyệt</button>
                         {% endif %}
+                    </form>
+                    <form action="{% url 'delete_account' user.id %}" method="post" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xóa vĩnh viễn tài khoản này khỏi hệ thống không?');">
+                        {% csrf_token %}
+                        <button type="submit" class="edit-btn" style="background:#c0392b; color:white; border:none; padding: 6px 12px; border-radius: 4px; cursor:pointer;">Xóa</button>
                     </form>
                 </div>
             </div>

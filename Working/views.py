@@ -71,7 +71,7 @@ def login_view(request):
                 request.session[SESSION_KEY] = user.id
                 request.session["display_name"] = user.name
                 
-                if user.role == "PREMIUM":
+                if user.role in ["PREMIUM", "QUAN_LY"]:
                     return redirect("premium_dashboard")
                 elif user.role == "HOAN_THIEN":
                     return redirect("finishing_web")
@@ -87,6 +87,34 @@ def logout_view(request):
     return redirect("login")
 
 
+@login_required
+def change_password_view(request):
+    current_user = get_current_user(request)
+    error = None
+    success = False
+    
+    if request.method == "POST":
+        old_password = request.POST.get("old_password", "")
+        new_password = request.POST.get("new_password", "")
+        confirm_password = request.POST.get("confirm_password", "")
+        
+        if current_user.password != old_password:
+            error = "Mật khẩu cũ không chính xác."
+        elif new_password != confirm_password:
+            error = "Mật khẩu mới không khớp."
+        elif len(new_password) < 1:
+            error = "Vui lòng nhập mật khẩu mới."
+        else:
+            current_user.password = new_password
+            current_user.save()
+            success = True
+            
+    return render(request, "change_password.html", {
+        "error": error,
+        "success": success
+    })
+
+
 # ---------- Đăng ký & Duyệt tài khoản ----------
 
 def register_view(request):
@@ -97,16 +125,20 @@ def register_view(request):
         account = request.POST.get("account", "").strip()
         password = request.POST.get("password", "")
         confirm_password = request.POST.get("confirm_password", "")
+        role = request.POST.get("role", "BASIC")
         
         if password != confirm_password:
             error = "Mật khẩu nhập lại không khớp."
         elif AppUser.objects.filter(account=account).exists():
             error = "Tài khoản này đã tồn tại, vui lòng chọn tên khác."
+        elif role not in ["BASIC", "HOAN_THIEN", "QUAN_LY"]:
+            error = "Vai trò không hợp lệ."
         else:
             AppUser.objects.create(
                 name=name,
                 account=account,
                 password=password,
+                role=role,
                 is_approved=False
             )
             success = True
@@ -138,7 +170,7 @@ def toggle_account_view(request, user_id):
         action = request.POST.get("action")
         if action == "change_role":
             new_role = request.POST.get("new_role")
-            if new_role in ["BASIC", "HOAN_THIEN", "PREMIUM"]:
+            if new_role in ["BASIC", "HOAN_THIEN", "QUAN_LY", "PREMIUM"]:
                 user_to_toggle.role = new_role
                 user_to_toggle.save()
         elif action == "toggle_status" or not action:
@@ -146,13 +178,23 @@ def toggle_account_view(request, user_id):
             user_to_toggle.save()
     return redirect("manage_accounts")
 
+@login_required
+def delete_account_view(request, user_id):
+    current_user = get_current_user(request)
+    if current_user.role != "PREMIUM":
+        raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền xóa tài khoản.")
+        
+    user_to_delete = get_object_or_404(AppUser, id=user_id)
+    if request.method == "POST":
+        user_to_delete.delete()
+    return redirect("manage_accounts")
 
 # ---------- Quản lý Cấu hình (PREMIUM) ----------
 
 @login_required
 def config_list_view(request):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     products = Product.objects.prefetch_related('colors__sizes').all()
@@ -164,7 +206,7 @@ def config_list_view(request):
 @login_required
 def config_add_product_view(request):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
     
     if request.method == "POST":
@@ -220,7 +262,7 @@ def config_add_product_view(request):
 @login_required
 def config_add_color_view(request, product_id):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     product = get_object_or_404(Product, pk=product_id)
@@ -247,7 +289,7 @@ def config_add_color_view(request, product_id):
 @login_required
 def config_edit_color_view(request, color_id):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     color = get_object_or_404(ProductColor, pk=color_id)
@@ -274,7 +316,7 @@ def config_edit_color_view(request, color_id):
 @login_required
 def config_add_size_view(request, color_id):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     color = get_object_or_404(ProductColor, pk=color_id)
@@ -292,7 +334,7 @@ def config_add_size_view(request, color_id):
 @login_required
 def config_delete_product_view(request, product_id):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
     
     if request.method == "POST":
@@ -303,7 +345,7 @@ def config_delete_product_view(request, product_id):
 @login_required
 def config_delete_color_view(request, color_id):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
     
     if request.method == "POST":
@@ -314,7 +356,7 @@ def config_delete_color_view(request, color_id):
 @login_required
 def config_delete_size_view(request, size_id):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
     
     if request.method == "POST":
@@ -326,7 +368,7 @@ def config_delete_size_view(request, size_id):
 @login_required
 def export_excel_view(request):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền xuất dữ liệu.")
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -355,7 +397,7 @@ def export_excel_view(request):
 def web_view(request):
     success = False
     current_user = get_current_user(request)
-    if current_user.role not in ['BASIC', 'PREMIUM']:
+    if current_user.role not in ['BASIC', 'PREMIUM', 'QUAN_LY']:
         raise PermissionDenied("Bạn không có quyền truy cập trang Sản xuất.")
 
     if request.method == "POST":
@@ -389,7 +431,7 @@ def web_view(request):
         "success": success,
         "config": load_config(),
         "display_name": current_user.name if current_user else "",
-        "is_premium": current_user.role == "PREMIUM" if current_user else False,
+        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
     })
 
 
@@ -398,10 +440,10 @@ def web_view(request):
 @login_required
 def list_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ['BASIC', 'PREMIUM']:
+    if current_user.role not in ['BASIC', 'PREMIUM', 'QUAN_LY']:
         raise PermissionDenied("Bạn không có quyền truy cập trang Sản xuất.")
 
-    if current_user.role == "PREMIUM":
+    if current_user.role in ["PREMIUM", "QUAN_LY"]:
         reports = ProcessReport.objects.all()
     else:
         reports = ProcessReport.objects.filter(nguoi_nhap=current_user)
@@ -412,7 +454,7 @@ def list_view(request):
         "table_rows": table_rows,
         "headers": HEADERS,
         "display_name": current_user.name if current_user else "",
-        "is_premium": current_user.role == "PREMIUM" if current_user else False,
+        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
     })
 
 
@@ -423,7 +465,7 @@ def edit_view(request, row_id):
     current_user = get_current_user(request)
     report = get_object_or_404(ProcessReport, pk=row_id)
 
-    if report.nguoi_nhap_id != current_user.id and current_user.role != "PREMIUM":
+    if report.nguoi_nhap_id != current_user.id and current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Bạn không có quyền sửa dữ liệu này.")
 
     if request.method == "POST":
@@ -445,7 +487,7 @@ def edit_view(request, row_id):
             report.kcs = data.get("kcs") or 0
             report.nhap_hoan_thien = data.get("nhap_hoan_thien") or 0
             report.save()
-            if current_user.role == "PREMIUM":
+            if current_user.role in ["PREMIUM", "QUAN_LY"]:
                 return redirect("premium_dashboard")
             return redirect("list")
     else:
@@ -479,13 +521,13 @@ def delete_report_view(request, row_id):
     current_user = get_current_user(request)
     report = get_object_or_404(ProcessReport, pk=row_id)
 
-    if report.nguoi_nhap_id != current_user.id and current_user.role != "PREMIUM":
+    if report.nguoi_nhap_id != current_user.id and current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Bạn không có quyền xoá dữ liệu này.")
 
     if request.method == "POST":
         report.delete()
         
-    if current_user.role == "PREMIUM":
+    if current_user.role in ["PREMIUM", "QUAN_LY"]:
         return redirect("premium_dashboard")
     return redirect("list")
 
@@ -544,7 +586,7 @@ def get_tracking_data():
 @login_required
 def tracking_view(request):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     tracking_data = get_tracking_data()
@@ -557,7 +599,7 @@ def tracking_view(request):
 @login_required
 def tracking_export_excel_view(request):
     current_user = get_current_user(request)
-    if current_user.role != "PREMIUM":
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     tracking_data = get_tracking_data()
@@ -636,7 +678,7 @@ from .forms import FinishingForm
 @login_required
 def finishing_web_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ['HOAN_THIEN', 'PREMIUM']:
+    if current_user.role not in ['HOAN_THIEN', 'PREMIUM', 'QUAN_LY']:
         raise PermissionDenied("Bạn không có quyền truy cập trang Hoàn thiện.")
 
     success = False
@@ -664,6 +706,7 @@ def finishing_web_view(request):
         "success": success,
         "config": load_config(),
         "display_name": current_user.name if current_user else "",
+        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
     })
 
 FINISHING_HEADERS = [
@@ -699,10 +742,10 @@ def _finishing_report_to_row(report: FinishingReport):
 @login_required
 def finishing_list_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ['HOAN_THIEN', 'PREMIUM']:
+    if current_user.role not in ['HOAN_THIEN', 'PREMIUM', 'QUAN_LY']:
         raise PermissionDenied("Bạn không có quyền truy cập trang Hoàn thiện.")
 
-    if current_user.role == "PREMIUM":
+    if current_user.role in ["PREMIUM", "QUAN_LY"]:
         qs = FinishingReport.objects.select_related('nguoi_nhap').all()
     else:
         qs = FinishingReport.objects.filter(nguoi_nhap=current_user).select_related('nguoi_nhap')
@@ -722,7 +765,8 @@ def finishing_list_view(request):
         "display_name": current_user.name if current_user else "",
         "start_date": start_date or '',
         "end_date": end_date or '',
-        "user": current_user
+        "user": current_user,
+        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
     })
 
 @login_required
@@ -730,7 +774,7 @@ def finishing_edit_view(request, row_id):
     current_user = get_current_user(request)
     report = get_object_or_404(FinishingReport, pk=row_id)
 
-    if report.nguoi_nhap_id != current_user.id and current_user.role != "PREMIUM":
+    if report.nguoi_nhap_id != current_user.id and current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Bạn không có quyền sửa dữ liệu này.")
 
     if request.method == "POST":
@@ -745,7 +789,7 @@ def finishing_edit_view(request, row_id):
             report.gap_hang = data.get("gap_hang") or 0
             report.treo_dong_thung = data.get("treo_dong_thung") or 0
             report.save()
-            if current_user.role == "PREMIUM":
+            if current_user.role in ["PREMIUM", "QUAN_LY"]:
                 return redirect("premium_dashboard")
             return redirect("finishing_list")
     else:
@@ -772,20 +816,20 @@ def finishing_delete_report_view(request, row_id):
     current_user = get_current_user(request)
     report = get_object_or_404(FinishingReport, pk=row_id)
 
-    if report.nguoi_nhap_id != current_user.id and current_user.role != "PREMIUM":
+    if report.nguoi_nhap_id != current_user.id and current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Bạn không có quyền xoá dữ liệu này.")
 
     if request.method == "POST":
         report.delete()
         
-    if current_user.role == "PREMIUM":
+    if current_user.role in ["PREMIUM", "QUAN_LY"]:
         return redirect("premium_dashboard")
     return redirect("finishing_list")
 
 @login_required
 def finishing_export_excel_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ['HOAN_THIEN', 'PREMIUM']:
+    if current_user.role not in ['HOAN_THIEN', 'PREMIUM', 'QUAN_LY']:
         raise PermissionDenied("Bạn không có quyền truy cập.")
 
     import openpyxl
@@ -814,21 +858,26 @@ from django.core.paginator import Paginator
 @login_required
 def premium_dashboard_view(request):
     current_user = get_current_user(request)
-    if current_user.role != 'PREMIUM':
+    if current_user.role not in ['PREMIUM', 'QUAN_LY']:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
         
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
+    prod_start_date = request.GET.get('prod_start_date')
+    prod_end_date = request.GET.get('prod_end_date')
+    fin_start_date = request.GET.get('fin_start_date')
+    fin_end_date = request.GET.get('fin_end_date')
     
     prod_qs = ProcessReport.objects.select_related('nguoi_nhap').all()
     fin_qs = FinishingReport.objects.select_related('nguoi_nhap').all()
     
-    if start_date:
-        prod_qs = prod_qs.filter(created_at__date__gte=start_date)
-        fin_qs = fin_qs.filter(created_at__date__gte=start_date)
-    if end_date:
-        prod_qs = prod_qs.filter(created_at__date__lte=end_date)
-        fin_qs = fin_qs.filter(created_at__date__lte=end_date)
+    if prod_start_date:
+        prod_qs = prod_qs.filter(created_at__date__gte=prod_start_date)
+    if prod_end_date:
+        prod_qs = prod_qs.filter(created_at__date__lte=prod_end_date)
+        
+    if fin_start_date:
+        fin_qs = fin_qs.filter(created_at__date__gte=fin_start_date)
+    if fin_end_date:
+        fin_qs = fin_qs.filter(created_at__date__lte=fin_end_date)
         
     prod_rows = [_report_to_row(r) for r in prod_qs]
     fin_rows = [_finishing_report_to_row(r) for r in fin_qs]
@@ -847,7 +896,10 @@ def premium_dashboard_view(request):
         "page_prod": page_prod,
         "page_fin": page_fin,
         "display_name": current_user.name if current_user else "",
-        "start_date": start_date or '',
-        "end_date": end_date or '',
-        "user": current_user
+        "prod_start_date": prod_start_date or '',
+        "prod_end_date": prod_end_date or '',
+        "fin_start_date": fin_start_date or '',
+        "fin_end_date": fin_end_date or '',
+        "user": current_user,
+        "is_premium": current_user.role == "PREMIUM"
     })

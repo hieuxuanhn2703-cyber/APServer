@@ -11,35 +11,48 @@
         <div class="top-bar">
             <h2>Dashboard Dữ Liệu</h2>
             <div style="display:flex; gap:8px; flex-wrap: wrap;">
+                {% if user.role == 'QUAN_LY' %}
+                <a class="back-btn" style="background:#3498db;" href="{% url 'web' %}">Nhập DL Sản xuất</a>
+                <a class="back-btn" style="background:#f39c12;" href="{% url 'finishing_web' %}">Nhập DL Hoàn thiện</a>
+                {% endif %}
                 <a class="back-btn" style="background:#8e44ad;" href="{% url 'config_list' %}">Quản lý Mã hàng</a>
+                {% if is_premium %}
                 <a class="back-btn" style="background:#2ecc71;" href="{% url 'manage_accounts' %}">Quản lý Tài khoản</a>
+                {% endif %}
+                <a class="back-btn" style="background:#3498db;" href="{% url 'change_password' %}">Đổi mật khẩu</a>
                 <a class="back-btn" style="background:#c0392b;" href="{% url 'logout' %}">Đăng xuất</a>
             </div>
         </div>
         
-        <!-- Form lọc thời gian chung -->
-        <form method="GET" class="filter-form" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; background: #f9f9f9; padding: 15px; border-radius: 8px;">
-            <div>
-                <label for="start_date" style="font-size: 0.9em; font-weight: bold; display: block; margin-bottom: 5px;">Từ ngày:</label>
-                <input type="date" id="start_date" name="start_date" value="{{ start_date }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
-            <div>
-                <label for="end_date" style="font-size: 0.9em; font-weight: bold; display: block; margin-bottom: 5px;">Đến ngày:</label>
-                <input type="date" id="end_date" name="end_date" value="{{ end_date }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
-            <div style="display: flex; gap: 8px; margin-top: 5px;">
-                <button type="submit" style="padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Lọc dữ liệu</button>
-                <a href="{% url 'premium_dashboard' %}" style="padding: 8px 15px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block;">Xóa lọc</a>
-            </div>
-        </form>
-
+        <!-- (Form lọc chung đã được gỡ bỏ và chuyển xuống từng bảng) -->
         <div style="display: flex; flex-direction: column; gap: 25px;">
             
             <!-- BẢNG DỮ LIỆU SẢN XUẤT -->
             <div style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
                     <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">Danh sách Sản xuất</h3>
-                    <a href="{% url 'export_excel' %}?start_date={{ start_date }}&end_date={{ end_date }}" style="background: #e67e22; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
+                    
+                    <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0;">
+                        <!-- Giữ lại filter của bảng hoàn thiện -->
+                        {% if fin_start_date %}<input type="hidden" name="fin_start_date" value="{{ fin_start_date }}">{% endif %}
+                        {% if fin_end_date %}<input type="hidden" name="fin_end_date" value="{{ fin_end_date }}">{% endif %}
+                        {% if page_fin.number %}<input type="hidden" name="p2" value="{{ page_fin.number }}">{% endif %}
+                        
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label for="prod_start_date" style="font-size: 0.8em; font-weight: bold;">Từ:</label>
+                            <input type="date" id="prod_start_date" name="prod_start_date" value="{{ prod_start_date }}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label for="prod_end_date" style="font-size: 0.8em; font-weight: bold;">Đến:</label>
+                            <input type="date" id="prod_end_date" name="prod_end_date" value="{{ prod_end_date }}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button type="submit" style="padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">Lọc</button>
+                            <a href="{% url 'premium_dashboard' %}?fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&p2={{ page_fin.number }}" style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
+                        </div>
+                    </form>
+                    
+                    <a href="{% url 'export_excel' %}?start_date={{ prod_start_date }}&end_date={{ prod_end_date }}" style="background: #e67e22; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
                 </div>
 
                 <!-- Bảng cho màn hình rộng (Desktop) -->
@@ -107,13 +120,13 @@
                 <!-- Phân trang Sản xuất -->
                 <div style="margin-top: 15px; text-align: center;">
                     {% if page_prod.has_previous %}
-                        <a href="?p1=1&p2={{ page_fin.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Đầu</a>
-                        <a href="?p1={{ page_prod.previous_page_number }}&p2={{ page_fin.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Trước</a>
+                        <a href="?p1=1&p2={{ page_fin.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}">Đầu</a>
+                        <a href="?p1={{ page_prod.previous_page_number }}&p2={{ page_fin.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}">Trước</a>
                     {% endif %}
                     <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_prod.number }} / {{ page_prod.paginator.num_pages }}</span>
                     {% if page_prod.has_next %}
-                        <a href="?p1={{ page_prod.next_page_number }}&p2={{ page_fin.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Sau</a>
-                        <a href="?p1={{ page_prod.paginator.num_pages }}&p2={{ page_fin.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Cuối</a>
+                        <a href="?p1={{ page_prod.next_page_number }}&p2={{ page_fin.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}">Sau</a>
+                        <a href="?p1={{ page_prod.paginator.num_pages }}&p2={{ page_fin.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}">Cuối</a>
                     {% endif %}
                 </div>
             </div>
@@ -122,7 +135,28 @@
             <div style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
                     <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">Danh sách Hoàn thiện</h3>
-                    <a href="{% url 'finishing_export_excel' %}?start_date={{ start_date }}&end_date={{ end_date }}" style="background: #27ae60; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
+                    
+                    <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0;">
+                        <!-- Giữ lại filter của bảng sản xuất -->
+                        {% if prod_start_date %}<input type="hidden" name="prod_start_date" value="{{ prod_start_date }}">{% endif %}
+                        {% if prod_end_date %}<input type="hidden" name="prod_end_date" value="{{ prod_end_date }}">{% endif %}
+                        {% if page_prod.number %}<input type="hidden" name="p1" value="{{ page_prod.number }}">{% endif %}
+                        
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label for="fin_start_date" style="font-size: 0.8em; font-weight: bold;">Từ:</label>
+                            <input type="date" id="fin_start_date" name="fin_start_date" value="{{ fin_start_date }}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label for="fin_end_date" style="font-size: 0.8em; font-weight: bold;">Đến:</label>
+                            <input type="date" id="fin_end_date" name="fin_end_date" value="{{ fin_end_date }}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button type="submit" style="padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">Lọc</button>
+                            <a href="{% url 'premium_dashboard' %}?prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&p1={{ page_prod.number }}" style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
+                        </div>
+                    </form>
+                    
+                    <a href="{% url 'finishing_export_excel' %}?start_date={{ fin_start_date }}&end_date={{ fin_end_date }}" style="background: #27ae60; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
                 </div>
 
                 <!-- Bảng cho màn hình rộng (Desktop) -->
@@ -190,13 +224,13 @@
                 <!-- Phân trang Hoàn thiện -->
                 <div style="margin-top: 15px; text-align: center;">
                     {% if page_fin.has_previous %}
-                        <a href="?p2=1&p1={{ page_prod.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Đầu</a>
-                        <a href="?p2={{ page_fin.previous_page_number }}&p1={{ page_prod.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Trước</a>
+                        <a href="?p2=1&p1={{ page_prod.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Đầu</a>
+                        <a href="?p2={{ page_fin.previous_page_number }}&p1={{ page_prod.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Trước</a>
                     {% endif %}
                     <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_fin.number }} / {{ page_fin.paginator.num_pages }}</span>
                     {% if page_fin.has_next %}
-                        <a href="?p2={{ page_fin.next_page_number }}&p1={{ page_prod.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Sau</a>
-                        <a href="?p2={{ page_fin.paginator.num_pages }}&p1={{ page_prod.number }}&start_date={{ start_date }}&end_date={{ end_date }}">Cuối</a>
+                        <a href="?p2={{ page_fin.next_page_number }}&p1={{ page_prod.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Sau</a>
+                        <a href="?p2={{ page_fin.paginator.num_pages }}&p1={{ page_prod.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Cuối</a>
                     {% endif %}
                 </div>
             </div>

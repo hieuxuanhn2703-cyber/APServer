@@ -50,8 +50,9 @@ class AppUser(models.Model):
     chỉ đổi nơi lưu trữ từ CSV sang MySQL.
     """
     ROLE_CHOICES = (
-        ("BASIC", "Cơ bản (Sản xuất)"),
+        ("BASIC", "Sản xuất"),
         ("HOAN_THIEN", "Hoàn thiện"),
+        ("QUAN_LY", "Quản lý"),
         ("PREMIUM", "Cao cấp (Admin)"),
     )
 

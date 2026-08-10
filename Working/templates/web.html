@@ -11,11 +11,17 @@
         <h2>Nhập dữ liệu quy trình sản xuất</h2>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <span style="font-size:0.9rem; color:#555; font-weight: 500;">Xin chào, <strong>{{ display_name }}</strong></span>
+            <a href="{% url 'change_password' %}" style="padding: 6px 12px; background: #3498db; color: white; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: bold; display: inline-block; margin-right: 5px;">Đổi mật khẩu</a>
             <a href="{% url 'logout' %}" style="padding: 6px 12px; background: #c0392b; color: white; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: bold; display: inline-block;">Đăng xuất</a>
         </div>
         {% if success %}
             <div class="success-msg">
-                Đã lưu dữ liệu thành công! <a href="{% url 'list' %}">Xem danh sách dữ liệu</a>
+                Đã lưu dữ liệu thành công! 
+                {% if is_premium %}
+                <a href="{% url 'premium_dashboard' %}">Xem danh sách dữ liệu</a>
+                {% else %}
+                <a href="{% url 'list' %}">Xem danh sách dữ liệu</a>
+                {% endif %}
             </div>
         {% endif %}
 
@@ -80,7 +86,11 @@
             <button type="submit">Lưu dữ liệu</button>
         </form>
 
-        <a class="list-link" href="{% url 'list' %}">📋 Xem danh sách dữ liệu đã nhập</a>
+        {% if is_premium %}
+            <a class="list-link" href="{% url 'premium_dashboard' %}" style="background: #8e44ad; color: white; padding: 10px; border-radius: 4px; display: block; text-align: center; font-weight: bold; margin-top: 15px;">📊 Dashboard dữ liệu</a>
+        {% else %}
+            <a class="list-link" href="{% url 'list' %}">📋 Xem danh sách dữ liệu đã nhập</a>
+        {% endif %}
     </div>
 
     <script src="{% static 'working/js/cascade_select.js' %}"></script>

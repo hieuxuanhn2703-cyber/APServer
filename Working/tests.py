@@ -12,6 +12,9 @@ class ComprehensiveSystemTests(TestCase):
         self.premium_user = AppUser.objects.create(
             account="admin_vip", password="123", name="Quản Trị Viên", role="PREMIUM", is_approved=True
         )
+        self.quanly_user = AppUser.objects.create(
+            account="manager_user", password="123", name="Quản Lý", role="QUAN_LY", is_approved=True
+        )
         self.basic_user = AppUser.objects.create(
             account="staff_prod", password="123", name="NV Sản Xuất", role="BASIC", is_approved=True
         )
@@ -120,11 +123,44 @@ class ComprehensiveSystemTests(TestCase):
         res_prem = self.client.post(reverse('login'), {'account': 'admin_vip', 'password': '123'})
         self.assertRedirects(res_prem, reverse('premium_dashboard'))
 
+        # 6. Đăng nhập tài khoản QUAN_LY -> Chuyển hướng về Dashboard Dữ Liệu
+        res_quanly = self.client.post(reverse('login'), {'account': 'manager_user', 'password': '123'})
+        self.assertRedirects(res_quanly, reverse('premium_dashboard'))
+
     def test_logout(self):
         self._login_as(self.premium_user)
         res = self.client.get(reverse('logout'))
         self.assertRedirects(res, reverse('login'))
         self.assertNotIn('user_id', self.client.session)
+
+    def test_change_password(self):
+        self._login_as(self.basic_user)
+        
+        # Đổi mật khẩu thành công
+        res_ok = self.client.post(reverse('change_password'), {
+            'old_password': '123',
+            'new_password': '456',
+            'confirm_password': '456'
+        })
+        self.assertEqual(res_ok.status_code, 200)
+        self.assertTrue(res_ok.context['success'])
+        
+        # Đổi mật khẩu thất bại (sai pass cũ)
+        res_fail1 = self.client.post(reverse('change_password'), {
+            'old_password': 'wrong',
+            'new_password': '789',
+            'confirm_password': '789'
+        })
+        self.assertIn("Mật khẩu cũ không chính xác", res_fail1.content.decode('utf-8'))
+        
+        # Đổi mật khẩu thất bại (pass mới không khớp)
+        res_fail2 = self.client.post(reverse('change_password'), {
+            'old_password': '456',
+            'new_password': '789',
+            'confirm_password': '999'
+        })
+        self.assertIn("Mật khẩu mới không khớp", res_fail2.content.decode('utf-8'))
+
 
     def test_unauthenticated_access_blocked(self):
         # Chưa đăng nhập truy cập các trang bảo mật đều chuyển về login
@@ -137,6 +173,7 @@ class ComprehensiveSystemTests(TestCase):
             reverse('tracking'),
             reverse('finishing_web'),
             reverse('finishing_list'),
+            reverse('change_password'),
         ]
         for url in protected_urls:
             res = self.client.get(url)
@@ -159,6 +196,14 @@ class ComprehensiveSystemTests(TestCase):
         self.assertEqual(self.client.get(reverse('web')).status_code, 403)
         self.assertEqual(self.client.get(reverse('list')).status_code, 403)
 
+        # QUAN_LY truy cập Dashboard, Cấu hình, Hoàn thiện OK.
+        # Nhưng bị chặn ở Manage Accounts
+        self._login_as(self.quanly_user)
+        self.assertEqual(self.client.get(reverse('premium_dashboard')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('config_list')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('manage_accounts')).status_code, 403)
+
+
     # ==========================================
     # 2. TEST DASHBOARD DỮ LIỆU (PREMIUM)
     # ==========================================
@@ -172,19 +217,36 @@ class ComprehensiveSystemTests(TestCase):
         self.assertIn("Quản lý Mã hàng", res.content.decode('utf-8'))
         self.assertIn("Quản lý Tài khoản", res.content.decode('utf-8'))
         self.assertIn("Đăng xuất", res.content.decode('utf-8'))
+        
+        # Admin (PREMIUM) thì KHÔNG thấy 2 nút nhập dữ liệu ở Dashboard
+        self.assertNotIn("Nhập DL Sản xuất", res.content.decode('utf-8'))
+        self.assertNotIn("Nhập DL Hoàn thiện", res.content.decode('utf-8'))
+
+
+    def test_quanly_dashboard_view(self):
+        self._login_as(self.quanly_user)
+        res = self.client.get(reverse('premium_dashboard'))
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("Dashboard Dữ Liệu", res.content.decode('utf-8'))
+        self.assertNotIn("Quản lý Tài khoản", res.content.decode('utf-8'))
+        
+        # Quản lý (QUAN_LY) thì CÓ thấy 2 nút nhập dữ liệu ở Dashboard
+        self.assertIn("Nhập DL Sản xuất", res.content.decode('utf-8'))
+        self.assertIn("Nhập DL Hoàn thiện", res.content.decode('utf-8'))
 
     def test_dashboard_date_filter(self):
         self._login_as(self.premium_user)
         prod_date = self.prod_report.created_at.strftime('%Y-%m-%d')
-        res = self.client.get(f"{reverse('premium_dashboard')}?start_date={prod_date}&end_date={prod_date}")
+        res = self.client.get(f"{reverse('premium_dashboard')}?prod_start_date={prod_date}&prod_end_date={prod_date}&fin_start_date={prod_date}&fin_end_date={prod_date}")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.context['page_prod']), 1)
         self.assertEqual(len(res.context['page_fin']), 1)
 
         # Lọc ngày trong tương lai -> Không có dữ liệu
-        res_empty = self.client.get(f"{reverse('premium_dashboard')}?start_date=2099-01-01&end_date=2099-12-31")
+        res_empty = self.client.get(f"{reverse('premium_dashboard')}?prod_start_date=2099-01-01&prod_end_date=2099-12-31&fin_start_date=2099-01-01&fin_end_date=2099-12-31")
         self.assertEqual(res_empty.status_code, 200)
         self.assertEqual(len(res_empty.context['page_prod']), 0)
+        self.assertEqual(len(res_empty.context['page_fin']), 0)
         self.assertEqual(len(res_empty.context['page_fin']), 0)
 
     def test_production_validation_zero_xuong_to(self):
@@ -231,6 +293,20 @@ class ComprehensiveSystemTests(TestCase):
         new_report = ProcessReport.objects.filter(to=2).first()
         self.assertIsNotNone(new_report)
         self.assertEqual(new_report.xuong, 2)
+        
+        # Kiểm tra BASIC không thấy nút Xóa/Sửa ở trang list
+        res_list = self.client.get(reverse('list'))
+        self.assertEqual(res_list.status_code, 200)
+        self.assertNotIn("<th>Thao tác</th>", res_list.content.decode('utf-8'))
+        
+        # Nhưng PREMIUM thì thấy
+        self._login_as(self.premium_user)
+        res_list_prem = self.client.get(reverse('list'))
+        self.assertEqual(res_list_prem.status_code, 200)
+        self.assertIn("<th>Thao tác</th>", res_list_prem.content.decode('utf-8'))
+        
+        # Đăng nhập lại BASIC để chạy tiếp luồng
+        self._login_as(self.basic_user)
 
         # 2. Sửa bởi người tạo (BASIC) -> Chuyển về 'list'
         res_edit_basic = self.client.post(reverse('edit', args=[new_report.id]), {
@@ -314,6 +390,20 @@ class ComprehensiveSystemTests(TestCase):
         self.assertTrue(res_post.context['success'])
         new_fin = FinishingReport.objects.filter(nhan_hang_hoan_thien=15).first()
         self.assertIsNotNone(new_fin)
+        
+        # Kiểm tra HOAN_THIEN không thấy nút Xóa/Sửa ở trang finishing_list
+        res_fin_list = self.client.get(reverse('finishing_list'))
+        self.assertEqual(res_fin_list.status_code, 200)
+        self.assertNotIn("<th>Thao tác</th>", res_fin_list.content.decode('utf-8'))
+        
+        # Nhưng QUAN_LY (hoặc PREMIUM) thì thấy
+        self._login_as(self.quanly_user)
+        res_fin_list_quanly = self.client.get(reverse('finishing_list'))
+        self.assertEqual(res_fin_list_quanly.status_code, 200)
+        self.assertIn("<th>Thao tác</th>", res_fin_list_quanly.content.decode('utf-8'))
+        
+        # Đăng nhập lại HOAN_THIEN để chạy tiếp luồng
+        self._login_as(self.finishing_user)
 
         # 2. Sửa bởi người tạo (HOAN_THIEN) -> Chuyển về 'finishing_list'
         res_edit_fin = self.client.post(reverse('finishing_edit', args=[new_fin.id]), {
@@ -377,6 +467,18 @@ class ComprehensiveSystemTests(TestCase):
         self.client.post(reverse('toggle_account', args=[self.unapproved_user.id]), {'action': 'change_role', 'new_role': 'HOAN_THIEN'})
         self.unapproved_user.refresh_from_db()
         self.assertEqual(self.unapproved_user.role, 'HOAN_THIEN')
+        
+        # Test quyền xóa tài khoản
+        # QUAN_LY truy cập sẽ bị 403
+        self._login_as(self.quanly_user)
+        res_del_fail = self.client.post(reverse('delete_account', args=[self.unapproved_user.id]))
+        self.assertEqual(res_del_fail.status_code, 403)
+        
+        # PREMIUM xóa thành công
+        self._login_as(self.premium_user)
+        res_del_ok = self.client.post(reverse('delete_account', args=[self.unapproved_user.id]))
+        self.assertRedirects(res_del_ok, reverse('manage_accounts'))
+        self.assertFalse(AppUser.objects.filter(id=self.unapproved_user.id).exists())
 
     def test_config_product_and_color_crud(self):
         self._login_as(self.premium_user)
