@@ -59,7 +59,7 @@
         <h2>Tracking Sản Xuất</h2>
         <div style="display:flex; gap:8px;">
             <a class="back-btn" style="background:#2ecc71;" href="{% url 'tracking_export_excel' %}">Xuất Excel</a>
-            <a class="back-btn" href="{% url 'config_list' %}">Quay lại</a>
+            <a class="back-btn" href="{% url 'premium_dashboard' %}">Quay lại</a>
         </div>
     </div>
     
@@ -77,7 +77,6 @@
                         <th colspan="2">Ra Chuyền</th>
                         <th colspan="2">Thu Hoá</th>
                         <th colspan="2">Là thành phẩm</th>
-                        <th colspan="2">KCS</th>
                         <th colspan="2">Nhập Hoàn Thiện</th>
                     </tr>
                     <tr class="sub-header">
@@ -86,7 +85,6 @@
                         <th>Đã Ra</th><th>Còn Lại</th>
                         <th>Đã Ra</th><th>Còn Lại</th>
                         <th>Đã Thu</th><th>Còn lại</th>
-                        <th>Đã Làm</th><th>Còn lại</th>
                         <th>Đã Làm</th><th>Còn lại</th>
                         <th>Đã Nhập</th><th>Còn lại</th>
                     </tr>
@@ -116,15 +114,12 @@
                         <td>{{ row.la_thanh_pham_lam }}</td>
                         <td class="{% if row.la_thanh_pham_con < 0 %}con-lai-am{% endif %}">{{ row.la_thanh_pham_con }}</td>
                         
-                        <td>{{ row.kcs_lam }}</td>
-                        <td class="{% if row.kcs_con < 0 %}con-lai-am{% endif %}">{{ row.kcs_con }}</td>
-                        
                         <td>{{ row.nhap_hoan_thien_nhap }}</td>
                         <td class="{% if row.nhap_hoan_thien_con < 0 %}con-lai-am{% endif %}">{{ row.nhap_hoan_thien_con }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="19" style="padding: 20px; color: #7f8c8d;">Chưa có dữ liệu. Hãy cấu hình Mã Hàng và Màu Sắc trước.</td>
+                        <td colspan="17" style="padding: 20px; color: #7f8c8d;">Chưa có dữ liệu. Hãy cấu hình Mã Hàng và Màu Sắc trước.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

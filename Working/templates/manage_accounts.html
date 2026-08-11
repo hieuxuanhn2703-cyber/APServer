@@ -44,6 +44,8 @@
                                 <select name="new_role" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
                                     <option value="BASIC" {% if user.role == 'BASIC' %}selected{% endif %}>Sản xuất</option>
                                     <option value="HOAN_THIEN" {% if user.role == 'HOAN_THIEN' %}selected{% endif %}>Hoàn thiện</option>
+                                    <option value="KCS" {% if user.role == 'KCS' %}selected{% endif %}>KCS</option>
+                                    <option value="NHA_CAT" {% if user.role == 'NHA_CAT' %}selected{% endif %}>Nhà cắt</option>
                                     <option value="QUAN_LY" {% if user.role == 'QUAN_LY' %}selected{% endif %}>Quản lý</option>
                                     <option value="PREMIUM" {% if user.role == 'PREMIUM' %}selected{% endif %}>Cao cấp (Admin)</option>
                                 </select>
@@ -95,6 +97,8 @@
                         <select name="new_role" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9em;">
                             <option value="BASIC" {% if user.role == 'BASIC' %}selected{% endif %}>Sản xuất</option>
                             <option value="HOAN_THIEN" {% if user.role == 'HOAN_THIEN' %}selected{% endif %}>Hoàn thiện</option>
+                            <option value="KCS" {% if user.role == 'KCS' %}selected{% endif %}>KCS</option>
+                            <option value="NHA_CAT" {% if user.role == 'NHA_CAT' %}selected{% endif %}>Nhà cắt</option>
                             <option value="QUAN_LY" {% if user.role == 'QUAN_LY' %}selected{% endif %}>Quản lý</option>
                             <option value="PREMIUM" {% if user.role == 'PREMIUM' %}selected{% endif %}>Admin</option>
                         </select>

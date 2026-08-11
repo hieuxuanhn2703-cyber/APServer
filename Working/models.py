@@ -18,7 +18,6 @@ class ProcessReport(models.Model):
     ra_chuyen = models.PositiveIntegerField("Ra chuyền", default=0)
     thu_hoa = models.PositiveIntegerField("Thu hóa", default=0)
     la_thanh_pham = models.PositiveIntegerField("Là thành phẩm", default=0)
-    kcs = models.PositiveIntegerField("KCS", default=0)
     nhap_hoan_thien = models.PositiveIntegerField("Nhập hoàn thiện", default=0)
 
     # Người ghi nhận dữ liệu — liên kết tới bảng User thay vì lưu CharField tự do,
@@ -52,6 +51,8 @@ class AppUser(models.Model):
     ROLE_CHOICES = (
         ("BASIC", "Sản xuất"),
         ("HOAN_THIEN", "Hoàn thiện"),
+        ("KCS", "KCS"),
+        ("NHA_CAT", "Nhà cắt"),
         ("QUAN_LY", "Quản lý"),
         ("PREMIUM", "Cao cấp (Admin)"),
     )
@@ -78,7 +79,6 @@ class FinishingReport(models.Model):
     size = models.CharField("Cỡ", max_length=50, default="N/A")
 
     # Các công đoạn hoàn thiện — mặc định 0, không cho âm
-    nhan_hang_hoan_thien = models.PositiveIntegerField("Nhận hàng hoàn thiện", default=0)
     the_bai = models.PositiveIntegerField("Thẻ bài", default=0)
     gap_hang = models.PositiveIntegerField("Gấp hàng", default=0)
     treo_dong_thung = models.PositiveIntegerField("Treo/Đóng thùng", default=0)
@@ -97,6 +97,41 @@ class FinishingReport(models.Model):
     class Meta:
         verbose_name = "Báo cáo hoàn thiện"
         verbose_name_plural = "Báo cáo hoàn thiện"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.ma_hang} - {self.mau} ({self.nguoi_nhap})"
+
+
+class KcsReport(models.Model):
+    # Thông tin sản phẩm
+    ngay_lam_viec = models.DateField("Ngày làm việc", default=datetime.date.today)
+    xuong = models.PositiveIntegerField("Xưởng", default=0)
+    to = models.PositiveIntegerField("Tổ", default=0)
+    ma_hang = models.CharField("Mã hàng", max_length=255, null=False)
+    mau = models.CharField("Màu", max_length=255, null=False)
+    size = models.CharField("Cỡ", max_length=50, default="N/A")
+
+    # Các công đoạn KCS
+    qua_tay = models.PositiveIntegerField("Qua tay", default=0)
+    dat = models.PositiveIntegerField("Đạt", default=0)
+    loi = models.PositiveIntegerField("Lỗi", default=0)
+    tong_dat = models.PositiveIntegerField("Tổng đạt", default=0)
+
+    # Người ghi nhận dữ liệu
+    nguoi_nhap = models.ForeignKey(
+        "AppUser",
+        on_delete=models.PROTECT,
+        related_name="kcs_reports",
+        verbose_name="Người nhập",
+    )
+
+    created_at = models.DateTimeField("Thời gian nhập", auto_now_add=True)
+    updated_at = models.DateTimeField("Cập nhật lần cuối", auto_now=True)
+
+    class Meta:
+        verbose_name = "Báo cáo KCS"
+        verbose_name_plural = "Báo cáo KCS"
         ordering = ["-created_at"]
 
     def __str__(self):
@@ -142,3 +177,36 @@ class ProductSize(models.Model):
 
     def __str__(self):
         return f"{self.color.product.name} - {self.color.name} - {self.name}"
+
+
+class CutReport(models.Model):
+    # Thông tin sản phẩm
+    ngay_lam_viec = models.DateField("Ngày làm việc", default=datetime.date.today)
+    ma_hang = models.CharField("Mã hàng", max_length=255, null=False)
+    mau = models.CharField("Màu", max_length=255, null=False)
+    size = models.CharField("Cỡ", max_length=50, default="N/A")
+
+    # Các công đoạn cắt
+    cat_chinh = models.PositiveIntegerField("Cắt chính", default=0)
+    cat_lot = models.PositiveIntegerField("Cắt lót", default=0)
+    cat_mex = models.PositiveIntegerField("Cắt Mex", default=0)
+    cat_bong = models.PositiveIntegerField("Cắt bông", default=0)
+
+    # Người ghi nhận dữ liệu
+    nguoi_nhap = models.ForeignKey(
+        "AppUser",
+        on_delete=models.PROTECT,
+        related_name="cut_reports",
+        verbose_name="Người nhập",
+    )
+
+    created_at = models.DateTimeField("Thời gian nhập", auto_now_add=True)
+    updated_at = models.DateTimeField("Cập nhật lần cuối", auto_now=True)
+
+    class Meta:
+        verbose_name = "Báo cáo Tổ Cắt"
+        verbose_name_plural = "Báo cáo Tổ Cắt"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.ma_hang} - {self.mau} ({self.nguoi_nhap})"

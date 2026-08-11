@@ -4,8 +4,46 @@ import openpyxl
 from django.core.exceptions import PermissionDenied
 from django.db.models import Sum
 
-from .forms import ProcessForm, load_config
-from .models import ProcessReport, AppUser, Product, ProductColor, ProductSize
+from .models import ProcessReport, AppUser, Product, ProductColor, ProductSize, CutReport, FinishingReport, KcsReport
+from .forms import ProcessForm, load_config, CutForm, FinishingForm, KcsForm
+import datetime
+from django.utils import timezone
+
+def parse_date_range(start_date_str, end_date_str):
+    """
+    Chuyển đổi chuỗi YYYY-MM-DD sang (start_datetime, end_datetime) có timezone
+    để lọc chính xác theo ngày và giờ mà không phụ thuộc CONVERT_TZ của MySQL.
+    """
+    start_dt = None
+    end_dt = None
+    if start_date_str:
+        try:
+            d = datetime.date.fromisoformat(start_date_str)
+            start_dt = timezone.make_aware(datetime.datetime.combine(d, datetime.time.min))
+        except (ValueError, TypeError):
+            pass
+    if end_date_str:
+        try:
+            d = datetime.date.fromisoformat(end_date_str)
+            end_dt = timezone.make_aware(datetime.datetime.combine(d, datetime.time.max))
+        except (ValueError, TypeError):
+            pass
+    return start_dt, end_dt
+
+
+def format_datetime(dt):
+    """Format datetime as dd/mm/yyyy hh:mm:ss in local timezone."""
+    if not dt:
+        return ""
+    local_dt = timezone.localtime(dt) if timezone.is_aware(dt) else dt
+    return local_dt.strftime("%d/%m/%Y %H:%M:%S")
+
+def format_date(d):
+    """Format date as dd/mm/yyyy."""
+    if not d:
+        return ""
+    return d.strftime("%d/%m/%Y")
+
 from .auth_utils import verify_credentials, get_current_user, login_required, SESSION_KEY
 
 HEADERS = [
@@ -23,7 +61,6 @@ HEADERS = [
     "Ra chuyền",
     "Thu hóa",
     "Là thành phẩm",
-    "KCS",
     "Nhập hoàn thiện",
 ]
 
@@ -32,8 +69,8 @@ def _report_to_row(report: ProcessReport):
     """Chuyển 1 đối tượng ProcessReport thành dict phù hợp với template list.html hiện có."""
     values = [
         report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
-        report.ngay_lam_viec.strftime("%Y-%m-%d") if report.ngay_lam_viec else "",
-        report.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        format_date(report.ngay_lam_viec),
+        format_datetime(report.created_at),
         report.xuong,
         report.to,
         report.ma_hang,
@@ -45,7 +82,6 @@ def _report_to_row(report: ProcessReport):
         report.ra_chuyen,
         report.thu_hoa,
         report.la_thanh_pham,
-        report.kcs,
         report.nhap_hoan_thien,
     ]
     return {
@@ -75,6 +111,10 @@ def login_view(request):
                     return redirect("premium_dashboard")
                 elif user.role == "HOAN_THIEN":
                     return redirect("finishing_web")
+                elif user.role == "KCS":
+                    return redirect("kcs_web")
+                elif user.role == "NHA_CAT":
+                    return redirect("cut_web")
                 return redirect("web")
         else:
             error = "Tài khoản hoặc mật khẩu không đúng."
@@ -131,7 +171,7 @@ def register_view(request):
             error = "Mật khẩu nhập lại không khớp."
         elif AppUser.objects.filter(account=account).exists():
             error = "Tài khoản này đã tồn tại, vui lòng chọn tên khác."
-        elif role not in ["BASIC", "HOAN_THIEN", "QUAN_LY"]:
+        elif role not in ["BASIC", "HOAN_THIEN", "KCS", "NHA_CAT", "QUAN_LY"]:
             error = "Vai trò không hợp lệ."
         else:
             AppUser.objects.create(
@@ -382,7 +422,15 @@ def export_excel_view(request):
     ws.append(HEADERS)
 
     # Lấy dữ liệu và ghi vào sheet
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    start_dt, end_dt = parse_date_range(start_date, end_date)
     reports = ProcessReport.objects.all().order_by("-created_at")
+    if start_dt:
+        reports = reports.filter(created_at__gte=start_dt)
+    if end_dt:
+        reports = reports.filter(created_at__lte=end_dt)
+        
     for report in reports:
         row = _report_to_row(report)
         ws.append(row["values"])
@@ -417,7 +465,6 @@ def web_view(request):
                 ra_chuyen=data.get("ra_chuyen") or 0,
                 thu_hoa=data.get("thu_hoa") or 0,
                 la_thanh_pham=data.get("la_thanh_pham") or 0,
-                kcs=data.get("kcs") or 0,
                 nhap_hoan_thien=data.get("nhap_hoan_thien") or 0,
                 nguoi_nhap=current_user,
             )
@@ -484,7 +531,6 @@ def edit_view(request, row_id):
             report.ra_chuyen = data.get("ra_chuyen") or 0
             report.thu_hoa = data.get("thu_hoa") or 0
             report.la_thanh_pham = data.get("la_thanh_pham") or 0
-            report.kcs = data.get("kcs") or 0
             report.nhap_hoan_thien = data.get("nhap_hoan_thien") or 0
             report.save()
             if current_user.role in ["PREMIUM", "QUAN_LY"]:
@@ -504,14 +550,13 @@ def edit_view(request, row_id):
             "ra_chuyen": report.ra_chuyen,
             "thu_hoa": report.thu_hoa,
             "la_thanh_pham": report.la_thanh_pham,
-            "kcs": report.kcs,
             "nhap_hoan_thien": report.nhap_hoan_thien,
         }
         form = ProcessForm(initial=initial)
 
     return render(request, "edit.html", {
         "form": form,
-        "thoi_gian": report.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        "thoi_gian": format_datetime(report.created_at),
         "config": load_config(),
         "display_name": current_user.name if current_user else "",
     })
@@ -543,7 +588,6 @@ def get_tracking_data():
         t_ra_chuyen=Sum('ra_chuyen'),
         t_thu_hoa=Sum('thu_hoa'),
         t_la_thanh_pham=Sum('la_thanh_pham'),
-        t_kcs=Sum('kcs'),
         t_nhap_hoan_thien=Sum('nhap_hoan_thien')
     )
     
@@ -575,8 +619,6 @@ def get_tracking_data():
                 'thu_hoa_con': qty - get_val('t_thu_hoa'),
                 'la_thanh_pham_lam': get_val('t_la_thanh_pham'),
                 'la_thanh_pham_con': qty - get_val('t_la_thanh_pham'),
-                'kcs_lam': get_val('t_kcs'),
-                'kcs_con': qty - get_val('t_kcs'),
                 'nhap_hoan_thien_nhap': get_val('t_nhap_hoan_thien'),
                 'nhap_hoan_thien_con': qty - get_val('t_nhap_hoan_thien'),
             })
@@ -617,7 +659,6 @@ def tracking_export_excel_view(request):
         "Ra Chuyền", "", 
         "Thu Hoá", "", 
         "Là thành phẩm", "",
-        "KCS", "",
         "Nhập Hoàn Thiện", ""
     ])
     
@@ -630,7 +671,6 @@ def tracking_export_excel_view(request):
         "Đã Ra", "Còn Lại", 
         "Đã Thu", "Còn lại", 
         "Đã Làm", "Còn lại",
-        "Đã Làm", "Còn lại",
         "Đã Nhập", "Còn lại"
     ])
     
@@ -639,7 +679,7 @@ def tracking_export_excel_view(request):
     ws.merge_cells("B1:B2")
     ws.merge_cells("C1:C2")
     
-    for col_start in range(4, 19, 2):
+    for col_start in range(4, 17, 2):
         ws.merge_cells(start_row=1, start_column=col_start, end_row=1, end_column=col_start+1)
         
     # Styling
@@ -661,7 +701,6 @@ def tracking_export_excel_view(request):
             row['ra_chuyen_ra'], row['ra_chuyen_con'],
             row['thu_hoa_thu'], row['thu_hoa_con'],
             row['la_thanh_pham_lam'], row['la_thanh_pham_con'],
-            row['kcs_lam'], row['kcs_con'],
             row['nhap_hoan_thien_nhap'], row['nhap_hoan_thien_con']
         ])
         
@@ -686,11 +725,11 @@ def finishing_web_view(request):
         form = FinishingForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
+
             FinishingReport.objects.create(
                 ngay_lam_viec=data["ngay_lam_viec"],
                 ma_hang=data["ma_hang"],
                 mau=data["mau"],
-                nhan_hang_hoan_thien=data.get("nhan_hang_hoan_thien") or 0,
                 the_bai=data.get("the_bai") or 0,
                 gap_hang=data.get("gap_hang") or 0,
                 treo_dong_thung=data.get("treo_dong_thung") or 0,
@@ -715,7 +754,6 @@ FINISHING_HEADERS = [
     "Ngày nhập",
     "Mã hàng",
     "Màu",
-    "Nhận hàng hoàn thiện",
     "Thẻ bài",
     "Gấp hàng",
     "Treo/Đóng thùng",
@@ -724,11 +762,10 @@ FINISHING_HEADERS = [
 def _finishing_report_to_row(report: FinishingReport):
     values = [
         report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
-        report.ngay_lam_viec.strftime("%Y-%m-%d") if report.ngay_lam_viec else "",
-        report.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        format_date(report.ngay_lam_viec),
+        format_datetime(report.created_at),
         report.ma_hang,
         report.mau,
-        report.nhan_hang_hoan_thien,
         report.the_bai,
         report.gap_hang,
         report.treo_dong_thung,
@@ -752,11 +789,12 @@ def finishing_list_view(request):
     
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
+    start_dt, end_dt = parse_date_range(start_date, end_date)
     
-    if start_date:
-        qs = qs.filter(created_at__date__gte=start_date)
-    if end_date:
-        qs = qs.filter(created_at__date__lte=end_date)
+    if start_dt:
+        qs = qs.filter(created_at__gte=start_dt)
+    if end_dt:
+        qs = qs.filter(created_at__lte=end_dt)
         
     table_rows = [_finishing_report_to_row(r) for r in qs]
     return render(request, "finishing_list.html", {
@@ -781,10 +819,10 @@ def finishing_edit_view(request, row_id):
         form = FinishingForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
+            
             report.ngay_lam_viec = data["ngay_lam_viec"]
             report.ma_hang = data["ma_hang"]
             report.mau = data["mau"]
-            report.nhan_hang_hoan_thien = data.get("nhan_hang_hoan_thien") or 0
             report.the_bai = data.get("the_bai") or 0
             report.gap_hang = data.get("gap_hang") or 0
             report.treo_dong_thung = data.get("treo_dong_thung") or 0
@@ -797,7 +835,6 @@ def finishing_edit_view(request, row_id):
             "ngay_lam_viec": report.ngay_lam_viec,
             "ma_hang": report.ma_hang,
             "mau": report.mau,
-            "nhan_hang_hoan_thien": report.nhan_hang_hoan_thien,
             "the_bai": report.the_bai,
             "gap_hang": report.gap_hang,
             "treo_dong_thung": report.treo_dong_thung,
@@ -806,7 +843,7 @@ def finishing_edit_view(request, row_id):
 
     return render(request, "finishing_edit.html", {
         "form": form,
-        "thoi_gian": report.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        "thoi_gian": format_datetime(report.created_at),
         "config": load_config(),
         "display_name": current_user.name if current_user else "",
     })
@@ -839,7 +876,15 @@ def finishing_export_excel_view(request):
     
     ws.append(FINISHING_HEADERS)
     
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    start_dt, end_dt = parse_date_range(start_date, end_date)
     qs = FinishingReport.objects.select_related('nguoi_nhap').all()
+    if start_dt:
+        qs = qs.filter(created_at__gte=start_dt)
+    if end_dt:
+        qs = qs.filter(created_at__lte=end_dt)
+        
     for report in qs:
         row_data = _finishing_report_to_row(report)
         ws.append(row_data["values"])
@@ -852,6 +897,31 @@ def finishing_export_excel_view(request):
     return response
 
 
+def _dashboard_finishing_report_to_row(report, color_map, fin_totals_map, prod_nhap_totals_map):
+    key = (report.ma_hang, report.mau)
+    tong_don_hang = color_map.get(key, 0)
+    tong_nhap_hoan_thien = prod_nhap_totals_map.get(key, 0)
+    totals = fin_totals_map.get(key, {})
+    tong_the_bai = totals.get('total_the_bai', 0)
+    tong_gap_hang = totals.get('total_gap_hang', 0)
+    tong_treo = totals.get('total_treo_dong_thung', 0)
+    
+    return {
+        "row_id": report.id,
+        "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+        "ngay_lam_viec": format_date(report.ngay_lam_viec),
+        "ngay_nhap": format_datetime(report.created_at),
+        "ma_hang": report.ma_hang,
+        "mau": report.mau,
+        "tong_don_hang": tong_don_hang,
+        "tong_nhap_hoan_thien": tong_nhap_hoan_thien,
+        "the_bai_ngay": report.the_bai,
+        "the_bai_tong": tong_the_bai,
+        "gap_hang_ngay": report.gap_hang,
+        "gap_hang_tong": tong_gap_hang,
+        "treo_dong_thung_ngay": report.treo_dong_thung,
+        "treo_dong_thung_tong": tong_treo,
+    }
 
 from django.core.paginator import Paginator
 
@@ -865,23 +935,125 @@ def premium_dashboard_view(request):
     prod_end_date = request.GET.get('prod_end_date')
     fin_start_date = request.GET.get('fin_start_date')
     fin_end_date = request.GET.get('fin_end_date')
+    kcs_start_date = request.GET.get('kcs_start_date')
+    kcs_end_date = request.GET.get('kcs_end_date')
+    cut_start_date = request.GET.get('cut_start_date')
+    cut_end_date = request.GET.get('cut_end_date')
     
     prod_qs = ProcessReport.objects.select_related('nguoi_nhap').all()
     fin_qs = FinishingReport.objects.select_related('nguoi_nhap').all()
+    kcs_qs = KcsReport.objects.select_related('nguoi_nhap').all()
+    cut_qs = CutReport.objects.select_related('nguoi_nhap').all()
     
-    if prod_start_date:
-        prod_qs = prod_qs.filter(created_at__date__gte=prod_start_date)
-    if prod_end_date:
-        prod_qs = prod_qs.filter(created_at__date__lte=prod_end_date)
+    prod_s, prod_e = parse_date_range(prod_start_date, prod_end_date)
+    fin_s, fin_e = parse_date_range(fin_start_date, fin_end_date)
+    kcs_s, kcs_e = parse_date_range(kcs_start_date, kcs_end_date)
+    cut_s, cut_e = parse_date_range(cut_start_date, cut_end_date)
+    
+    if prod_s:
+        prod_qs = prod_qs.filter(created_at__gte=prod_s)
+    if prod_e:
+        prod_qs = prod_qs.filter(created_at__lte=prod_e)
         
-    if fin_start_date:
-        fin_qs = fin_qs.filter(created_at__date__gte=fin_start_date)
-    if fin_end_date:
-        fin_qs = fin_qs.filter(created_at__date__lte=fin_end_date)
+    if fin_s:
+        fin_qs = fin_qs.filter(created_at__gte=fin_s)
+    if fin_e:
+        fin_qs = fin_qs.filter(created_at__lte=fin_e)
+        
+    if kcs_s:
+        kcs_qs = kcs_qs.filter(created_at__gte=kcs_s)
+    if kcs_e:
+        kcs_qs = kcs_qs.filter(created_at__lte=kcs_e)
+        
+    if cut_s:
+        cut_qs = cut_qs.filter(created_at__gte=cut_s)
+    if cut_e:
+        cut_qs = cut_qs.filter(created_at__lte=cut_e)
         
     prod_rows = [_report_to_row(r) for r in prod_qs]
-    fin_rows = [_finishing_report_to_row(r) for r in fin_qs]
     
+    color_map = {}
+    for color in ProductColor.objects.all().select_related('product'):
+        color_map[(color.product.name, color.name)] = color.quantity
+        
+    fin_totals = FinishingReport.objects.values('ma_hang', 'mau').annotate(
+        total_the_bai=Sum('the_bai'),
+        total_gap_hang=Sum('gap_hang'),
+        total_treo_dong_thung=Sum('treo_dong_thung')
+    )
+    fin_totals_map = {(row['ma_hang'], row['mau']): row for row in fin_totals}
+    
+    prod_nhap_totals = ProcessReport.objects.values('ma_hang', 'mau').annotate(
+        total_nhap=Sum('nhap_hoan_thien')
+    )
+    prod_nhap_totals_map = {(row['ma_hang'], row['mau']): row['total_nhap'] for row in prod_nhap_totals}
+    
+    fin_rows = [_dashboard_finishing_report_to_row(r, color_map, fin_totals_map, prod_nhap_totals_map) for r in fin_qs]
+    
+    kcs_totals = KcsReport.objects.values('ma_hang', 'mau').annotate(
+        total_qua_tay=Sum('qua_tay'),
+        total_dat=Sum('dat'),
+        total_loi=Sum('loi'),
+        total_tong_dat=Sum('tong_dat')
+    )
+    kcs_totals_map = {(row['ma_hang'], row['mau']): row for row in kcs_totals}
+    
+    def _dashboard_kcs_report_to_row(report, color_map, kcs_totals_map):
+        key = (report.ma_hang, report.mau)
+        tong_don_hang = color_map.get(key, 0)
+        totals = kcs_totals_map.get(key, {})
+        return {
+            "row_id": report.id,
+            "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+            "ngay_lam_viec": format_date(report.ngay_lam_viec),
+            "ngay_nhap": format_datetime(report.created_at),
+            "ma_hang": report.ma_hang,
+            "mau": report.mau,
+            "tong_don_hang": tong_don_hang,
+            "qua_tay_ngay": report.qua_tay,
+            "qua_tay_tong": totals.get('total_qua_tay', 0),
+            "dat_ngay": report.dat,
+            "dat_tong": totals.get('total_dat', 0),
+            "loi_ngay": report.loi,
+            "loi_tong": totals.get('total_loi', 0),
+            "tong_dat_ngay": report.tong_dat,
+            "tong_dat_tong": totals.get('total_tong_dat', 0),
+        }
+        
+    kcs_rows = [_dashboard_kcs_report_to_row(r, color_map, kcs_totals_map) for r in kcs_qs]
+
+    cut_totals = CutReport.objects.values('ma_hang', 'mau').annotate(
+        total_cat_chinh=Sum('cat_chinh'),
+        total_cat_lot=Sum('cat_lot'),
+        total_cat_mex=Sum('cat_mex'),
+        total_cat_bong=Sum('cat_bong')
+    )
+    cut_totals_map = {(row['ma_hang'], row['mau']): row for row in cut_totals}
+
+    def _dashboard_cut_report_to_row(report, color_map, cut_totals_map):
+        key = (report.ma_hang, report.mau)
+        tong_don_hang = color_map.get(key, 0)
+        totals = cut_totals_map.get(key, {})
+        return {
+            "row_id": report.id,
+            "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+            "ngay_lam_viec": format_date(report.ngay_lam_viec),
+            "ngay_nhap": format_datetime(report.created_at),
+            "ma_hang": report.ma_hang,
+            "mau": report.mau,
+            "tong_don_hang": tong_don_hang,
+            "cat_chinh_ngay": report.cat_chinh,
+            "cat_chinh_tong": totals.get('total_cat_chinh', 0),
+            "cat_lot_ngay": report.cat_lot,
+            "cat_lot_tong": totals.get('total_cat_lot', 0),
+            "cat_mex_ngay": report.cat_mex,
+            "cat_mex_tong": totals.get('total_cat_mex', 0),
+            "cat_bong_ngay": report.cat_bong,
+            "cat_bong_tong": totals.get('total_cat_bong', 0),
+        }
+        
+    cut_rows = [_dashboard_cut_report_to_row(r, color_map, cut_totals_map) for r in cut_qs]
+
     prod_paginator = Paginator(prod_rows, 20)
     page_prod_num = request.GET.get('p1')
     page_prod = prod_paginator.get_page(page_prod_num)
@@ -890,16 +1062,418 @@ def premium_dashboard_view(request):
     page_fin_num = request.GET.get('p2')
     page_fin = fin_paginator.get_page(page_fin_num)
     
+    kcs_paginator = Paginator(kcs_rows, 20)
+    page_kcs_num = request.GET.get('p3')
+    page_kcs = kcs_paginator.get_page(page_kcs_num)
+    
+    cut_paginator = Paginator(cut_rows, 20)
+    page_cut_num = request.GET.get('p4')
+    page_cut = cut_paginator.get_page(page_cut_num)
+    
     return render(request, "premium_dashboard.html", {
         "prod_headers": HEADERS,
         "fin_headers": FINISHING_HEADERS,
         "page_prod": page_prod,
         "page_fin": page_fin,
+        "page_kcs": page_kcs,
+        "page_cut": page_cut,
         "display_name": current_user.name if current_user else "",
         "prod_start_date": prod_start_date or '',
         "prod_end_date": prod_end_date or '',
         "fin_start_date": fin_start_date or '',
         "fin_end_date": fin_end_date or '',
+        "kcs_start_date": kcs_start_date or '',
+        "kcs_end_date": kcs_end_date or '',
+        "cut_start_date": cut_start_date or '',
+        "cut_end_date": cut_end_date or '',
         "user": current_user,
         "is_premium": current_user.role == "PREMIUM"
     })
+
+
+# ---------- QUY TRÌNH KCS ----------
+
+from .models import KcsReport
+from .forms import KcsForm
+
+KCS_HEADERS = [
+    "Người nhập", "Ngày làm việc", "Thời gian",
+    "Mã hàng", "Màu", "Xưởng", "Tổ", "Cỡ", "Qua tay", "Đạt", "Lỗi", "Tổng đạt"
+]
+
+def _kcs_report_to_row(report: KcsReport):
+    values = [
+        report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+        format_date(report.ngay_lam_viec),
+        format_datetime(report.created_at),
+        report.ma_hang,
+        report.mau,
+        report.xuong,
+        report.to,
+        report.size,
+        report.qua_tay,
+        report.dat,
+        report.loi,
+        report.tong_dat,
+    ]
+    return {
+        "row_id": report.id,
+        "values": values,
+        "pairs": list(zip(KCS_HEADERS, values)),
+    }
+
+@login_required
+def kcs_web_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ["KCS", "PREMIUM", "QUAN_LY"]:
+        raise PermissionDenied("Bạn không có quyền truy cập trang này.")
+
+    success = False
+    if request.method == "POST":
+        form = KcsForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            KcsReport.objects.create(
+                ngay_lam_viec=data.get("ngay_lam_viec") or datetime.date.today(),
+                xuong=data.get("xuong") or 0,
+                to=data.get("to") or 0,
+                ma_hang=data["ma_hang"],
+                mau=data["mau"],
+                size="N/A",
+                qua_tay=data.get("qua_tay") or 0,
+                dat=data.get("dat") or 0,
+                loi=data.get("loi") or 0,
+                tong_dat=data.get("tong_dat") or 0,
+                nguoi_nhap=current_user,
+            )
+            success = True
+            form = KcsForm()
+    else:
+        form = KcsForm()
+
+    return render(request, "kcs_web.html", {
+        "form": form,
+        "success": success,
+        "config": load_config(),
+        "display_name": current_user.name if current_user else "",
+        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+    })
+
+@login_required
+def kcs_list_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ["KCS", "PREMIUM", "QUAN_LY"]:
+        raise PermissionDenied("Bạn không có quyền truy cập trang này.")
+
+    qs = KcsReport.objects.all()
+    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+        qs = qs.filter(nguoi_nhap=current_user)
+    else:
+        # Nếu là quản lý, cho phép lọc
+        u_id = request.GET.get('u_id')
+        if u_id:
+            qs = qs.filter(nguoi_nhap_id=u_id)
+        from_date = request.GET.get('from_date')
+        if from_date:
+            qs = qs.filter(ngay_lam_viec__gte=from_date)
+        to_date = request.GET.get('to_date')
+        if to_date:
+            qs = qs.filter(ngay_lam_viec__lte=to_date)
+
+    data_rows = [_kcs_report_to_row(r) for r in qs]
+    
+    # Phân trang
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(data_rows, 50)
+    page_obj = paginator.get_page(page_number)
+
+    all_users = AppUser.objects.filter(role="KCS") if current_user.role in ["PREMIUM", "QUAN_LY"] else []
+
+    return render(request, "kcs_list.html", {
+        "headers": KCS_HEADERS,
+        "page_obj": page_obj,
+        "display_name": current_user.name if current_user else "",
+        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+        "all_users": all_users,
+        "u_id": request.GET.get('u_id', ''),
+        "from_date": request.GET.get('from_date', ''),
+        "to_date": request.GET.get('to_date', ''),
+    })
+
+@login_required
+def kcs_edit_view(request, row_id):
+    current_user = get_current_user(request)
+    report = get_object_or_404(KcsReport, pk=row_id)
+
+    if report.nguoi_nhap_id != current_user.id and current_user.role not in ["PREMIUM", "QUAN_LY"]:
+        raise PermissionDenied("Bạn không có quyền sửa dữ liệu này.")
+
+    if request.method == "POST":
+        form = KcsForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            report.ngay_lam_viec = data.get("ngay_lam_viec") or datetime.date.today()
+            report.xuong = data.get("xuong") or 0
+            report.to = data.get("to") or 0
+            report.ma_hang = data["ma_hang"]
+            report.mau = data["mau"]
+            report.size = "N/A"
+            report.qua_tay = data.get("qua_tay") or 0
+            report.dat = data.get("dat") or 0
+            report.loi = data.get("loi") or 0
+            report.tong_dat = data.get("tong_dat") or 0
+            report.save()
+            if current_user.role in ["PREMIUM", "QUAN_LY"]:
+                return redirect("premium_dashboard")
+            return redirect("kcs_list")
+    else:
+        initial = {
+            "ngay_lam_viec": report.ngay_lam_viec,
+            "xuong": report.xuong,
+            "to": report.to,
+            "ma_hang": report.ma_hang,
+            "mau": report.mau,
+            "qua_tay": report.qua_tay,
+            "dat": report.dat,
+            "loi": report.loi,
+            "tong_dat": report.tong_dat,
+        }
+        form = KcsForm(initial=initial)
+
+    return render(request, "kcs_edit.html", {
+        "form": form,
+        "thoi_gian": format_datetime(report.created_at),
+        "config": load_config(),
+        "display_name": current_user.name if current_user else "",
+    })
+
+@login_required
+def kcs_delete_report_view(request, row_id):
+    current_user = get_current_user(request)
+    report = get_object_or_404(KcsReport, pk=row_id)
+
+    if report.nguoi_nhap_id != current_user.id and current_user.role not in ["PREMIUM", "QUAN_LY"]:
+        raise PermissionDenied("Bạn không có quyền xoá dữ liệu này.")
+
+    if request.method == "POST":
+        report.delete()
+        
+    if current_user.role in ["PREMIUM", "QUAN_LY"]:
+        return redirect("premium_dashboard")
+    return redirect("kcs_list")
+
+@login_required
+def kcs_export_excel_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ['KCS', 'PREMIUM', 'QUAN_LY']:
+        raise PermissionDenied("Bạn không có quyền truy cập.")
+
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Du lieu KCS"
+    
+    ws.append(KCS_HEADERS)
+    
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    start_dt, end_dt = parse_date_range(start_date, end_date)
+    qs = KcsReport.objects.select_related('nguoi_nhap').all()
+    if start_dt:
+        qs = qs.filter(created_at__gte=start_dt)
+    if end_dt:
+        qs = qs.filter(created_at__lte=end_dt)
+        
+    for report in qs:
+        row_data = _kcs_report_to_row(report)
+        ws.append(row_data["values"])
+        
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="du_lieu_kcs.xlsx"'
+    wb.save(response)
+    return response
+
+
+# ---------- Nhập dữ liệu Tổ Cắt ----------
+
+@login_required
+def cut_web_view(request):
+    success = False
+    current_user = get_current_user(request)
+    if current_user.role not in ['NHA_CAT', 'PREMIUM', 'QUAN_LY']:
+        raise PermissionDenied("Bạn không có quyền truy cập trang Cắt.")
+
+    if request.method == "POST":
+        form = CutForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            CutReport.objects.create(
+                ngay_lam_viec=data["ngay_lam_viec"],
+                ma_hang=data["ma_hang"],
+                mau=data["mau"],
+                size="N/A",
+                cat_chinh=data.get("cat_chinh") or 0,
+                cat_lot=data.get("cat_lot") or 0,
+                cat_mex=data.get("cat_mex") or 0,
+                cat_bong=data.get("cat_bong") or 0,
+                nguoi_nhap=current_user,
+            )
+            success = True
+            form = CutForm()  # reset form
+    else:
+        form = CutForm()
+
+    return render(request, "cut_web.html", {
+        "form": form,
+        "success": success,
+        "config": load_config(),
+        "display_name": current_user.name if current_user else "",
+        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+    })
+
+
+def _cut_report_to_row(report):
+    values = [
+        report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+        format_date(report.ngay_lam_viec),
+        format_datetime(report.created_at),
+        report.ma_hang,
+        report.mau,
+        report.cat_chinh,
+        report.cat_lot,
+        report.cat_mex,
+        report.cat_bong,
+    ]
+    return {
+        "row_id": report.id,
+        "values": values,
+        "pairs": list(zip(CUT_HEADERS, values))
+    }
+
+
+CUT_HEADERS = [
+    "Người nhập",
+    "Ngày làm việc",
+    "Ngày nhập",
+    "Mã hàng",
+    "Màu",
+    "Cắt chính",
+    "Cắt lót",
+    "Cắt Mex",
+    "Cắt bông",
+]
+
+
+@login_required
+def cut_list_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ['NHA_CAT', 'PREMIUM', 'QUAN_LY']:
+        raise PermissionDenied("Bạn không có quyền truy cập trang Cắt.")
+
+    if current_user.role in ["PREMIUM", "QUAN_LY"]:
+        reports = CutReport.objects.all()
+    else:
+        reports = CutReport.objects.filter(nguoi_nhap=current_user)
+        
+    table_rows = [_cut_report_to_row(r) for r in reports]
+
+    return render(request, "cut_list.html", {
+        "table_rows": table_rows,
+        "headers": CUT_HEADERS,
+        "display_name": current_user.name if current_user else "",
+        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+    })
+
+
+@login_required
+def cut_edit_view(request, row_id):
+    current_user = get_current_user(request)
+    report = get_object_or_404(CutReport, pk=row_id)
+
+    if report.nguoi_nhap_id != current_user.id and current_user.role not in ["PREMIUM", "QUAN_LY"]:
+        raise PermissionDenied("Bạn không có quyền sửa dữ liệu này.")
+
+    if request.method == "POST":
+        form = CutForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            report.ngay_lam_viec = data["ngay_lam_viec"]
+            report.ma_hang = data["ma_hang"]
+            report.mau = data["mau"]
+            report.cat_chinh = data.get("cat_chinh") or 0
+            report.cat_lot = data.get("cat_lot") or 0
+            report.cat_mex = data.get("cat_mex") or 0
+            report.cat_bong = data.get("cat_bong") or 0
+            report.save()
+            if current_user.role in ["PREMIUM", "QUAN_LY"]:
+                return redirect("premium_dashboard")
+            return redirect("cut_list")
+    else:
+        form = CutForm(initial={
+            "ngay_lam_viec": report.ngay_lam_viec,
+            "ma_hang": report.ma_hang,
+            "mau": report.mau,
+            "cat_chinh": report.cat_chinh,
+            "cat_lot": report.cat_lot,
+            "cat_mex": report.cat_mex,
+            "cat_bong": report.cat_bong,
+        })
+
+    return render(request, "cut_edit.html", {
+        "form": form,
+        "report_id": report.id,
+        "thoi_gian": format_datetime(report.created_at),
+        "config": load_config(),
+        "display_name": current_user.name if current_user else "",
+        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+    })
+
+
+@login_required
+def cut_delete_report_view(request, row_id):
+    current_user = get_current_user(request)
+    report = get_object_or_404(CutReport, pk=row_id)
+
+    if report.nguoi_nhap_id != current_user.id and current_user.role not in ["PREMIUM", "QUAN_LY"]:
+        raise PermissionDenied("Bạn không có quyền xoá dữ liệu này.")
+
+    if request.method == "POST":
+        report.delete()
+        
+    if current_user.role in ["PREMIUM", "QUAN_LY"]:
+        return redirect("premium_dashboard")
+    return redirect("cut_list")
+
+
+@login_required
+def cut_export_excel_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ['NHA_CAT', 'PREMIUM', 'QUAN_LY']:
+        raise PermissionDenied("Bạn không có quyền xuất Excel.")
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="bao_cao_cat.xlsx"'
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Báo cáo Cắt"
+    
+    ws.append(CUT_HEADERS)
+    
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    start_dt, end_dt = parse_date_range(start_date, end_date)
+    qs = CutReport.objects.select_related('nguoi_nhap').all()
+    if start_dt:
+        qs = qs.filter(created_at__gte=start_dt)
+    if end_dt:
+        qs = qs.filter(created_at__lte=end_dt)
+        
+    for report in qs:
+        row_data = _cut_report_to_row(report)
+        ws.append(row_data["values"])
+
+    wb.save(response)
+    return response

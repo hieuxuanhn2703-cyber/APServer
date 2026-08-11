@@ -57,8 +57,6 @@ class ProcessForm(forms.Form):
                                   widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
     la_thanh_pham = forms.IntegerField(label="Là thành phẩm", required=False, min_value=0, initial=0,
                                         widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
-    kcs = forms.IntegerField(label="KCS", required=False, min_value=0, initial=0,
-                              widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
     nhap_hoan_thien = forms.IntegerField(label="Nhập hoàn thiện", required=False, min_value=0, initial=0,
                                           widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
 
@@ -105,10 +103,123 @@ class FinishingForm(forms.Form):
     ma_hang = forms.ChoiceField(label="Mã hàng")
     mau = forms.ChoiceField(label="Màu")
 
-    nhan_hang_hoan_thien = forms.IntegerField(label="Nhận hàng hoàn thiện", required=False, min_value=0, initial=0, widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
     the_bai = forms.IntegerField(label="Thẻ bài", required=False, min_value=0, initial=0, widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
     gap_hang = forms.IntegerField(label="Gấp hàng", required=False, min_value=0, initial=0, widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
     treo_dong_thung = forms.IntegerField(label="Treo/Đóng thùng", required=False, min_value=0, initial=0, widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config = load_config()
+
+        self.fields["ma_hang"].choices = [("", "-- Chọn mã hàng --")] + [
+            (ma, ma) for ma in self.config.keys()
+        ]
+
+        all_colors = set()
+        for data in self.config.values():
+            for color in data["colors"].keys():
+                all_colors.add(color)
+
+        self.fields["mau"].choices = [("", "-- Chọn màu --")] + [(c, c) for c in sorted(all_colors)]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        ma_hang = cleaned_data.get("ma_hang")
+        mau = cleaned_data.get("mau")
+
+        if ma_hang and ma_hang not in self.config:
+            self.add_error("ma_hang", "Mã hàng không hợp lệ.")
+            return cleaned_data
+
+        if ma_hang and mau:
+            colors = self.config[ma_hang]["colors"]
+            if mau not in colors:
+                self.add_error("mau", f"Màu '{mau}' không thuộc mã hàng '{ma_hang}'.")
+                return cleaned_data
+
+        return cleaned_data
+
+
+class KcsForm(forms.Form):
+    ngay_lam_viec = forms.DateField(
+        label="Ngày làm việc",
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        initial=datetime.date.today,
+    )
+    xuong = forms.IntegerField(
+        label="Xưởng", required=True, min_value=1, initial=0,
+        error_messages={'min_value': 'Vui lòng nhập số xưởng khác 0.', 'required': 'Vui lòng nhập số xưởng.'},
+        widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS)
+    )
+    to = forms.IntegerField(
+        label="Tổ", required=True, min_value=1, initial=0,
+        error_messages={'min_value': 'Vui lòng nhập số tổ khác 0.', 'required': 'Vui lòng nhập số tổ.'},
+        widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS)
+    )
+                             
+    ma_hang = forms.ChoiceField(label="Mã hàng", choices=[])
+    mau = forms.ChoiceField(label="Màu sắc", choices=[])
+    
+    qua_tay = forms.IntegerField(label="Qua tay", required=False, min_value=0, initial=0,
+                                  widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+    dat = forms.IntegerField(label="Đạt", required=False, min_value=0, initial=0,
+                              widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+    loi = forms.IntegerField(label="Lỗi", required=False, min_value=0, initial=0,
+                              widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+    tong_dat = forms.IntegerField(label="Tổng đạt", required=False, min_value=0, initial=0,
+                                   widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config = load_config()
+
+        self.fields["ma_hang"].choices = [("", "-- Chọn mã hàng --")] + [
+            (ma, ma) for ma in self.config.keys()
+        ]
+
+        all_colors = set()
+        for data in self.config.values():
+            for color in data["colors"].keys():
+                all_colors.add(color)
+
+        self.fields["mau"].choices = [("", "-- Chọn màu --")] + [(c, c) for c in sorted(all_colors)]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        ma_hang = cleaned_data.get("ma_hang")
+        mau = cleaned_data.get("mau")
+
+        if ma_hang and ma_hang not in self.config:
+            self.add_error("ma_hang", "Mã hàng không hợp lệ.")
+            return cleaned_data
+
+        if ma_hang and mau:
+            colors = self.config[ma_hang]["colors"]
+            if mau not in colors:
+                self.add_error("mau", f"Màu '{mau}' không thuộc mã hàng '{ma_hang}'.")
+                return cleaned_data
+
+        return cleaned_data
+
+
+class CutForm(forms.Form):
+    ngay_lam_viec = forms.DateField(
+        label="Ngày làm việc",
+        initial=datetime.date.today,
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+
+    ma_hang = forms.ChoiceField(label="Mã hàng", choices=[])
+    mau = forms.ChoiceField(label="Màu sắc", choices=[])
+    
+    cat_chinh = forms.IntegerField(label="Cắt chính", required=False, min_value=0, initial=0,
+                                  widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+    cat_lot = forms.IntegerField(label="Cắt lót", required=False, min_value=0, initial=0,
+                              widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+    cat_mex = forms.IntegerField(label="Cắt Mex", required=False, min_value=0, initial=0,
+                              widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
+    cat_bong = forms.IntegerField(label="Cắt bông", required=False, min_value=0, initial=0,
+                                   widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

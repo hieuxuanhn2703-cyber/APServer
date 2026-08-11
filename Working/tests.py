@@ -1,7 +1,7 @@
 import datetime
 from django.test import TestCase, Client
 from django.urls import reverse
-from .models import AppUser, Product, ProductColor, ProductSize, ProcessReport, FinishingReport
+from .models import AppUser, Product, ProductColor, ProductSize, ProcessReport, FinishingReport, CutReport, KcsReport
 
 
 class ComprehensiveSystemTests(TestCase):
@@ -44,7 +44,6 @@ class ComprehensiveSystemTests(TestCase):
             ra_chuyen=10,
             thu_hoa=10,
             la_thanh_pham=10,
-            kcs=10,
             nhap_hoan_thien=10,
             nguoi_nhap=self.basic_user
         )
@@ -55,7 +54,6 @@ class ComprehensiveSystemTests(TestCase):
             ma_hang="AT01",
             mau="Đỏ",
             size="N/A",
-            nhan_hang_hoan_thien=10,
             the_bai=10,
             gap_hang=10,
             treo_dong_thung=10,
@@ -247,8 +245,8 @@ class ComprehensiveSystemTests(TestCase):
         res = self.client.get(reverse('premium_dashboard'))
         self.assertEqual(res.status_code, 200)
         self.assertIn("Dashboard Dữ Liệu", res.content.decode('utf-8'))
-        self.assertIn("Danh sách Sản xuất", res.content.decode('utf-8'))
-        self.assertIn("Danh sách Hoàn thiện", res.content.decode('utf-8'))
+        self.assertIn("Tổng hợp Sản xuất", res.content.decode('utf-8'))
+        self.assertIn("Tổng hợp Hoàn thiện", res.content.decode('utf-8'))
         self.assertIn("Quản lý Mã hàng", res.content.decode('utf-8'))
         self.assertIn("Quản lý Tài khoản", res.content.decode('utf-8'))
         self.assertIn("Đăng xuất", res.content.decode('utf-8'))
@@ -271,8 +269,12 @@ class ComprehensiveSystemTests(TestCase):
 
     def test_dashboard_date_filter(self):
         self._login_as(self.premium_user)
-        prod_date = self.prod_report.created_at.strftime('%Y-%m-%d')
-        res = self.client.get(f"{reverse('premium_dashboard')}?prod_start_date={prod_date}&prod_end_date={prod_date}&fin_start_date={prod_date}&fin_end_date={prod_date}")
+        # Dùng localtime để lấy đúng ngày theo múi giờ Asia/Ho_Chi_Minh
+        # vì parse_date_range trong views cũng dùng make_aware (Asia/Ho_Chi_Minh)
+        from django.utils import timezone as tz
+        prod_date = tz.localtime(self.prod_report.created_at).strftime('%Y-%m-%d')
+        fin_date = tz.localtime(self.fin_report.created_at).strftime('%Y-%m-%d')
+        res = self.client.get(f"{reverse('premium_dashboard')}?prod_start_date={prod_date}&prod_end_date={prod_date}&fin_start_date={fin_date}&fin_end_date={fin_date}")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.context['page_prod']), 1)
         self.assertEqual(len(res.context['page_fin']), 1)
@@ -281,7 +283,6 @@ class ComprehensiveSystemTests(TestCase):
         res_empty = self.client.get(f"{reverse('premium_dashboard')}?prod_start_date=2099-01-01&prod_end_date=2099-12-31&fin_start_date=2099-01-01&fin_end_date=2099-12-31")
         self.assertEqual(res_empty.status_code, 200)
         self.assertEqual(len(res_empty.context['page_prod']), 0)
-        self.assertEqual(len(res_empty.context['page_fin']), 0)
         self.assertEqual(len(res_empty.context['page_fin']), 0)
 
     def test_production_validation_zero_xuong_to(self):
@@ -320,7 +321,6 @@ class ComprehensiveSystemTests(TestCase):
             'ra_chuyen': 20,
             'thu_hoa': 20,
             'la_thanh_pham': 20,
-            'kcs': 20,
             'nhap_hoan_thien': 20,
         })
         self.assertEqual(res_post.status_code, 200)
@@ -357,7 +357,6 @@ class ComprehensiveSystemTests(TestCase):
             'ra_chuyen': 30,
             'thu_hoa': 30,
             'la_thanh_pham': 30,
-            'kcs': 30,
             'nhap_hoan_thien': 30,
         })
         self.assertRedirects(res_edit_basic, reverse('list'))
@@ -380,7 +379,6 @@ class ComprehensiveSystemTests(TestCase):
             'ra_chuyen': 50,
             'thu_hoa': 50,
             'la_thanh_pham': 50,
-            'kcs': 50,
             'nhap_hoan_thien': 50,
         })
         self.assertRedirects(res_edit_prem, reverse('premium_dashboard'))
@@ -416,14 +414,13 @@ class ComprehensiveSystemTests(TestCase):
             'ngay_lam_viec': today_str,
             'ma_hang': 'AT01',
             'mau': 'Đỏ',
-            'nhan_hang_hoan_thien': 15,
             'the_bai': 15,
             'gap_hang': 15,
             'treo_dong_thung': 15,
         })
         self.assertEqual(res_post.status_code, 200)
         self.assertTrue(res_post.context['success'])
-        new_fin = FinishingReport.objects.filter(nhan_hang_hoan_thien=15).first()
+        new_fin = FinishingReport.objects.filter(the_bai=15).first()
         self.assertIsNotNone(new_fin)
         
         # Kiểm tra HOAN_THIEN không thấy nút Xóa/Sửa ở trang finishing_list
@@ -445,14 +442,13 @@ class ComprehensiveSystemTests(TestCase):
             'ngay_lam_viec': today_str,
             'ma_hang': 'AT01',
             'mau': 'Đỏ',
-            'nhan_hang_hoan_thien': 25,
             'the_bai': 25,
             'gap_hang': 25,
             'treo_dong_thung': 25,
         })
         self.assertRedirects(res_edit_fin, reverse('finishing_list'))
         new_fin.refresh_from_db()
-        self.assertEqual(new_fin.nhan_hang_hoan_thien, 25)
+        self.assertEqual(new_fin.the_bai, 25)
 
         # 3. Sửa bởi PREMIUM -> Chuyển về 'premium_dashboard'
         self._login_as(self.premium_user)
@@ -460,14 +456,13 @@ class ComprehensiveSystemTests(TestCase):
             'ngay_lam_viec': today_str,
             'ma_hang': 'AT01',
             'mau': 'Đỏ',
-            'nhan_hang_hoan_thien': 35,
             'the_bai': 35,
             'gap_hang': 35,
             'treo_dong_thung': 35,
         })
         self.assertRedirects(res_edit_prem, reverse('premium_dashboard'))
         new_fin.refresh_from_db()
-        self.assertEqual(new_fin.nhan_hang_hoan_thien, 35)
+        self.assertEqual(new_fin.the_bai, 35)
 
         # 4. Người khác không có quyền sửa (BASIC) -> 403
         self._login_as(self.basic_user)
@@ -563,3 +558,129 @@ class ComprehensiveSystemTests(TestCase):
         res_track = self.client.get(reverse('tracking_export_excel'))
         self.assertEqual(res_track.status_code, 200)
         self.assertEqual(res_track['Content-Type'], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # 4. Xuất Excel KCS
+        res_kcs = self.client.get(reverse('kcs_export_excel'))
+        self.assertEqual(res_kcs.status_code, 200)
+        self.assertEqual(res_kcs['Content-Type'], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # 5. Xuất Excel Cắt
+        res_cut = self.client.get(reverse('cut_export_excel'))
+        self.assertEqual(res_cut.status_code, 200)
+        self.assertEqual(res_cut['Content-Type'], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    def test_cut_and_kcs_crud_flows(self):
+        # 1. Tạo user NHA_CAT và KCS
+        cut_user = AppUser.objects.create(account="cut_staff", password="123", name="NV Cắt", role="NHA_CAT", is_approved=True)
+        kcs_user = AppUser.objects.create(account="kcs_staff", password="123", name="NV KCS", role="KCS", is_approved=True)
+        today_str = datetime.date.today().strftime('%Y-%m-%d')
+
+        # 2. Test Quản lý nhập dữ liệu Cắt và KCS
+        self._login_as(self.quanly_user)
+        res_cut_ql = self.client.post(reverse('cut_web'), {
+            'ngay_lam_viec': today_str,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'cat_chinh': 50,
+            'cat_lot': 40,
+            'cat_mex': 30,
+            'cat_bong': 20,
+        })
+        self.assertEqual(res_cut_ql.status_code, 200)
+        self.assertTrue(res_cut_ql.context.get('success', False))
+        self.assertEqual(CutReport.objects.filter(nguoi_nhap=self.quanly_user).count(), 1)
+
+        res_kcs_ql = self.client.post(reverse('kcs_web'), {
+            'ngay_lam_viec': today_str,
+            'xuong': 1,
+            'to': 2,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'qua_tay': 15,
+            'dat': 14,
+            'loi': 1,
+            'tong_dat': 14,
+        })
+        self.assertEqual(res_kcs_ql.status_code, 200)
+        self.assertTrue(res_kcs_ql.context.get('success', False))
+        self.assertEqual(KcsReport.objects.filter(nguoi_nhap=self.quanly_user).count(), 1)
+
+        # 3. Test NV Cắt nhập dữ liệu và xem list
+        self._login_as(cut_user)
+        res_cut_post = self.client.post(reverse('cut_web'), {
+            'ngay_lam_viec': today_str,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'cat_chinh': 100,
+            'cat_lot': 100,
+            'cat_mex': 100,
+            'cat_bong': 100,
+        })
+        self.assertEqual(res_cut_post.status_code, 200)
+        self.assertTrue(res_cut_post.context.get('success', False))
+        cut_report = CutReport.objects.filter(nguoi_nhap=cut_user).first()
+        self.assertIsNotNone(cut_report)
+
+        res_cut_list = self.client.get(reverse('cut_list'))
+        self.assertEqual(res_cut_list.status_code, 200)
+
+        # 4. Test Sửa dữ liệu Cắt
+        res_cut_edit = self.client.post(reverse('cut_edit', args=[cut_report.id]), {
+            'ngay_lam_viec': today_str,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'cat_chinh': 120,
+            'cat_lot': 110,
+            'cat_mex': 105,
+            'cat_bong': 100,
+        })
+        self.assertRedirects(res_cut_edit, reverse('cut_list'))
+        cut_report.refresh_from_db()
+        self.assertEqual(cut_report.cat_chinh, 120)
+
+        # 5. Test Xóa dữ liệu Cắt
+        res_cut_del = self.client.post(reverse('cut_delete_report', args=[cut_report.id]))
+        self.assertRedirects(res_cut_del, reverse('cut_list'))
+        self.assertFalse(CutReport.objects.filter(id=cut_report.id).exists())
+
+        # 6. Test NV KCS nhập dữ liệu và xem list
+        self._login_as(kcs_user)
+        res_kcs_post = self.client.post(reverse('kcs_web'), {
+            'ngay_lam_viec': today_str,
+            'xuong': 1,
+            'to': 1,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'qua_tay': 50,
+            'dat': 48,
+            'loi': 2,
+            'tong_dat': 48,
+        })
+        self.assertEqual(res_kcs_post.status_code, 200)
+        self.assertTrue(res_kcs_post.context.get('success', False))
+        kcs_report = KcsReport.objects.filter(nguoi_nhap=kcs_user).first()
+        self.assertIsNotNone(kcs_report)
+
+        res_kcs_list = self.client.get(reverse('kcs_list'))
+        self.assertEqual(res_kcs_list.status_code, 200)
+
+        # 7. Test Sửa dữ liệu KCS
+        res_kcs_edit = self.client.post(reverse('kcs_edit', args=[kcs_report.id]), {
+            'ngay_lam_viec': today_str,
+            'xuong': 1,
+            'to': 1,
+            'ma_hang': 'AT01',
+            'mau': 'Đỏ',
+            'qua_tay': 60,
+            'dat': 58,
+            'loi': 2,
+            'tong_dat': 58,
+        })
+        self.assertRedirects(res_kcs_edit, reverse('kcs_list'))
+        kcs_report.refresh_from_db()
+        self.assertEqual(kcs_report.qua_tay, 60)
+
+        # 8. Test Xóa dữ liệu KCS
+        res_kcs_del = self.client.post(reverse('kcs_delete_report', args=[kcs_report.id]))
+        self.assertRedirects(res_kcs_del, reverse('kcs_list'))
+        self.assertFalse(KcsReport.objects.filter(id=kcs_report.id).exists())

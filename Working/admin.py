@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ProcessReport, AppUser
+from .models import ProcessReport, AppUser, CutReport
 # p.x.hieu
 # Xinchao2026
 @admin.register(AppUser)
@@ -13,3 +13,9 @@ class ProcessReportAdmin(admin.ModelAdmin):
     list_display = ("id", "ma_hang", "mau", "size", "nguoi_nhap", "created_at")
     list_filter = ("ma_hang", "mau", "nguoi_nhap")
     search_fields = ("ma_hang", "mau", "size")
+
+@admin.register(CutReport)
+class CutReportAdmin(admin.ModelAdmin):
+    list_display = ("id", "ma_hang", "mau", "nguoi_nhap", "created_at")
+    list_filter = ("ma_hang", "mau", "nguoi_nhap")
+    search_fields = ("ma_hang", "mau")

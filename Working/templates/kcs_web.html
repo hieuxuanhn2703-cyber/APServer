@@ -3,12 +3,12 @@
 <html lang="vi">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nhập liệu quy trình sản xuất</title>
+    <title>Nhập liệu quy trình KCS</title>
     <link rel="stylesheet" href="{% static 'working/css/web.css' %}">
 </head>
 <body>
     <div class="container">
-        <h2>Nhập dữ liệu quy trình sản xuất</h2>
+        <h2>Nhập dữ liệu quy trình KCS</h2>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <span style="font-size:0.9rem; color:#555; font-weight: 500;">Xin chào, <strong>{{ display_name }}</strong></span>
             <a href="{% url 'change_password' %}" style="padding: 6px 12px; background: #3498db; color: white; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: bold; display: inline-block; margin-right: 5px;">Đổi mật khẩu</a>
@@ -20,7 +20,7 @@
                 {% if is_premium %}
                 <a href="{% url 'premium_dashboard' %}">Xem danh sách dữ liệu</a>
                 {% else %}
-                <a href="{% url 'list' %}">Xem danh sách dữ liệu</a>
+                <a href="{% url 'kcs_list' %}">Xem danh sách dữ liệu</a>
                 {% endif %}
             </div>
         {% endif %}
@@ -40,6 +40,23 @@
 
             <div class="row">
                 <div class="form-group">
+                    <label for="id_ma_hang">Mã hàng</label>
+                    <select id="id_ma_hang" name="ma_hang" data-initial="{{ form.ma_hang.value|default:'' }}"></select>
+                    {{ form.ma_hang.errors }}
+                </div>
+                <div class="form-group">
+                    <label for="id_mau">Màu</label>
+                    <select id="id_mau" name="mau" data-initial="{{ form.mau.value|default:'' }}"></select>
+                    {{ form.mau.errors }}
+                </div>
+                <!-- Ẩn cột cỡ -->
+                <div style="display: none;">
+                    <select id="id_co" name="co" data-initial="N/A"></select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
                     <label for="id_xuong">Xưởng</label>
                     {{ form.xuong }}
                     {{ form.xuong.errors }}
@@ -52,34 +69,10 @@
             </div>
 
             <div class="row">
-                <div class="form-group">
-                    <label for="id_ma_hang">Mã hàng</label>
-                    <select id="id_ma_hang" name="ma_hang" data-initial="{{ form.ma_hang.value|default:'' }}"></select>
-                    {{ form.ma_hang.errors }}
-                </div>
-                <div class="form-group">
-                    <label for="id_mau">Màu</label>
-                    <select id="id_mau" name="mau" data-initial="{{ form.mau.value|default:'' }}"></select>
-                    {{ form.mau.errors }}
-                </div>
-                <div style="display: none;">
-                    <select id="id_co" name="co">
-                        <option value="N/A" selected>N/A</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="form-group">{{ form.nhan_btp.label_tag }} {{ form.nhan_btp }}</div>
-                <div class="form-group">{{ form.vao_chuyen.label_tag }} {{ form.vao_chuyen }}</div>
-                <div class="form-group">{{ form.giua_chuyen.label_tag }} {{ form.giua_chuyen }}</div>
-                <div class="form-group">{{ form.ra_chuyen.label_tag }} {{ form.ra_chuyen }}</div>
-            </div>
-
-            <div class="row">
-                <div class="form-group">{{ form.thu_hoa.label_tag }} {{ form.thu_hoa }}</div>
-                <div class="form-group">{{ form.la_thanh_pham.label_tag }} {{ form.la_thanh_pham }}</div>
-                <div class="form-group">{{ form.nhap_hoan_thien.label_tag }} {{ form.nhap_hoan_thien }}</div>
+                <div class="form-group">{{ form.qua_tay.label_tag }} {{ form.qua_tay }}</div>
+                <div class="form-group">{{ form.dat.label_tag }} {{ form.dat }}</div>
+                <div class="form-group">{{ form.loi.label_tag }} {{ form.loi }}</div>
+                <div class="form-group">{{ form.tong_dat.label_tag }} {{ form.tong_dat }}</div>
             </div>
 
             <button type="submit">Lưu dữ liệu</button>
@@ -88,7 +81,7 @@
         {% if is_premium %}
             <a class="list-link" href="{% url 'premium_dashboard' %}" style="background: #8e44ad; color: white; padding: 10px; border-radius: 4px; display: block; text-align: center; font-weight: bold; margin-top: 15px;">📊 Dashboard dữ liệu</a>
         {% else %}
-            <a class="list-link" href="{% url 'list' %}">📋 Xem danh sách dữ liệu đã nhập</a>
+            <a class="list-link" href="{% url 'kcs_list' %}">📋 Xem danh sách dữ liệu KCS</a>
         {% endif %}
     </div>
 

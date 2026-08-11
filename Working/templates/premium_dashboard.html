@@ -1,20 +1,25 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Quản Trị Viên (Premium)</title>
     <link rel="stylesheet" href="{% static 'working/css/list.css' %}">
 </head>
+
 <body>
     <div class="container" style="max-width: 1400px;">
         <div class="top-bar">
             <h2>Dashboard Dữ Liệu</h2>
             <div style="display:flex; gap:8px; flex-wrap: wrap;">
                 {% if user.role == 'QUAN_LY' %}
+                <a class="back-btn" style="background:#27ae60;" href="{% url 'cut_web' %}">Nhập DL Cắt</a>
                 <a class="back-btn" style="background:#3498db;" href="{% url 'web' %}">Nhập DL Sản xuất</a>
+                <a class="back-btn" style="background:#e67e22;" href="{% url 'kcs_web' %}">Nhập DL KCS</a>
                 <a class="back-btn" style="background:#f39c12;" href="{% url 'finishing_web' %}">Nhập DL Hoàn thiện</a>
                 {% endif %}
+                <a class="back-btn" style="background:#16a085;" href="{% url 'tracking' %}">Theo dõi Đơn hàng</a>
                 <a class="back-btn" style="background:#8e44ad;" href="{% url 'config_list' %}">Quản lý Mã hàng</a>
                 {% if is_premium %}
                 <a class="back-btn" style="background:#2ecc71;" href="{% url 'manage_accounts' %}">Quản lý Tài khoản</a>
@@ -23,21 +28,25 @@
                 <a class="back-btn" style="background:#c0392b;" href="{% url 'logout' %}">Đăng xuất</a>
             </div>
         </div>
-        
-        <!-- (Form lọc chung đã được gỡ bỏ và chuyển xuống từng bảng) -->
+
         <div style="display: flex; flex-direction: column; gap: 25px;">
-            
-            <!-- BẢNG DỮ LIỆU SẢN XUẤT -->
+
+            <!-- 1. BẢNG DỮ LIỆU SẢN XUẤT -->
             <div style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
-                    <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">Danh sách Sản xuất</h3>
-                    
+                    <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">Tổng hợp Sản xuất</h3>
+
                     <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0;">
-                        <!-- Giữ lại filter của bảng hoàn thiện -->
                         {% if fin_start_date %}<input type="hidden" name="fin_start_date" value="{{ fin_start_date }}">{% endif %}
                         {% if fin_end_date %}<input type="hidden" name="fin_end_date" value="{{ fin_end_date }}">{% endif %}
+                        {% if kcs_start_date %}<input type="hidden" name="kcs_start_date" value="{{ kcs_start_date }}">{% endif %}
+                        {% if kcs_end_date %}<input type="hidden" name="kcs_end_date" value="{{ kcs_end_date }}">{% endif %}
+                        {% if cut_start_date %}<input type="hidden" name="cut_start_date" value="{{ cut_start_date }}">{% endif %}
+                        {% if cut_end_date %}<input type="hidden" name="cut_end_date" value="{{ cut_end_date }}">{% endif %}
                         {% if page_fin.number %}<input type="hidden" name="p2" value="{{ page_fin.number }}">{% endif %}
-                        
+                        {% if page_kcs.number %}<input type="hidden" name="p3" value="{{ page_kcs.number }}">{% endif %}
+                        {% if page_cut.number %}<input type="hidden" name="p4" value="{{ page_cut.number }}">{% endif %}
+
                         <div style="display: flex; align-items: center; gap: 5px;">
                             <label for="prod_start_date" style="font-size: 0.8em; font-weight: bold;">Từ:</label>
                             <input type="date" id="prod_start_date" name="prod_start_date" value="{{ prod_start_date }}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
@@ -48,11 +57,13 @@
                         </div>
                         <div style="display: flex; gap: 5px;">
                             <button type="submit" style="padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">Lọc</button>
-                            <a href="{% url 'premium_dashboard' %}?fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&p2={{ page_fin.number }}" style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
+                            <a href="{% url 'premium_dashboard' %}?fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}"
+                                style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
                         </div>
                     </form>
-                    
-                    <a href="{% url 'export_excel' %}?start_date={{ prod_start_date }}&end_date={{ prod_end_date }}" style="background: #e67e22; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
+
+                    <a href="{% url 'export_excel' %}?start_date={{ prod_start_date }}&end_date={{ prod_end_date }}"
+                        style="background: #e67e22; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
                 </div>
 
                 <!-- Bảng cho màn hình rộng (Desktop) -->
@@ -84,7 +95,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="17" class="empty">Chưa có dữ liệu nào được nhập.</td>
+                                <td colspan="16" class="empty">Chưa có dữ liệu nào được nhập.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -96,7 +107,7 @@
                     {% for row in page_prod %}
                     <div class="data-card">
                         <div class="card-header">
-                            <span class="card-title">{{ row.values.5 }} — {{ row.values.6 }} (X{{ row.values.3 }} - T{{ row.values.4 }})</span>
+                            <span class="card-title">{{ row.values.5 }} — {{ row.values.6 }} ({{ row.values.1 }})</span>
                             <div style="display: flex; gap: 5px;">
                                 <a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a>
                                 <form action="{% url 'delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
@@ -116,32 +127,37 @@
                     <p class="empty">Chưa có dữ liệu nào được nhập.</p>
                     {% endfor %}
                 </div>
-                
+
                 <!-- Phân trang Sản xuất -->
                 <div style="margin-top: 15px; text-align: center;">
                     {% if page_prod.has_previous %}
-                        <a href="?p1=1&p2={{ page_fin.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}">Đầu</a>
-                        <a href="?p1={{ page_prod.previous_page_number }}&p2={{ page_fin.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}">Trước</a>
+                    <a href="?p1=1&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Đầu</a>
+                    <a href="?p1={{ page_prod.previous_page_number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Trước</a>
                     {% endif %}
                     <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_prod.number }} / {{ page_prod.paginator.num_pages }}</span>
                     {% if page_prod.has_next %}
-                        <a href="?p1={{ page_prod.next_page_number }}&p2={{ page_fin.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}">Sau</a>
-                        <a href="?p1={{ page_prod.paginator.num_pages }}&p2={{ page_fin.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}">Cuối</a>
+                    <a href="?p1={{ page_prod.next_page_number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Sau</a>
+                    <a href="?p1={{ page_prod.paginator.num_pages }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Cuối</a>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- BẢNG DỮ LIỆU HOÀN THIỆN -->
+            <!-- 2. BẢNG DỮ LIỆU HOÀN THIỆN -->
             <div style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
-                    <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">Danh sách Hoàn thiện</h3>
-                    
+                    <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">Tổng hợp Hoàn thiện</h3>
+
                     <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0;">
-                        <!-- Giữ lại filter của bảng sản xuất -->
                         {% if prod_start_date %}<input type="hidden" name="prod_start_date" value="{{ prod_start_date }}">{% endif %}
                         {% if prod_end_date %}<input type="hidden" name="prod_end_date" value="{{ prod_end_date }}">{% endif %}
+                        {% if kcs_start_date %}<input type="hidden" name="kcs_start_date" value="{{ kcs_start_date }}">{% endif %}
+                        {% if kcs_end_date %}<input type="hidden" name="kcs_end_date" value="{{ kcs_end_date }}">{% endif %}
+                        {% if cut_start_date %}<input type="hidden" name="cut_start_date" value="{{ cut_start_date }}">{% endif %}
+                        {% if cut_end_date %}<input type="hidden" name="cut_end_date" value="{{ cut_end_date }}">{% endif %}
                         {% if page_prod.number %}<input type="hidden" name="p1" value="{{ page_prod.number }}">{% endif %}
-                        
+                        {% if page_kcs.number %}<input type="hidden" name="p3" value="{{ page_kcs.number }}">{% endif %}
+                        {% if page_cut.number %}<input type="hidden" name="p4" value="{{ page_cut.number }}">{% endif %}
+
                         <div style="display: flex; align-items: center; gap: 5px;">
                             <label for="fin_start_date" style="font-size: 0.8em; font-weight: bold;">Từ:</label>
                             <input type="date" id="fin_start_date" name="fin_start_date" value="{{ fin_start_date }}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
@@ -152,11 +168,13 @@
                         </div>
                         <div style="display: flex; gap: 5px;">
                             <button type="submit" style="padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">Lọc</button>
-                            <a href="{% url 'premium_dashboard' %}?prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&p1={{ page_prod.number }}" style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
+                            <a href="{% url 'premium_dashboard' %}?prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&p1={{ page_prod.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}"
+                                style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
                         </div>
                     </form>
-                    
-                    <a href="{% url 'finishing_export_excel' %}?start_date={{ fin_start_date }}&end_date={{ fin_end_date }}" style="background: #27ae60; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
+
+                    <a href="{% url 'finishing_export_excel' %}?start_date={{ fin_start_date }}&end_date={{ fin_end_date }}"
+                        style="background: #27ae60; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
                 </div>
 
                 <!-- Bảng cho màn hình rộng (Desktop) -->
@@ -164,18 +182,53 @@
                     <table>
                         <thead>
                             <tr>
-                                {% for header in fin_headers %}
-                                <th>{{ header }}</th>
-                                {% endfor %}
-                                <th>Thao tác</th>
+                                <th rowspan="2">Người nhập</th>
+                                <th rowspan="2">Ngày làm việc</th>
+                                <th rowspan="2">Ngày nhập</th>
+                                <th rowspan="2">Mã hàng</th>
+                                <th rowspan="2">Màu</th>
+                                <th rowspan="2">Tổng SL Đơn hàng</th>
+                                <th rowspan="2">Tổng Nhập HT</th>
+                                <th colspan="2">Thẻ bài</th>
+                                <th colspan="2">Gấp hàng</th>
+                                <th colspan="2">Treo/Đóng thùng</th>
+                                <th rowspan="2">Thao tác</th>
+                            </tr>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for row in page_fin %}
                             <tr>
-                                {% for cell in row.values %}
-                                <td>{{ cell }}</td>
-                                {% endfor %}
+                                <td>{{ row.nguoi_nhap }}</td>
+                                <td>{{ row.ngay_lam_viec }}</td>
+                                <td>{{ row.ngay_nhap }}</td>
+                                <td>{{ row.ma_hang }}</td>
+                                <td>{{ row.mau }}</td>
+                                <td>{{ row.tong_don_hang }}</td>
+                                <td>{{ row.tong_nhap_hoan_thien }}</td>
+
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.the_bai_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.the_bai_tong }}</span>
+                                </td>
+
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.gap_hang_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.gap_hang_tong }}</span>
+                                </td>
+
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.treo_dong_thung_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.treo_dong_thung_tong }}</span>
+                                </td>
+
                                 <td>
                                     <div style="display: flex; gap: 5px; justify-content: center;">
                                         <a class="edit-btn" href="{% url 'finishing_edit' row.row_id %}">Sửa</a>
@@ -188,7 +241,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="10" class="empty">Chưa có dữ liệu nào được nhập.</td>
+                                <td colspan="13" class="empty">Chưa có dữ liệu nào được nhập.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -200,7 +253,7 @@
                     {% for row in page_fin %}
                     <div class="data-card">
                         <div class="card-header">
-                            <span class="card-title">{{ row.values.3 }} — {{ row.values.4 }} ({{ row.values.1 }})</span>
+                            <span class="card-title">{{ row.ma_hang }} — {{ row.mau }} ({{ row.ngay_lam_viec }})</span>
                             <div style="display: flex; gap: 5px;">
                                 <a class="edit-btn" href="{% url 'finishing_edit' row.row_id %}">Sửa</a>
                                 <form action="{% url 'finishing_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
@@ -209,28 +262,330 @@
                                 </form>
                             </div>
                         </div>
-                        {% for label, val in row.pairs %}
-                        <div class="card-row">
-                            <span class="label">{{ label }}</span>
-                            <span class="value">{{ val }}</span>
-                        </div>
-                        {% endfor %}
+                        <div class="card-row"><span class="label">Người nhập</span><span class="value">{{ row.nguoi_nhap }}</span></div>
+                        <div class="card-row"><span class="label">Ngày nhập</span><span class="value">{{ row.ngay_nhap }}</span></div>
+                        <div class="card-row"><span class="label">Tổng SL Đơn hàng</span><span class="value">{{ row.tong_don_hang }}</span></div>
+                        <div class="card-row"><span class="label">Tổng Nhập HT</span><span class="value">{{ row.tong_nhap_hoan_thien }}</span></div>
+                        <div class="card-row"><span class="label">Thẻ bài (Ngày / Tổng)</span><span class="value">{{ row.the_bai_ngay }} / {{ row.the_bai_tong }}</span></div>
+                        <div class="card-row"><span class="label">Gấp hàng (Ngày / Tổng)</span><span class="value">{{ row.gap_hang_ngay }} / {{ row.gap_hang_tong }}</span></div>
+                        <div class="card-row"><span class="label">Treo/Đóng thùng (Ngày / Tổng)</span><span class="value">{{ row.treo_dong_thung_ngay }} / {{ row.treo_dong_thung_tong }}</span></div>
                     </div>
                     {% empty %}
                     <p class="empty">Chưa có dữ liệu nào được nhập.</p>
                     {% endfor %}
                 </div>
-                
+
                 <!-- Phân trang Hoàn thiện -->
                 <div style="margin-top: 15px; text-align: center;">
                     {% if page_fin.has_previous %}
-                        <a href="?p2=1&p1={{ page_prod.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Đầu</a>
-                        <a href="?p2={{ page_fin.previous_page_number }}&p1={{ page_prod.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Trước</a>
+                    <a href="?p2=1&p1={{ page_prod.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Đầu</a>
+                    <a href="?p2={{ page_fin.previous_page_number }}&p1={{ page_prod.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Trước</a>
                     {% endif %}
                     <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_fin.number }} / {{ page_fin.paginator.num_pages }}</span>
                     {% if page_fin.has_next %}
-                        <a href="?p2={{ page_fin.next_page_number }}&p1={{ page_prod.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Sau</a>
-                        <a href="?p2={{ page_fin.paginator.num_pages }}&p1={{ page_prod.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Cuối</a>
+                    <a href="?p2={{ page_fin.next_page_number }}&p1={{ page_prod.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Sau</a>
+                    <a href="?p2={{ page_fin.paginator.num_pages }}&p1={{ page_prod.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Cuối</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 3. BẢNG DỮ LIỆU KCS -->
+            <div style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
+                    <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">Tổng hợp KCS</h3>
+
+                    <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0;">
+                        {% if prod_start_date %}<input type="hidden" name="prod_start_date" value="{{ prod_start_date }}">{% endif %}
+                        {% if prod_end_date %}<input type="hidden" name="prod_end_date" value="{{ prod_end_date }}">{% endif %}
+                        {% if fin_start_date %}<input type="hidden" name="fin_start_date" value="{{ fin_start_date }}">{% endif %}
+                        {% if fin_end_date %}<input type="hidden" name="fin_end_date" value="{{ fin_end_date }}">{% endif %}
+                        {% if cut_start_date %}<input type="hidden" name="cut_start_date" value="{{ cut_start_date }}">{% endif %}
+                        {% if cut_end_date %}<input type="hidden" name="cut_end_date" value="{{ cut_end_date }}">{% endif %}
+                        {% if page_prod.number %}<input type="hidden" name="p1" value="{{ page_prod.number }}">{% endif %}
+                        {% if page_fin.number %}<input type="hidden" name="p2" value="{{ page_fin.number }}">{% endif %}
+                        {% if page_cut.number %}<input type="hidden" name="p4" value="{{ page_cut.number }}">{% endif %}
+
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label for="kcs_start_date" style="font-size: 0.8em; font-weight: bold;">Từ:</label>
+                            <input type="date" id="kcs_start_date" name="kcs_start_date" value="{{ kcs_start_date }}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label for="kcs_end_date" style="font-size: 0.8em; font-weight: bold;">Đến:</label>
+                            <input type="date" id="kcs_end_date" name="kcs_end_date" value="{{ kcs_end_date }}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button type="submit" style="padding: 4px 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">Lọc</button>
+                            <a href="{% url 'premium_dashboard' %}?prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p4={{ page_cut.number }}"
+                                style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
+                        </div>
+                    </form>
+
+                    <a href="{% url 'kcs_export_excel' %}?start_date={{ kcs_start_date }}&end_date={{ kcs_end_date }}"
+                        style="background: #8e44ad; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th rowspan="2">Người nhập</th>
+                                <th rowspan="2">Ngày làm việc</th>
+                                <th rowspan="2">Ngày nhập</th>
+                                <th rowspan="2">Mã hàng</th>
+                                <th rowspan="2">Màu</th>
+                                <th rowspan="2">Tổng SL Đơn hàng</th>
+                                <th colspan="2">Qua tay</th>
+                                <th colspan="2">Đạt</th>
+                                <th colspan="2">Lỗi</th>
+                                <th colspan="2">Tổng đạt</th>
+                                <th rowspan="2">Thao tác</th>
+                            </tr>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in page_kcs %}
+                            <tr>
+                                <td>{{ row.nguoi_nhap }}</td>
+                                <td>{{ row.ngay_lam_viec }}</td>
+                                <td>{{ row.ngay_nhap }}</td>
+                                <td>{{ row.ma_hang }}</td>
+                                <td>{{ row.mau }}</td>
+                                <td>{{ row.tong_don_hang }}</td>
+
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.qua_tay_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.qua_tay_tong }}</span>
+                                </td>
+
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.dat_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.dat_tong }}</span>
+                                </td>
+
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.loi_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.loi_tong }}</span>
+                                </td>
+
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.tong_dat_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.tong_dat_tong }}</span>
+                                </td>
+
+                                <td>
+                                    <div style="display: flex; gap: 5px; justify-content: center;">
+                                        <a class="edit-btn" href="{% url 'kcs_edit' row.row_id %}">Sửa</a>
+                                        <form action="{% url 'kcs_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="15" class="empty">Chưa có dữ liệu nào được nhập.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Card cho màn hình hẹp (Điện thoại) -->
+                <div class="card-list">
+                    {% for row in page_kcs %}
+                    <div class="data-card">
+                        <div class="card-header">
+                            <span class="card-title">{{ row.ma_hang }} — {{ row.mau }} ({{ row.ngay_lam_viec }})</span>
+                            <div style="display: flex; gap: 5px;">
+                                <a class="edit-btn" href="{% url 'kcs_edit' row.row_id %}">Sửa</a>
+                                <form action="{% url 'kcs_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card-row"><span class="label">Người nhập</span><span class="value">{{ row.nguoi_nhap }}</span></div>
+                        <div class="card-row"><span class="label">Ngày nhập</span><span class="value">{{ row.ngay_nhap }}</span></div>
+                        <div class="card-row"><span class="label">Tổng SL Đơn hàng</span><span class="value">{{ row.tong_don_hang }}</span></div>
+                        <div class="card-row"><span class="label">Qua tay (Ngày / Tổng)</span><span class="value">{{ row.qua_tay_ngay }} / {{ row.qua_tay_tong }}</span></div>
+                        <div class="card-row"><span class="label">Đạt (Ngày / Tổng)</span><span class="value">{{ row.dat_ngay }} / {{ row.dat_tong }}</span></div>
+                        <div class="card-row"><span class="label">Lỗi (Ngày / Tổng)</span><span class="value">{{ row.loi_ngay }} / {{ row.loi_tong }}</span></div>
+                        <div class="card-row"><span class="label">Tổng đạt (Ngày / Tổng)</span><span class="value">{{ row.tong_dat_ngay }} / {{ row.tong_dat_tong }}</span></div>
+                    </div>
+                    {% empty %}
+                    <p class="empty">Chưa có dữ liệu nào được nhập.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Phân trang KCS -->
+                <div style="margin-top: 15px; text-align: center;">
+                    {% if page_kcs.has_previous %}
+                    <a href="?p3=1&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p4={{ page_cut.number }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Đầu</a>
+                    <a href="?p3={{ page_kcs.previous_page_number }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p4={{ page_cut.number }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Trước</a>
+                    {% endif %}
+                    <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_kcs.number }} / {{ page_kcs.paginator.num_pages }}</span>
+                    {% if page_kcs.has_next %}
+                    <a href="?p3={{ page_kcs.next_page_number }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p4={{ page_cut.number }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Sau</a>
+                    <a href="?p3={{ page_kcs.paginator.num_pages }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p4={{ page_cut.number }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Cuối</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 4. BẢNG TỔNG HỢP CẮT -->
+            <div style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
+                    <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">Tổng hợp Cắt</h3>
+                    
+                    <form method="GET" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0;">
+                        {% if prod_start_date %}<input type="hidden" name="prod_start_date" value="{{ prod_start_date }}">{% endif %}
+                        {% if prod_end_date %}<input type="hidden" name="prod_end_date" value="{{ prod_end_date }}">{% endif %}
+                        {% if fin_start_date %}<input type="hidden" name="fin_start_date" value="{{ fin_start_date }}">{% endif %}
+                        {% if fin_end_date %}<input type="hidden" name="fin_end_date" value="{{ fin_end_date }}">{% endif %}
+                        {% if kcs_start_date %}<input type="hidden" name="kcs_start_date" value="{{ kcs_start_date }}">{% endif %}
+                        {% if kcs_end_date %}<input type="hidden" name="kcs_end_date" value="{{ kcs_end_date }}">{% endif %}
+                        {% if page_prod.number %}<input type="hidden" name="p1" value="{{ page_prod.number }}">{% endif %}
+                        {% if page_fin.number %}<input type="hidden" name="p2" value="{{ page_fin.number }}">{% endif %}
+                        {% if page_kcs.number %}<input type="hidden" name="p3" value="{{ page_kcs.number }}">{% endif %}
+
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label for="cut_start_date" style="font-size: 0.8em; font-weight: bold;">Từ:</label>
+                            <input type="date" id="cut_start_date" name="cut_start_date" value="{{ cut_start_date }}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label for="cut_end_date" style="font-size: 0.8em; font-weight: bold;">Đến:</label>
+                            <input type="date" id="cut_end_date" name="cut_end_date" value="{{ cut_end_date }}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button type="submit" style="padding: 4px 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">Lọc</button>
+                            <a href="{% url 'premium_dashboard' %}?prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}"
+                                style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
+                        </div>
+                    </form>
+
+                    <a href="{% url 'cut_export_excel' %}?start_date={{ cut_start_date }}&end_date={{ cut_end_date }}"
+                        style="background: #8e44ad; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">Xuất Excel</a>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th rowspan="2">Người nhập</th>
+                                <th rowspan="2">Ngày làm việc</th>
+                                <th rowspan="2">Ngày nhập</th>
+                                <th rowspan="2">Mã hàng</th>
+                                <th rowspan="2">Màu</th>
+                                <th rowspan="2">Tổng SL Đơn hàng</th>
+                                <th colspan="2">Cắt chính</th>
+                                <th colspan="2">Cắt lót</th>
+                                <th colspan="2">Cắt Mex</th>
+                                <th colspan="2">Cắt bông</th>
+                                <th rowspan="2">Thao tác</th>
+                            </tr>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
+                                <th>Ngày</th>
+                                <th>Tổng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in page_cut %}
+                            <tr>
+                                <td>{{ row.nguoi_nhap }}</td>
+                                <td>{{ row.ngay_lam_viec }}</td>
+                                <td>{{ row.ngay_nhap }}</td>
+                                <td>{{ row.ma_hang }}</td>
+                                <td>{{ row.mau }}</td>
+                                <td>{{ row.tong_don_hang }}</td>
+
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.cat_chinh_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.cat_chinh_tong }}</span>
+                                </td>
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.cat_lot_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.cat_lot_tong }}</span>
+                                </td>
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.cat_mex_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.cat_mex_tong }}</span>
+                                </td>
+                                <td colspan="2" style="position: relative; width: 100px; height: 50px; background: linear-gradient(to bottom right, transparent 49%, #ccc 49.5%, #ccc 50.5%, transparent 51%); padding: 0;">
+                                    <span style="position: absolute; top: 2px; left: 6px; font-weight: bold; font-size: 0.9em;">{{ row.cat_bong_ngay }}</span>
+                                    <span style="position: absolute; bottom: 2px; right: 6px; font-weight: bold; font-size: 0.9em; color: #e74c3c;">{{ row.cat_bong_tong }}</span>
+                                </td>
+
+                                <td>
+                                    <div style="display: flex; gap: 5px; justify-content: center;">
+                                        <a class="edit-btn" href="{% url 'cut_edit' row.row_id %}">Sửa</a>
+                                        <form action="{% url 'cut_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="15" class="empty">Chưa có dữ liệu nào được nhập.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Card cho màn hình hẹp (Điện thoại) -->
+                <div class="card-list">
+                    {% for row in page_cut %}
+                    <div class="data-card">
+                        <div class="card-header">
+                            <span class="card-title">{{ row.ma_hang }} — {{ row.mau }} ({{ row.ngay_lam_viec }})</span>
+                            <div style="display: flex; gap: 5px;">
+                                <a class="edit-btn" href="{% url 'cut_edit' row.row_id %}">Sửa</a>
+                                <form action="{% url 'cut_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card-row"><span class="label">Người nhập</span><span class="value">{{ row.nguoi_nhap }}</span></div>
+                        <div class="card-row"><span class="label">Ngày nhập</span><span class="value">{{ row.ngay_nhap }}</span></div>
+                        <div class="card-row"><span class="label">Tổng SL Đơn hàng</span><span class="value">{{ row.tong_don_hang }}</span></div>
+                        <div class="card-row"><span class="label">Cắt chính (Ngày / Tổng)</span><span class="value">{{ row.cat_chinh_ngay }} / {{ row.cat_chinh_tong }}</span></div>
+                        <div class="card-row"><span class="label">Cắt lót (Ngày / Tổng)</span><span class="value">{{ row.cat_lot_ngay }} / {{ row.cat_lot_tong }}</span></div>
+                        <div class="card-row"><span class="label">Cắt Mex (Ngày / Tổng)</span><span class="value">{{ row.cat_mex_ngay }} / {{ row.cat_mex_tong }}</span></div>
+                        <div class="card-row"><span class="label">Cắt bông (Ngày / Tổng)</span><span class="value">{{ row.cat_bong_ngay }} / {{ row.cat_bong_tong }}</span></div>
+                    </div>
+                    {% empty %}
+                    <p class="empty">Chưa có dữ liệu nào được nhập.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Phân trang Cắt -->
+                <div style="margin-top: 15px; text-align: center;">
+                    {% if page_cut.has_previous %}
+                    <a href="?p4=1&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Đầu</a>
+                    <a href="?p4={{ page_cut.previous_page_number }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Trước</a>
+                    {% endif %}
+                    <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_cut.number }} / {{ page_cut.paginator.num_pages }}</span>
+                    {% if page_cut.has_next %}
+                    <a href="?p4={{ page_cut.next_page_number }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Sau</a>
+                    <a href="?p4={{ page_cut.paginator.num_pages }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Cuối</a>
                     {% endif %}
                 </div>
             </div>
@@ -238,4 +593,5 @@
         </div>
     </div>
 </body>
+
 </html>

@@ -35,4 +35,18 @@ urlpatterns = [
     path("finishing/edit/<int:row_id>/", views.finishing_edit_view, name="finishing_edit"),
     path("finishing/delete/<int:row_id>/", views.finishing_delete_report_view, name="finishing_delete_report"),
     path("finishing/export-excel/", views.finishing_export_excel_view, name="finishing_export_excel"),
+    
+    # Quy trình KCS
+    path("kcs/", views.kcs_web_view, name="kcs_web"),
+    path("kcs/list/", views.kcs_list_view, name="kcs_list"),
+    path("kcs/edit/<int:row_id>/", views.kcs_edit_view, name="kcs_edit"),
+    path("kcs/delete/<int:row_id>/", views.kcs_delete_report_view, name="kcs_delete_report"),
+    path("kcs/export-excel/", views.kcs_export_excel_view, name="kcs_export_excel"),
+    
+    # Quy trình Cắt
+    path("cut/", views.cut_web_view, name="cut_web"),
+    path("cut/list/", views.cut_list_view, name="cut_list"),
+    path("cut/edit/<int:row_id>/", views.cut_edit_view, name="cut_edit"),
+    path("cut/delete/<int:row_id>/", views.cut_delete_report_view, name="cut_delete_report"),
+    path("cut/export-excel/", views.cut_export_excel_view, name="cut_export_excel"),
 ]

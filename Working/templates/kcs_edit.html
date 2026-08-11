@@ -3,12 +3,12 @@
 <html lang="vi">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sửa dữ liệu hoàn thiện</title>
+    <title>Sửa dữ liệu</title>
     <link rel="stylesheet" href="{% static 'working/css/edit.css' %}">
 </head>
 <body>
     <div class="container">
-        <h2>Sửa dữ liệu hoàn thiện</h2>
+        <h2>Sửa dữ liệu</h2>
         <p class="meta">Thời gian ghi nhận gốc: {{ thoi_gian }}</p>
 
         {{ config|json_script:"config-data" }}
@@ -26,6 +26,19 @@
 
             <div class="row">
                 <div class="form-group">
+                    <label for="id_xuong">Xưởng</label>
+                    {{ form.xuong }}
+                    {{ form.xuong.errors }}
+                </div>
+                <div class="form-group">
+                    <label for="id_to">Tổ</label>
+                    {{ form.to }}
+                    {{ form.to.errors }}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
                     <label for="id_ma_hang">Mã hàng</label>
                     <select id="id_ma_hang" name="ma_hang" data-initial="{{ form.ma_hang.value|default:'' }}"></select>
                     {{ form.ma_hang.errors }}
@@ -36,14 +49,17 @@
                     {{ form.mau.errors }}
                 </div>
                 <div style="display: none;">
-                    <select id="id_co" name="co" data-initial="N/A"></select>
+                    <select id="id_co" name="co">
+                        <option value="N/A" selected>N/A</option>
+                    </select>
                 </div>
             </div>
 
             <div class="row">
-                <div class="form-group">{{ form.the_bai.label_tag }} {{ form.the_bai }}</div>
-                <div class="form-group">{{ form.gap_hang.label_tag }} {{ form.gap_hang }}</div>
-                <div class="form-group">{{ form.treo_dong_thung.label_tag }} {{ form.treo_dong_thung }}</div>
+                <div class="form-group">{{ form.qua_tay.label_tag }} {{ form.qua_tay }}</div>
+                <div class="form-group">{{ form.dat.label_tag }} {{ form.dat }}</div>
+                <div class="form-group">{{ form.loi.label_tag }} {{ form.loi }}</div>
+                <div class="form-group">{{ form.tong_dat.label_tag }} {{ form.tong_dat }}</div>
             </div>
 
             <div class="btn-row">
