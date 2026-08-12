@@ -3,17 +3,13 @@
 <html lang="vi">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chỉnh sửa dữ liệu Tổ Cắt</title>
-    <link rel="stylesheet" href="{% static 'working/css/web.css' %}">
+    <title>Sửa dữ liệu</title>
+    <link rel="stylesheet" href="{% static 'working/css/edit.css' %}">
 </head>
 <body>
     <div class="container">
-        <h2>Chỉnh sửa dữ liệu Cắt #{{ report_id }}</h2>
-        <p class="meta" style="color: #666; font-size: 0.9em; margin-bottom: 10px;">Thời gian ghi nhận gốc: {{ thoi_gian }}</p>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <span style="font-size:0.9rem; color:#555; font-weight: 500;">Xin chào, <strong>{{ display_name }}</strong></span>
-            <a href="{% url 'logout' %}" style="padding: 6px 12px; background: #c0392b; color: white; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: bold; display: inline-block;">Đăng xuất</a>
-        </div>
+        <h2>Sửa dữ liệu</h2>
+        <p class="meta">Thời gian ghi nhận gốc: {{ thoi_gian }}</p>
 
         {{ config|json_script:"config-data" }}
 
@@ -52,9 +48,9 @@
                 <div class="form-group">{{ form.cat_bong.label_tag }} {{ form.cat_bong }}</div>
             </div>
 
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button type="submit" style="flex: 1;">Lưu thay đổi</button>
-                <a href="{% url 'cut_list' %}" style="flex: 1; background: #95a5a6; color: white; text-align: center; padding: 12px; border-radius: 4px; text-decoration: none; font-weight: bold;">Hủy bỏ</a>
+            <div class="btn-row">
+                <a class="cancel-btn" href="javascript:history.back()">Hủy</a>
+                <button type="submit">Cập nhật</button>
             </div>
         </form>
     </div>

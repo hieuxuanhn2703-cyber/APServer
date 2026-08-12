@@ -29,7 +29,7 @@ Trang làm việc: `/` (sau khi đăng nhập)
 
 - **Thêm Báo Cáo:**
   1. Chọn **Mã Hàng** → danh sách **Màu** sẽ tự hiện ra, chọn Màu.
-  2. Nhập **Xưởng** và **Tổ** (bắt buộc, không được bằng 0).
+  2. Nhập **Xưởng**, **Tổ** (bắt buộc, không được bằng 0) và **Số lượng LĐ**.
   3. Nhập số lượng các công đoạn: Nhận BTP, Vào chuyền, Giữa chuyền, Ra chuyền, Thu hóa, Là TP, Nhập HT.
   4. Ấn **Lưu dữ liệu**.
 - **Xem Danh sách:** Vào `/list/` để xem các báo cáo **do chính bạn** đã nhập.
@@ -81,18 +81,24 @@ Trang làm việc: `/finishing/`
 ## VI. HƯỚNG DẪN QUẢN LÝ (Quyền QUAN_LY)
 
 ### 1. Bảng Điều Khiển — Dashboard (`/dashboard/`)
-Ngay khi đăng nhập, Quản lý thấy **Dashboard Dữ Liệu** với **4 bảng tổng hợp độc lập**:
+Ngay khi đăng nhập, Quản lý thấy **Dashboard Dữ Liệu** với **4 bảng tổng hợp độc lập** (được tối ưu giao diện rộng toàn màn hình trên máy tính, hiển thị đầy đủ các cột mà không cần kéo ngang):
 
-| Bảng | Nội dung |
-|---|---|
-| Tổng hợp Sản xuất | Số liệu tổng hợp từng (Mã hàng, Màu) của bộ phận Sản xuất |
-| Tổng hợp Hoàn thiện | Số liệu tổng hợp từng (Mã hàng, Màu) của bộ phận Hoàn thiện |
-| Tổng hợp KCS | Số liệu tổng hợp từng (Mã hàng, Màu) của bộ phận KCS |
-| Tổng hợp Cắt | Số liệu tổng hợp từng (Mã hàng, Màu) của tổ Cắt, có cột Tổng SL đơn hàng |
+| Thứ tự | Bảng | Nội dung |
+|---|---|---|
+| 1 | **Tổng hợp Cắt** | Số liệu tổng hợp từng (Mã hàng, Màu) của tổ Cắt (Cắt chính, Cắt lót, Cắt Mex, Cắt bông), có cột Tổng SL đơn hàng |
+| 2 | **Tổng hợp Sản xuất** | Số liệu tổng hợp từng (Mã hàng, Màu) của bộ phận Sản xuất (không hiển thị cột Thời gian, có cột Số lượng LĐ) |
+| 3 | **Tổng hợp KCS** | Số liệu tổng hợp từng (Mã hàng, Màu) của bộ phận KCS (Xưởng, Tổ, Qua tay, Đạt, Lỗi, Tổng đạt) |
+| 4 | **Tổng hợp Hoàn thiện** | Số liệu tổng hợp từng (Mã hàng, Màu) của bộ phận Hoàn thiện (Thẻ bài, Gấp hàng, Treo/Đóng thùng) |
 
 - **Lọc thời gian độc lập**: Mỗi bảng có bộ lọc riêng (Từ ngày – Đến ngày). Lọc bảng này không ảnh hưởng bảng kia.
+- **Quy tắc tính ô Ngày / Tổng (Lũy kế theo thời gian)**: Số Tổng ở góc dưới ô chéo là **tổng lũy kế** của lần nhập đó cộng với tất cả các lần nhập trước đó (cùng Mã hàng + Màu). Khi có các lần nhập mới sau đó, giá trị Tổng của lần nhập cũ vẫn giữ nguyên không đổi.
+- **Bộ lọc dạng Excel trên từng cột (Desktop)**: Các cột **Người nhập, Mã hàng, Màu, Xưởng, Tổ** trên cả 4 bảng đều có nút lọc `[▼]` giống Excel:
+  - Bấm vào nút `[▼]` trên tiêu đề cột để mở popup danh sách các giá trị phân biệt.
+  - Hỗ trợ ô **Tìm kiếm**, checkbox **(Chọn tất cả)**, chọn lọc đa giá trị linh hoạt.
+  - Hỗ trợ lọc kết hợp nhiều cột cùng lúc trong bảng. Cột đang có bộ lọc sẽ đổi màu cam nổi bật kèm biểu tượng phễu lọc.
+  - Bấm **"Áp dụng"** để lọc ngay lập tức trên bảng hoặc **"Xóa lọc"** để bỏ lọc cột đó.
 - **Xuất Excel**: Ấn nút **Xuất Excel** của từng bảng để tải file dữ liệu đã lọc.
-- **Phân trang**: Mỗi bảng phân trang độc lập, chuyển trang bảng này không mất trang của bảng kia.
+- **Phân trang**: Mỗi bảng hiển thị tối đa **10 hàng dữ liệu** trên một trang và phân trang độc lập, chuyển trang bảng này không mất trang của bảng kia.
 
 ### 2. Nhập Dữ Liệu Nhanh (Top-bar)
 Từ Dashboard, Quản lý có thể truy cập nhanh:

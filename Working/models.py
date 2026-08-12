@@ -7,6 +7,7 @@ class ProcessReport(models.Model):
     ngay_lam_viec = models.DateField("Ngày làm việc", default=datetime.date.today)
     xuong = models.PositiveIntegerField("Xưởng", default=0)
     to = models.PositiveIntegerField("Tổ", default=0)
+    so_luong_ld = models.PositiveIntegerField("Số lượng LĐ", default=0)
     ma_hang = models.CharField("Mã hàng", max_length=255, null=False)
     mau = models.CharField("Màu", max_length=255, null=False)
     size = models.CharField("Cỡ", max_length=50, null=False)

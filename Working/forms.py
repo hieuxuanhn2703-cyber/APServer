@@ -41,6 +41,10 @@ class ProcessForm(forms.Form):
         error_messages={'min_value': 'Vui lòng nhập số tổ khác 0.', 'required': 'Vui lòng nhập số tổ.'},
         widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS)
     )
+    so_luong_ld = forms.IntegerField(
+        label="Số lượng LĐ", required=False, min_value=0, initial=0,
+        widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS)
+    )
     ma_hang = forms.ChoiceField(label="Mã hàng")
     mau = forms.ChoiceField(label="Màu")
     co = forms.CharField(label="Cỡ", required=False, initial="N/A")

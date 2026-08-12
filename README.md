@@ -31,6 +31,7 @@ Hệ thống phân chia người dùng thành **6 vai trò (Role)** chặt chẽ
 Hệ thống có **4 luồng dữ liệu độc lập** với giao diện nhập liệu, danh sách, sửa, xóa và xuất Excel riêng:
 
 ### 2.1 Sản xuất (`/`)
+Thông tin chung: Xưởng, Tổ, **Số lượng LĐ**.
 Các công đoạn: Nhận BTP, Vào chuyền, Giữa chuyền, Ra chuyền, Thu hóa, Là TP, Nhập HT.
 
 ### 2.2 Tổ Cắt (`/cut/`)
@@ -50,14 +51,24 @@ Các công đoạn: **Thẻ bài, Gấp hàng, Treo/Đóng thùng**.
 ---
 
 ## 3. Dashboard Tổng hợp (`/dashboard/`)
-
-Dành cho Quản lý (`QUAN_LY`) và Admin (`PREMIUM`).
-
-- **4 bảng tổng hợp độc lập**: Sản xuất, Hoàn thiện, KCS, Cắt — mỗi bảng hiển thị số liệu tổng hợp theo (Mã hàng, Màu) với cột Ngày và cột Tổng cộng dồn.
-- **Bộ lọc thời gian riêng biệt**: Lọc theo ngày cho từng bảng, các bảng khác không bị ảnh hưởng.
-- **Phân trang độc lập**: Tham số `p1`, `p2`, `p3`, `p4` — chuyển trang bảng này không mất trạng thái bảng kia.
-- **Xuất Excel từng bảng**: Lấy đúng dữ liệu theo bộ lọc đang áp dụng.
-- **Nút nhập liệu nhanh** (top-bar): Nhập DL Cắt, Nhập DL Sản xuất, Nhập DL KCS, Nhập DL Hoàn thiện, Theo dõi Đơn hàng, Quản lý Mã hàng.
+ 
+ Dành cho Quản lý (`QUAN_LY`) và Admin (`PREMIUM`).
+ 
+ - **Khung hiển thị mở rộng (Full-width Desktop)**: Dashboard được thiết kế rộng toàn màn hình máy tính, tối ưu hóa kích thước cột và ô chéo giúp hiển thị trọn vẹn tất cả các cột mà không cần kéo thanh cuộn ngang (overflow-x).
+ - **Thứ tự 4 bảng tổng hợp độc lập**: **Tổng hợp Cắt → Tổng hợp Sản Xuất → Tổng hợp KCS → Tổng hợp Hoàn Thiện**.
+   - **Tổng hợp Cắt**: Cắt chính, Cắt lót, Cắt Mex, Cắt bông (Ngày / Tổng), Tổng SL Đơn hàng.
+   - **Tổng hợp Sản xuất**: Người nhập, Ngày làm việc, Xưởng, Tổ, Số lượng LĐ, Mã hàng, Màu, Cỡ, Nhận BTP, Vào chuyền, Giữa chuyền, Ra chuyền, Thu hóa, Là TP, Nhập HT (bỏ cột Thời gian để giao diện gọn gàng).
+   - **Tổng hợp KCS**: Xưởng, Tổ, Tổng SL Đơn hàng, Qua tay, Đạt, Lỗi, Tổng đạt (Ngày / Tổng).
+   - **Tổng hợp Hoàn thiện**: Tổng SL Đơn hàng, Tổng Nhập HT, Thẻ bài, Gấp hàng, Treo/Đóng thùng (Ngày / Tổng).
+ - **Quy tắc tính ô Ngày / Tổng**: Số Tổng ở góc dưới ô chéo là **tổng lũy kế** tính đến thời điểm của lần nhập đó (giá trị lần đó + tất cả các lần trước đó). Khi có thêm lần nhập mới sau này, số Tổng của các lần nhập trước vẫn được giữ nguyên.
+ - **Bộ lọc Excel trên từng cột (Desktop)**: Các cột **Người nhập, Mã hàng, Màu, Xưởng, Tổ** trên cả 4 bảng tổng hợp đều có nút `[▼]` lọc dữ liệu giống hệt Microsoft Excel:
+  - Bấm vào `[▼]` để mở popup danh sách các giá trị thực tế trong bảng.
+  - Tích hợp ô Tìm kiếm nhanh, tùy chọn (Chọn tất cả), chọn lọc đa giá trị linh hoạt.
+  - Hỗ trợ kết hợp lọc nhiều cột cùng lúc, tự động highlight cột đang lọc kèm biểu tượng phễu lọc.
+ - **Bộ lọc thời gian riêng biệt**: Lọc theo ngày cho từng bảng, các bảng khác không bị ảnh hưởng.
+ - **Phân trang độc lập (10 hàng/trang)**: Mỗi bảng hiển thị tối đa 10 hàng dữ liệu, chuyển trang độc lập qua tham số `p1`, `p2`, `p3`, `p4`.
+ - **Xuất Excel từng bảng**: Lấy đúng dữ liệu theo bộ lọc đang áp dụng.
+ - **Nút nhập liệu nhanh** (top-bar): Nhập DL Cắt, Nhập DL Sản xuất, Nhập DL KCS, Nhập DL Hoàn thiện, Theo dõi Đơn hàng, Quản lý Mã hàng.
 
 ---
 

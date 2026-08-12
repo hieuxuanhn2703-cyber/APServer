@@ -255,6 +255,25 @@ class ComprehensiveSystemTests(TestCase):
         self.assertNotIn("Nhập DL Sản xuất", res.content.decode('utf-8'))
         self.assertNotIn("Nhập DL Hoàn thiện", res.content.decode('utf-8'))
 
+        # Dashboard tổng hợp sản xuất không hiển thị cột Thời gian
+        self.assertNotIn("Thời gian", res.context['prod_headers'])
+        self.assertIn("Số lượng LĐ", res.context['prod_headers'])
+
+        # Kiểm tra sự hiện diện của bộ lọc Excel
+        self.assertIn("excel_filter.js", res.content.decode('utf-8'))
+        self.assertIn("excel-filter-btn", res.content.decode('utf-8'))
+        self.assertIn('data-title="Mã hàng"', res.content.decode('utf-8'))
+        self.assertIn('data-title="Màu"', res.content.decode('utf-8'))
+        self.assertIn('data-title="Người nhập"', res.content.decode('utf-8'))
+        self.assertIn('data-title="Xưởng"', res.content.decode('utf-8'))
+        self.assertIn('data-title="Tổ"', res.content.decode('utf-8'))
+
+        # Kiểm tra mỗi bảng trong Dashboard chỉ hiển thị tối đa 10 hàng dữ liệu
+        self.assertEqual(res.context['page_prod'].paginator.per_page, 10)
+        self.assertEqual(res.context['page_fin'].paginator.per_page, 10)
+        self.assertEqual(res.context['page_kcs'].paginator.per_page, 10)
+        self.assertEqual(res.context['page_cut'].paginator.per_page, 10)
+
 
     def test_quanly_dashboard_view(self):
         self._login_as(self.quanly_user)
@@ -285,6 +304,124 @@ class ComprehensiveSystemTests(TestCase):
         self.assertEqual(len(res_empty.context['page_prod']), 0)
         self.assertEqual(len(res_empty.context['page_fin']), 0)
 
+    def test_dashboard_cumulative_running_totals(self):
+        """
+        Kiểm tra giá trị Ngày/Tổng luôn là tổng lũy kế đến thời điểm nhập của bản ghi đó:
+        - Lần nhập 1: 300/300
+        - Lần nhập 2: 200/500 (bản ghi 1 vẫn giữ nguyên 300/300, không bị cộng dồn thành 300/500)
+        """
+        self._login_as(self.premium_user)
+        import datetime
+        from Working.models import CutReport, FinishingReport, KcsReport
+
+        # Xóa các report cũ để test độc lập
+        CutReport.objects.all().delete()
+        FinishingReport.objects.all().delete()
+        KcsReport.objects.all().delete()
+
+        today = datetime.date.today()
+
+        # Tạo 2 báo cáo Cắt liên tiếp cho cùng mã hàng/màu
+        cut1 = CutReport.objects.create(
+            nguoi_nhap=self.premium_user,
+            ngay_lam_viec=today,
+            ma_hang="AT01",
+            mau="Đỏ",
+            cat_chinh=300,
+            cat_lot=50,
+            cat_mex=40,
+            cat_bong=30
+        )
+        cut2 = CutReport.objects.create(
+            nguoi_nhap=self.premium_user,
+            ngay_lam_viec=today,
+            ma_hang="AT01",
+            mau="Đỏ",
+            cat_chinh=200,
+            cat_lot=100,
+            cat_mex=60,
+            cat_bong=70
+        )
+
+        # Tạo 2 báo cáo Hoàn thiện liên tiếp
+        fin1 = FinishingReport.objects.create(
+            nguoi_nhap=self.premium_user,
+            ngay_lam_viec=today,
+            ma_hang="AT01",
+            mau="Đỏ",
+            the_bai=100,
+            gap_hang=80,
+            treo_dong_thung=60
+        )
+        fin2 = FinishingReport.objects.create(
+            nguoi_nhap=self.premium_user,
+            ngay_lam_viec=today,
+            ma_hang="AT01",
+            mau="Đỏ",
+            the_bai=150,
+            gap_hang=120,
+            treo_dong_thung=90
+        )
+
+        # Tạo 2 báo cáo KCS liên tiếp
+        kcs1 = KcsReport.objects.create(
+            nguoi_nhap=self.premium_user,
+            ngay_lam_viec=today,
+            ma_hang="AT01",
+            mau="Đỏ",
+            xuong=1,
+            to=1,
+            qua_tay=50,
+            dat=45,
+            loi=5,
+            tong_dat=45
+        )
+        kcs2 = KcsReport.objects.create(
+            nguoi_nhap=self.premium_user,
+            ngay_lam_viec=today,
+            ma_hang="AT01",
+            mau="Đỏ",
+            xuong=1,
+            to=1,
+            qua_tay=70,
+            dat=65,
+            loi=5,
+            tong_dat=65
+        )
+
+        res = self.client.get(reverse('premium_dashboard'))
+        self.assertEqual(res.status_code, 200)
+
+        # Kiểm tra bảng Cắt
+        cut_page = res.context['page_cut']
+        cut_dict = {row['row_id']: row for row in cut_page}
+        # Bản ghi 1: Ngày 300 / Tổng 300
+        self.assertEqual(cut_dict[cut1.id]['cat_chinh_ngay'], 300)
+        self.assertEqual(cut_dict[cut1.id]['cat_chinh_tong'], 300)
+        # Bản ghi 2: Ngày 200 / Tổng 500
+        self.assertEqual(cut_dict[cut2.id]['cat_chinh_ngay'], 200)
+        self.assertEqual(cut_dict[cut2.id]['cat_chinh_tong'], 500)
+
+        # Kiểm tra bảng Hoàn thiện
+        fin_page = res.context['page_fin']
+        fin_dict = {row['row_id']: row for row in fin_page}
+        # Bản ghi 1: 100 / 100
+        self.assertEqual(fin_dict[fin1.id]['the_bai_ngay'], 100)
+        self.assertEqual(fin_dict[fin1.id]['the_bai_tong'], 100)
+        # Bản ghi 2: 150 / 250
+        self.assertEqual(fin_dict[fin2.id]['the_bai_ngay'], 150)
+        self.assertEqual(fin_dict[fin2.id]['the_bai_tong'], 250)
+
+        # Kiểm tra bảng KCS
+        kcs_page = res.context['page_kcs']
+        kcs_dict = {row['row_id']: row for row in kcs_page}
+        # Bản ghi 1: 50 / 50
+        self.assertEqual(kcs_dict[kcs1.id]['qua_tay_ngay'], 50)
+        self.assertEqual(kcs_dict[kcs1.id]['qua_tay_tong'], 50)
+        # Bản ghi 2: 70 / 120
+        self.assertEqual(kcs_dict[kcs2.id]['qua_tay_ngay'], 70)
+        self.assertEqual(kcs_dict[kcs2.id]['qua_tay_tong'], 120)
+
     def test_production_validation_zero_xuong_to(self):
         # Kiểm tra Xưởng và Tổ không được bằng 0
         self._login_as(self.basic_user)
@@ -312,6 +449,7 @@ class ComprehensiveSystemTests(TestCase):
             'ngay_lam_viec': today_str,
             'xuong': 2,
             'to': 2,
+            'so_luong_ld': 15,
             'ma_hang': 'AT01',
             'mau': 'Đỏ',
             'co': 'N/A',
@@ -328,6 +466,7 @@ class ComprehensiveSystemTests(TestCase):
         new_report = ProcessReport.objects.filter(to=2).first()
         self.assertIsNotNone(new_report)
         self.assertEqual(new_report.xuong, 2)
+        self.assertEqual(new_report.so_luong_ld, 15)
         
         # Kiểm tra BASIC không thấy nút Xóa/Sửa ở trang list
         res_list = self.client.get(reverse('list'))
@@ -348,6 +487,7 @@ class ComprehensiveSystemTests(TestCase):
             'ngay_lam_viec': today_str,
             'xuong': 3,
             'to': 2,
+            'so_luong_ld': 25,
             'ma_hang': 'AT01',
             'mau': 'Đỏ',
             'co': 'N/A',
@@ -363,6 +503,7 @@ class ComprehensiveSystemTests(TestCase):
         new_report.refresh_from_db()
         self.assertEqual(new_report.nhan_btp, 30)
         self.assertEqual(new_report.xuong, 3)
+        self.assertEqual(new_report.so_luong_ld, 25)
 
         # 3. Sửa bởi PREMIUM -> Chuyển về 'premium_dashboard'
         self._login_as(self.premium_user)
@@ -370,6 +511,7 @@ class ComprehensiveSystemTests(TestCase):
             'ngay_lam_viec': today_str,
             'xuong': 3,
             'to': 2,
+            'so_luong_ld': 35,
             'ma_hang': 'AT01',
             'mau': 'Đỏ',
             'co': 'N/A',
@@ -384,6 +526,7 @@ class ComprehensiveSystemTests(TestCase):
         self.assertRedirects(res_edit_prem, reverse('premium_dashboard'))
         new_report.refresh_from_db()
         self.assertEqual(new_report.nhan_btp, 50)
+        self.assertEqual(new_report.so_luong_ld, 35)
 
         # 4. Người khác không có quyền sửa (HOAN_THIEN) -> 403
         self._login_as(self.finishing_user)
