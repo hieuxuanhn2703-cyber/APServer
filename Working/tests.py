@@ -61,10 +61,12 @@ class ComprehensiveSystemTests(TestCase):
         )
 
     def _login_as(self, user):
+        from django.conf import settings
         session = self.client.session
         session['user_id'] = user.id
         session['display_name'] = user.name
         session.save()
+        self.client.cookies[settings.SESSION_COOKIE_NAME] = session.session_key
 
     # ==========================================
     # 1. TEST ĐĂNG KÝ, ĐĂNG NHẬP, PHÂN QUYỀN
@@ -161,21 +163,54 @@ class ComprehensiveSystemTests(TestCase):
 
 
     def test_unauthenticated_access_blocked(self):
-        # Chưa đăng nhập truy cập các trang bảo mật đều chuyển về login
+        # Chưa đăng nhập truy cập bất kỳ trang nào đều tự động chuyển về login
         protected_urls = [
             reverse('web'),
             reverse('list'),
             reverse('premium_dashboard'),
             reverse('manage_accounts'),
             reverse('config_list'),
+            reverse('config_add_product'),
             reverse('tracking'),
+            reverse('tracking_export_excel'),
+            reverse('export_excel'),
             reverse('finishing_web'),
             reverse('finishing_list'),
+            reverse('finishing_export_excel'),
+            reverse('kcs_web'),
+            reverse('kcs_list'),
+            reverse('kcs_export_excel'),
+            reverse('cut_web'),
+            reverse('cut_list'),
+            reverse('cut_export_excel'),
             reverse('change_password'),
+            '/random-protected-path/',
         ]
         for url in protected_urls:
             res = self.client.get(url)
             self.assertRedirects(res, reverse('login'), msg_prefix=f"URL {url} should redirect to login")
+
+        # Session chứa user_id không tồn tại trong database -> Chuyển về login
+        self._login_as(self.basic_user)
+        session = self.client.session
+        session['user_id'] = 999999
+        session.save()
+        res_invalid = self.client.get(reverse('web'))
+        self.assertRedirects(res_invalid, reverse('login'))
+
+        # Session chứa tài khoản chưa được duyệt -> Chuyển về login
+        self._login_as(self.unapproved_user)
+        res_unapproved = self.client.get(reverse('web'))
+        self.assertRedirects(res_unapproved, reverse('login'))
+
+        # Người dùng đã đăng nhập truy cập GET /login/ -> Tự động chuyển về trang chính
+        self._login_as(self.basic_user)
+        res_logged_basic = self.client.get(reverse('login'))
+        self.assertRedirects(res_logged_basic, reverse('web'))
+
+        self._login_as(self.premium_user)
+        res_logged_prem = self.client.get(reverse('login'))
+        self.assertRedirects(res_logged_prem, reverse('premium_dashboard'))
 
     def test_exhaustive_role_permissions(self):
         # Định nghĩa các route cần test
@@ -827,3 +862,144 @@ class ComprehensiveSystemTests(TestCase):
         res_kcs_del = self.client.post(reverse('kcs_delete_report', args=[kcs_report.id]))
         self.assertRedirects(res_kcs_del, reverse('kcs_list'))
         self.assertFalse(KcsReport.objects.filter(id=kcs_report.id).exists())
+
+    def test_dashboard_server_side_column_filters(self):
+        self._login_as(self.premium_user)
+        today = datetime.date.today()
+
+        # Tạo 25 báo cáo Cắt: 15 cho AT01, 10 cho AT02
+        CutReport.objects.all().delete()
+        for i in range(15):
+            CutReport.objects.create(
+                ngay_lam_viec=today,
+                ma_hang="AT01",
+                mau="Đỏ" if i % 2 == 0 else "Xanh",
+                cat_chinh=10,
+                cat_lot=10,
+                cat_mex=10,
+                cat_bong=10,
+                nguoi_nhap=self.premium_user
+            )
+        for i in range(10):
+            CutReport.objects.create(
+                ngay_lam_viec=today,
+                ma_hang="AT02",
+                mau="Vàng",
+                cat_chinh=20,
+                cat_lot=20,
+                cat_mex=20,
+                cat_bong=20,
+                nguoi_nhap=self.quanly_user
+            )
+
+        # 1. Chưa lọc: tổng 25 bản ghi -> 3 trang (10, 10, 5)
+        res_no_filter = self.client.get(reverse('premium_dashboard'))
+        self.assertEqual(res_no_filter.status_code, 200)
+        page_cut = res_no_filter.context['page_cut']
+        self.assertEqual(page_cut.paginator.count, 25)
+        self.assertEqual(page_cut.paginator.num_pages, 3)
+        self.assertEqual(len(page_cut.object_list), 10)
+
+        # 2. Lọc cột Mã hàng = AT01: 15 bản ghi -> 2 trang (10, 5)
+        res_filter_at01 = self.client.get(reverse('premium_dashboard') + '?cut_filter_ma_hang=AT01')
+        self.assertEqual(res_filter_at01.status_code, 200)
+        page_cut_filtered = res_filter_at01.context['page_cut']
+        self.assertEqual(page_cut_filtered.paginator.count, 15)
+        self.assertEqual(page_cut_filtered.paginator.num_pages, 2)
+        self.assertEqual(len(page_cut_filtered.object_list), 10)
+        for row in page_cut_filtered.object_list:
+            self.assertEqual(row['ma_hang'], 'AT01')
+
+        # 3. Sang trang 2 vẫn giữ lọc Mã hàng = AT01
+        res_page2_filtered = self.client.get(reverse('premium_dashboard') + '?cut_filter_ma_hang=AT01&p4=2')
+        self.assertEqual(res_page2_filtered.status_code, 200)
+        page_cut_p2 = res_page2_filtered.context['page_cut']
+        self.assertEqual(page_cut_p2.number, 2)
+        self.assertEqual(len(page_cut_p2.object_list), 5)
+        for row in page_cut_p2.object_list:
+            self.assertEqual(row['ma_hang'], 'AT01')
+
+        # 4. Lọc kết hợp nhiều cột: Mã hàng = AT01 VÀ Màu = Đỏ (8 bản ghi -> 1 trang)
+        res_multi_filter = self.client.get(reverse('premium_dashboard') + '?cut_filter_ma_hang=AT01&cut_filter_mau=%C4%90%E1%BB%8F')
+        self.assertEqual(res_multi_filter.status_code, 200)
+        page_cut_multi = res_multi_filter.context['page_cut']
+        self.assertEqual(page_cut_multi.paginator.count, 8)
+        self.assertEqual(page_cut_multi.paginator.num_pages, 1)
+        for row in page_cut_multi.object_list:
+            self.assertEqual(row['ma_hang'], 'AT01')
+            self.assertEqual(row['mau'], 'Đỏ')
+
+        # 5. Kiểm tra tính năng lọc liên tầng (Cascading Options) trong excel_filter_config
+        # Khi lọc ma_hang=AT01: options của cột Màu (cột 4) CHỈ chứa ['Đỏ', 'Xanh'], KHÔNG chứa 'Vàng' (do 'Vàng' thuộc AT02)
+        res_cascade_at01 = self.client.get(reverse('premium_dashboard') + '?cut_filter_ma_hang=AT01')
+        cfg_at01 = res_cascade_at01.context['excel_filter_config']['cut']['columns']
+        self.assertIn('Đỏ', cfg_at01['4']['options'])
+        self.assertIn('Xanh', cfg_at01['4']['options'])
+        self.assertNotIn('Vàng', cfg_at01['4']['options'])
+
+        # Khi lọc màu=Đỏ: options của cột Mã hàng (cột 3) CHỈ chứa ['AT01'], KHÔNG chứa 'AT02'
+        res_cascade_red = self.client.get(reverse('premium_dashboard') + '?cut_filter_mau=%C4%90%E1%BB%8F')
+        cfg_red = res_cascade_red.context['excel_filter_config']['cut']['columns']
+        self.assertIn('AT01', cfg_red['3']['options'])
+        self.assertNotIn('AT02', cfg_red['3']['options'])
+
+        # 6. Test bảng Sản xuất (20 bản ghi) lọc theo Xưởng và Tổ
+        ProcessReport.objects.all().delete()
+        for i in range(12):
+            ProcessReport.objects.create(
+                ngay_lam_viec=today,
+                xuong=1, to=1,
+                ma_hang="AT01", mau="Đỏ", size="N/A",
+                nhan_btp=10, vao_chuyen=10, giua_chuyen=10, ra_chuyen=10, thu_hoa=10, la_thanh_pham=10, nhap_hoan_thien=10,
+                nguoi_nhap=self.basic_user
+            )
+        for i in range(8):
+            ProcessReport.objects.create(
+                ngay_lam_viec=today,
+                xuong=2, to=2,
+                ma_hang="AT02", mau="Xanh", size="N/A",
+                nhan_btp=20, vao_chuyen=20, giua_chuyen=20, ra_chuyen=20, thu_hoa=20, la_thanh_pham=20, nhap_hoan_thien=20,
+                nguoi_nhap=self.basic_user
+            )
+        res_prod_filter = self.client.get(reverse('premium_dashboard') + '?prod_filter_xuong=1&prod_filter_to=1&p1=2')
+        self.assertEqual(res_prod_filter.status_code, 200)
+        page_prod = res_prod_filter.context['page_prod']
+        self.assertEqual(page_prod.paginator.count, 12)
+        self.assertEqual(page_prod.paginator.num_pages, 2)
+        self.assertEqual(page_prod.number, 2)
+        self.assertEqual(len(page_prod.object_list), 2)
+
+        # 7. Test bảng KCS (15 bản ghi) lọc theo Mã hàng và Xưởng
+        KcsReport.objects.all().delete()
+        for i in range(15):
+            KcsReport.objects.create(
+                ngay_lam_viec=today,
+                xuong=1 if i < 10 else 2,
+                to=1,
+                ma_hang="AT01", mau="Đỏ", size="N/A",
+                qua_tay=10, dat=10, loi=0, tong_dat=10,
+                nguoi_nhap=self.quanly_user
+            )
+        res_kcs_filter = self.client.get(reverse('premium_dashboard') + '?kcs_filter_xuong=1&p3=1')
+        self.assertEqual(res_kcs_filter.status_code, 200)
+        page_kcs = res_kcs_filter.context['page_kcs']
+        self.assertEqual(page_kcs.paginator.count, 10)
+        self.assertEqual(page_kcs.paginator.num_pages, 1)
+
+        # 8. Test bảng Hoàn thiện (18 bản ghi) lọc theo Màu
+        FinishingReport.objects.all().delete()
+        for i in range(18):
+            FinishingReport.objects.create(
+                ngay_lam_viec=today,
+                ma_hang="AT01", mau="Đỏ" if i < 14 else "Xanh", size="N/A",
+                the_bai=10, gap_hang=10, treo_dong_thung=10,
+                nguoi_nhap=self.finishing_user
+            )
+        res_fin_filter = self.client.get(reverse('premium_dashboard') + '?fin_filter_mau=%C4%90%E1%BB%8F&p2=2')
+        self.assertEqual(res_fin_filter.status_code, 200)
+        page_fin = res_fin_filter.context['page_fin']
+        self.assertEqual(page_fin.paginator.count, 14)
+        self.assertEqual(page_fin.paginator.num_pages, 2)
+        self.assertEqual(page_fin.number, 2)
+        self.assertEqual(len(page_fin.object_list), 4)
+

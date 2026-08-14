@@ -1,21 +1,62 @@
 /**
- * Excel-Style Column Filtering for Tables
- * Supports multi-column filtering, search within filter, select all / deselect all,
- * active filter indicators, and real-time client-side table row updates.
+ * Server-Side Excel-Style Column Filtering for Dashboard Tables
+ * - Reads filter configuration and distinct dataset options from server (via JSON script #excel-filter-config)
+ * - Highlights active filter buttons with orange badge and funnel icon
+ * - Allows searching inside filter options, Select All / Deselect All
+ * - When "Áp dụng" is clicked, navigates to the URL with updated GET query parameters,
+ *   filtering the entire dataset across the database and resetting that table's page to 1
+ * - When changing pagination pages, all active filters are preserved
+ * - When "Xóa lọc" is clicked, removes that column's parameter from URL and reloads
  */
 
 (function() {
     'use strict';
 
-    // Store active filters per table: Map<HTMLTableElement, Map<colIndex, Set<string>>>
-    const tableFilters = new Map();
+    let filterConfig = {};
     let currentTable = null;
+    let currentTableType = null;
     let currentColumn = null;
+    let currentColConfig = null;
     let currentBtn = null;
     let popupEl = null;
 
     const SVG_DOWN_ARROW = `<svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>`;
     const SVG_FUNNEL_ACTIVE = `<svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>`;
+
+    function loadConfig() {
+        const scriptEl = document.getElementById('excel-filter-config');
+        if (scriptEl) {
+            try {
+                filterConfig = JSON.parse(scriptEl.textContent);
+            } catch (e) {
+                console.error("Error parsing excel-filter-config:", e);
+                filterConfig = {};
+            }
+        }
+    }
+
+    function updateButtonIndicators() {
+        const filterBtns = document.querySelectorAll('.excel-filter-btn');
+        filterBtns.forEach(btn => {
+            const table = btn.closest('table');
+            const tableType = table ? table.getAttribute('data-table-type') : null;
+            const colKey = btn.getAttribute('data-col');
+
+            if (tableType && filterConfig[tableType] && filterConfig[tableType].columns[colKey]) {
+                const colConf = filterConfig[tableType].columns[colKey];
+                const selected = colConf.selected || [];
+                if (selected.length > 0) {
+                    btn.classList.add('is-filtered');
+                    btn.innerHTML = SVG_FUNNEL_ACTIVE;
+                    btn.title = `Đang lọc ${colConf.title}: ${selected.join(', ')}`;
+                } else {
+                    btn.classList.remove('is-filtered');
+                    btn.innerHTML = SVG_DOWN_ARROW;
+                    btn.title = `Lọc ${colConf.title}`;
+                }
+            }
+        });
+    }
 
     function createPopup() {
         if (popupEl) return;
@@ -45,7 +86,6 @@
         `;
         document.body.appendChild(popupEl);
 
-        // Event listeners for popup elements
         document.getElementById('ef-close-btn').addEventListener('click', hidePopup);
         document.getElementById('ef-btn-clear').addEventListener('click', clearCurrentColumnFilter);
         document.getElementById('ef-btn-apply').addEventListener('click', applyCurrentColumnFilter);
@@ -126,60 +166,30 @@
         }
     }
 
-    function getDistinctValues(table, colIndex) {
-        const rows = table.querySelectorAll('tbody tr:not(.empty-row):not(.filter-empty-row)');
-        const valuesSet = new Set();
-
-        rows.forEach(row => {
-            const cells = row.children;
-            if (cells && cells.length > colIndex) {
-                // If this cell has colspan, skip or handle
-                const cell = cells[colIndex];
-                if (cell) {
-                    const text = cell.textContent.trim();
-                    if (text && !cell.classList.contains('empty')) {
-                        valuesSet.add(text);
-                    }
-                }
-            }
-        });
-
-        const values = Array.from(valuesSet);
-        // Sort values: try numeric, then locale
-        values.sort((a, b) => {
-            const numA = Number(a);
-            const numB = Number(b);
-            if (!isNaN(numA) && !isNaN(numB)) {
-                return numA - numB;
-            }
-            return a.localeCompare(b, 'vi', { numeric: true });
-        });
-
-        return values;
-    }
-
     function showPopup(btn) {
         createPopup();
 
         currentBtn = btn;
         currentTable = btn.closest('table');
-        currentColumn = parseInt(btn.getAttribute('data-col'), 10);
-        const colTitle = btn.getAttribute('data-title') || 'cột';
+        currentTableType = currentTable ? currentTable.getAttribute('data-table-type') : null;
+        currentColumn = btn.getAttribute('data-col');
+
+        if (!currentTableType || !filterConfig[currentTableType] || !filterConfig[currentTableType].columns[currentColumn]) {
+            console.warn("No filter config found for", currentTableType, currentColumn);
+            return;
+        }
+
+        currentColConfig = filterConfig[currentTableType].columns[currentColumn];
+        const colTitle = currentColConfig.title || btn.getAttribute('data-title') || 'cột';
 
         document.getElementById('ef-popup-title').textContent = `Lọc: ${colTitle}`;
         const searchInput = document.getElementById('ef-search-input');
         searchInput.value = '';
 
-        // Get all distinct values in this column
-        const distinctVals = getDistinctValues(currentTable, currentColumn);
+        const distinctVals = currentColConfig.options || [];
+        const selectedVals = new Set(currentColConfig.selected || []);
         const listContainer = document.getElementById('ef-list');
         listContainer.innerHTML = '';
-
-        if (!tableFilters.has(currentTable)) {
-            tableFilters.set(currentTable, new Map());
-        }
-        const activeTableFilters = tableFilters.get(currentTable);
-        const activeColumnFilter = activeTableFilters.get(currentColumn); // Set or undefined
 
         if (distinctVals.length === 0) {
             listContainer.innerHTML = `<div style="padding:10px 12px; color:#888; font-style:italic;">(Không có dữ liệu)</div>`;
@@ -187,7 +197,7 @@
         } else {
             document.getElementById('ef-select-all-label').style.display = 'flex';
             distinctVals.forEach(val => {
-                const isChecked = activeColumnFilter ? activeColumnFilter.has(val) : true;
+                const isChecked = selectedVals.size > 0 ? selectedVals.has(val) : true;
                 const label = document.createElement('label');
                 label.className = 'ef-option-item';
                 label.setAttribute('data-value', val);
@@ -238,90 +248,58 @@
         }
         currentBtn = null;
         currentTable = null;
+        currentTableType = null;
         currentColumn = null;
+        currentColConfig = null;
     }
 
     function applyCurrentColumnFilter() {
-        if (!currentTable || currentColumn === null || !currentBtn) return;
+        if (!currentTableType || !currentColConfig || !filterConfig[currentTableType]) return;
 
-        const distinctVals = getDistinctValues(currentTable, currentColumn);
+        const distinctVals = currentColConfig.options || [];
         const checkedBoxes = popupEl.querySelectorAll('#ef-list input[type="checkbox"]:checked');
-        const selectedVals = new Set(Array.from(checkedBoxes).map(cb => cb.value));
+        const selectedVals = Array.from(checkedBoxes).map(cb => cb.value);
 
-        const activeTableFilters = tableFilters.get(currentTable);
+        const url = new URL(window.location.href);
+        const params = url.searchParams;
 
-        // If all are selected (or none are available), no filtering is active on this column
-        if (selectedVals.size >= distinctVals.length || selectedVals.size === 0 && distinctVals.length === 0) {
-            activeTableFilters.delete(currentColumn);
-            currentBtn.classList.remove('is-filtered');
-            currentBtn.innerHTML = SVG_DOWN_ARROW;
-            currentBtn.title = `Lọc ${currentBtn.getAttribute('data-title') || ''}`;
-        } else {
-            activeTableFilters.set(currentColumn, selectedVals);
-            currentBtn.classList.add('is-filtered');
-            currentBtn.innerHTML = SVG_FUNNEL_ACTIVE;
-            currentBtn.title = `Đang lọc: ${selectedVals.size}/${distinctVals.length} giá trị`;
+        // Remove existing query params for this column filter
+        params.delete(currentColConfig.param);
+
+        // If not all are selected and at least one is selected, append them
+        if (selectedVals.length < distinctVals.length && selectedVals.length > 0) {
+            selectedVals.forEach(val => {
+                params.append(currentColConfig.param, val);
+            });
         }
 
-        applyAllFilters(currentTable);
+        // Reset page for this table to 1
+        const pageParam = filterConfig[currentTableType].page_param;
+        if (pageParam) {
+            params.set(pageParam, '1');
+        }
+
         hidePopup();
+        window.location.href = url.pathname + '?' + params.toString();
     }
 
     function clearCurrentColumnFilter() {
-        if (!currentTable || currentColumn === null || !currentBtn) return;
+        if (!currentTableType || !currentColConfig || !filterConfig[currentTableType]) return;
 
-        const activeTableFilters = tableFilters.get(currentTable);
-        activeTableFilters.delete(currentColumn);
+        const url = new URL(window.location.href);
+        const params = url.searchParams;
 
-        currentBtn.classList.remove('is-filtered');
-        currentBtn.innerHTML = SVG_DOWN_ARROW;
-        currentBtn.title = `Lọc ${currentBtn.getAttribute('data-title') || ''}`;
+        // Remove query param for this filter
+        params.delete(currentColConfig.param);
 
-        applyAllFilters(currentTable);
-        hidePopup();
-    }
-
-    function applyAllFilters(table) {
-        if (!table) return;
-
-        const activeTableFilters = tableFilters.get(table) || new Map();
-        const rows = table.querySelectorAll('tbody tr:not(.empty):not(.filter-empty-row)');
-        let visibleCount = 0;
-
-        rows.forEach(row => {
-            // Check if this row is the backend empty message
-            if (row.querySelector('td.empty')) return;
-
-            let isRowVisible = true;
-            for (const [colIdx, allowedSet] of activeTableFilters.entries()) {
-                const cell = row.children[colIdx];
-                if (cell) {
-                    const text = cell.textContent.trim();
-                    if (!allowedSet.has(text)) {
-                        isRowVisible = false;
-                        break;
-                    }
-                }
-            }
-
-            row.style.display = isRowVisible ? '' : 'none';
-            if (isRowVisible) visibleCount++;
-        });
-
-        // Manage dynamic empty state if all rows filtered out
-        let filterEmptyRow = table.querySelector('.filter-empty-row');
-        if (visibleCount === 0 && rows.length > 0) {
-            if (!filterEmptyRow) {
-                filterEmptyRow = document.createElement('tr');
-                filterEmptyRow.className = 'filter-empty-row';
-                filterEmptyRow.innerHTML = `<td colspan="30" style="text-align:center; color:#e74c3c; padding:18px; font-style:italic; background:#fff9f9;">Không có dữ liệu phù hợp với bộ lọc cột hiện tại.</td>`;
-                const tbody = table.querySelector('tbody');
-                if (tbody) tbody.appendChild(filterEmptyRow);
-            }
-            filterEmptyRow.style.display = '';
-        } else if (filterEmptyRow) {
-            filterEmptyRow.style.display = 'none';
+        // Reset page for this table to 1
+        const pageParam = filterConfig[currentTableType].page_param;
+        if (pageParam) {
+            params.set(pageParam, '1');
         }
+
+        hidePopup();
+        window.location.href = url.pathname + '?' + params.toString();
     }
 
     function escapeHtml(text) {
@@ -330,8 +308,10 @@
         return div.innerHTML;
     }
 
-    // Initialize all Excel filter buttons
     function initExcelFilters() {
+        loadConfig();
+        updateButtonIndicators();
+
         document.addEventListener('click', function(e) {
             const btn = e.target.closest('.excel-filter-btn');
             if (btn) {

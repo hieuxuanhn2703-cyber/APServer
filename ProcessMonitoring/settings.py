@@ -51,7 +51,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'Working.middleware.LoginRequiredMiddleware',
 ]
+
+LOGIN_URL = 'login'
 
 ROOT_URLCONF = 'ProcessMonitoring.urls'
 
@@ -66,6 +69,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'libraries': {
+                'dashboard_tags': 'Working.templatetags.dashboard_tags',
+            },
         },
     },
 ]

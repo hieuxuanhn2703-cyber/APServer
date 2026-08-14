@@ -1,4 +1,4 @@
-{% load static %}
+{% load static dashboard_tags %}
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -287,7 +287,7 @@
                         </div>
                         <div style="display: flex; gap: 5px;">
                             <button type="submit" style="padding: 4px 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">Lọc</button>
-                            <a href="{% url 'premium_dashboard' %}?prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}"
+                            <a href="{% url_replace cut_start_date='' cut_end_date='' p4=1 %}"
                                 style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
                         </div>
                     </form>
@@ -297,7 +297,7 @@
                 </div>
 
                 <div class="table-wrapper">
-                    <table>
+                    <table data-table-type="cut">
                         <thead>
                             <tr>
                                 <th rowspan="2">
@@ -420,13 +420,13 @@
                 <!-- Phân trang Cắt -->
                 <div style="margin-top: 15px; text-align: center;">
                     {% if page_cut.has_previous %}
-                    <a href="?p4=1&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Đầu</a>
-                    <a href="?p4={{ page_cut.previous_page_number }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Trước</a>
+                    <a href="{% url_replace p4=1 %}">Đầu</a>
+                    <a href="{% url_replace p4=page_cut.previous_page_number %}">Trước</a>
                     {% endif %}
                     <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_cut.number }} / {{ page_cut.paginator.num_pages }}</span>
                     {% if page_cut.has_next %}
-                    <a href="?p4={{ page_cut.next_page_number }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Sau</a>
-                    <a href="?p4={{ page_cut.paginator.num_pages }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}">Cuối</a>
+                    <a href="{% url_replace p4=page_cut.next_page_number %}">Sau</a>
+                    <a href="{% url_replace p4=page_cut.paginator.num_pages %}">Cuối</a>
                     {% endif %}
                 </div>
             </div>
@@ -457,7 +457,7 @@
                         </div>
                         <div style="display: flex; gap: 5px;">
                             <button type="submit" style="padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">Lọc</button>
-                            <a href="{% url 'premium_dashboard' %}?fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}"
+                            <a href="{% url_replace prod_start_date='' prod_end_date='' p1=1 %}"
                                 style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
                         </div>
                     </form>
@@ -468,7 +468,7 @@
 
                 <!-- Bảng cho màn hình rộng (Desktop) -->
                 <div class="table-wrapper">
-                    <table>
+                    <table data-table-type="prod">
                         <thead>
                             <tr>
                                 {% for header in prod_headers %}
@@ -542,13 +542,13 @@
                 <!-- Phân trang Sản xuất -->
                 <div style="margin-top: 15px; text-align: center;">
                     {% if page_prod.has_previous %}
-                    <a href="?p1=1&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Đầu</a>
-                    <a href="?p1={{ page_prod.previous_page_number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Trước</a>
+                    <a href="{% url_replace p1=1 %}">Đầu</a>
+                    <a href="{% url_replace p1=page_prod.previous_page_number %}">Trước</a>
                     {% endif %}
                     <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_prod.number }} / {{ page_prod.paginator.num_pages }}</span>
                     {% if page_prod.has_next %}
-                    <a href="?p1={{ page_prod.next_page_number }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Sau</a>
-                    <a href="?p1={{ page_prod.paginator.num_pages }}&p2={{ page_fin.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Cuối</a>
+                    <a href="{% url_replace p1=page_prod.next_page_number %}">Sau</a>
+                    <a href="{% url_replace p1=page_prod.paginator.num_pages %}">Cuối</a>
                     {% endif %}
                 </div>
             </div>
@@ -579,7 +579,7 @@
                         </div>
                         <div style="display: flex; gap: 5px;">
                             <button type="submit" style="padding: 4px 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">Lọc</button>
-                            <a href="{% url 'premium_dashboard' %}?prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p4={{ page_cut.number }}"
+                            <a href="{% url_replace kcs_start_date='' kcs_end_date='' p3=1 %}"
                                 style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
                         </div>
                     </form>
@@ -589,7 +589,7 @@
                 </div>
 
                 <div class="table-wrapper">
-                    <table>
+                    <table data-table-type="kcs">
                         <thead>
                             <tr>
                                 <th rowspan="2">
@@ -734,13 +734,13 @@
                 <!-- Phân trang KCS -->
                 <div style="margin-top: 15px; text-align: center;">
                     {% if page_kcs.has_previous %}
-                    <a href="?p3=1&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p4={{ page_cut.number }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Đầu</a>
-                    <a href="?p3={{ page_kcs.previous_page_number }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p4={{ page_cut.number }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Trước</a>
+                    <a href="{% url_replace p3=1 %}">Đầu</a>
+                    <a href="{% url_replace p3=page_kcs.previous_page_number %}">Trước</a>
                     {% endif %}
                     <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_kcs.number }} / {{ page_kcs.paginator.num_pages }}</span>
                     {% if page_kcs.has_next %}
-                    <a href="?p3={{ page_kcs.next_page_number }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p4={{ page_cut.number }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Sau</a>
-                    <a href="?p3={{ page_kcs.paginator.num_pages }}&p1={{ page_prod.number }}&p2={{ page_fin.number }}&p4={{ page_cut.number }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Cuối</a>
+                    <a href="{% url_replace p3=page_kcs.next_page_number %}">Sau</a>
+                    <a href="{% url_replace p3=page_kcs.paginator.num_pages %}">Cuối</a>
                     {% endif %}
                 </div>
             </div>
@@ -771,7 +771,7 @@
                         </div>
                         <div style="display: flex; gap: 5px;">
                             <button type="submit" style="padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">Lọc</button>
-                            <a href="{% url 'premium_dashboard' %}?prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}&p1={{ page_prod.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}"
+                            <a href="{% url_replace fin_start_date='' fin_end_date='' p2=1 %}"
                                 style="padding: 4px 8px; background: #95a5a6; color: white; border: none; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 0.9em;">Xóa</a>
                         </div>
                     </form>
@@ -782,7 +782,7 @@
 
                 <!-- Bảng cho màn hình rộng (Desktop) -->
                 <div class="table-wrapper">
-                    <table>
+                    <table data-table-type="fin">
                         <thead>
                             <tr>
                                 <th rowspan="2">
@@ -902,13 +902,13 @@
                 <!-- Phân trang Hoàn thiện -->
                 <div style="margin-top: 15px; text-align: center;">
                     {% if page_fin.has_previous %}
-                    <a href="?p2=1&p1={{ page_prod.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Đầu</a>
-                    <a href="?p2={{ page_fin.previous_page_number }}&p1={{ page_prod.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Trước</a>
+                    <a href="{% url_replace p2=1 %}">Đầu</a>
+                    <a href="{% url_replace p2=page_fin.previous_page_number %}">Trước</a>
                     {% endif %}
                     <span style="padding: 0 10px; font-size: 0.9em; font-weight: bold;">Trang {{ page_fin.number }} / {{ page_fin.paginator.num_pages }}</span>
                     {% if page_fin.has_next %}
-                    <a href="?p2={{ page_fin.next_page_number }}&p1={{ page_prod.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Sau</a>
-                    <a href="?p2={{ page_fin.paginator.num_pages }}&p1={{ page_prod.number }}&p3={{ page_kcs.number }}&p4={{ page_cut.number }}&fin_start_date={{ fin_start_date }}&fin_end_date={{ fin_end_date }}&prod_start_date={{ prod_start_date }}&prod_end_date={{ prod_end_date }}&kcs_start_date={{ kcs_start_date }}&kcs_end_date={{ kcs_end_date }}&cut_start_date={{ cut_start_date }}&cut_end_date={{ cut_end_date }}">Cuối</a>
+                    <a href="{% url_replace p2=page_fin.next_page_number %}">Sau</a>
+                    <a href="{% url_replace p2=page_fin.paginator.num_pages %}">Cuối</a>
                     {% endif %}
                 </div>
             </div>
@@ -916,6 +916,7 @@
         </div>
     </div>
 
+    {{ excel_filter_config|json_script:"excel-filter-config" }}
     <script src="{% static 'working/js/excel_filter.js' %}"></script>
 </body>
 

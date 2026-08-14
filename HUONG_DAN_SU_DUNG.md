@@ -17,6 +17,7 @@ Chào mừng bạn đến với Hệ thống Quản lý và Theo dõi Tiến đ�
   - **Quản lý** – cán bộ quản lý tổng hợp
 - **Lưu ý:** Tài khoản mới sẽ ở trạng thái *Chờ duyệt*. Bạn cần báo cho Admin phê duyệt thì mới có thể đăng nhập.
 - **Đăng nhập:** Nhập Tên tài khoản và Mật khẩu. Hệ thống tự chuyển hướng vào màn hình làm việc đúng với vai trò của bạn.
+- **Bảo mật truy cập:** Trường hợp người dùng **chưa đăng nhập** mà truy cập vào bất kỳ đường dẫn nào trên hệ thống, hệ thống sẽ **tự động chuyển hướng về trang Đăng nhập (`/login/`)**.
 
 ### 2. Đổi mật khẩu
 Khi đã đăng nhập, bấm nút **"Đổi mật khẩu"** ở góc trên trang để tự đổi mật khẩu cá nhân.
@@ -92,13 +93,16 @@ Ngay khi đăng nhập, Quản lý thấy **Dashboard Dữ Liệu** với **4 b�
 
 - **Lọc thời gian độc lập**: Mỗi bảng có bộ lọc riêng (Từ ngày – Đến ngày). Lọc bảng này không ảnh hưởng bảng kia.
 - **Quy tắc tính ô Ngày / Tổng (Lũy kế theo thời gian)**: Số Tổng ở góc dưới ô chéo là **tổng lũy kế** của lần nhập đó cộng với tất cả các lần nhập trước đó (cùng Mã hàng + Màu). Khi có các lần nhập mới sau đó, giá trị Tổng của lần nhập cũ vẫn giữ nguyên không đổi.
-- **Bộ lọc dạng Excel trên từng cột (Desktop)**: Các cột **Người nhập, Mã hàng, Màu, Xưởng, Tổ** trên cả 4 bảng đều có nút lọc `[▼]` giống Excel:
+- **Bộ lọc dạng Excel trên từng cột (Lọc liên tầng, Toàn bộ dữ liệu & Giữ lọc khi đổi trang)**: Các cột **Người nhập, Mã hàng, Màu, Xưởng, Tổ** trên cả 4 bảng đều có nút lọc `[▼]` giống Excel:
+  - **Lọc liên tầng (Cascading Filter)**: Khi lọc một hoặc nhiều cột (ví dụ Mã hàng = AT01), popup của các cột khác (ví dụ Màu) sẽ tự động thu hẹp và **chỉ hiển thị những giá trị thực tế của các dòng đã được lọc** bởi các bộ lọc trước đó, hoàn toàn giống cách hoạt động của Excel.
   - Bấm vào nút `[▼]` trên tiêu đề cột để mở popup danh sách các giá trị phân biệt.
-  - Hỗ trợ ô **Tìm kiếm**, checkbox **(Chọn tất cả)**, chọn lọc đa giá trị linh hoạt.
-  - Hỗ trợ lọc kết hợp nhiều cột cùng lúc trong bảng. Cột đang có bộ lọc sẽ đổi màu cam nổi bật kèm biểu tượng phễu lọc.
-  - Bấm **"Áp dụng"** để lọc ngay lập tức trên bảng hoặc **"Xóa lọc"** để bỏ lọc cột đó.
+  - Hỗ trợ ô **Tìm kiếm**, checkbox **(Chọn tất cả)**, chọn lọc nhiều giá trị linh hoạt.
+  - Khi ấn **"Áp dụng"**, hệ thống sẽ **lọc trên toàn bộ dữ liệu** trong cơ sở dữ liệu, sau đó phân trang hiển thị tối đa 10 hàng/trang.
+  - Khi **chuyển trang** (Trang 1, 2, Sau, Cuối...), hệ thống **tự động giữ nguyên tất cả các bộ lọc cột đang chọn**.
+  - Cột đang có bộ lọc sẽ đổi màu cam nổi bật kèm biểu tượng phễu lọc.
+  - Bấm **"Xóa lọc"** trên popup để hủy lọc cột đó.
 - **Xuất Excel**: Ấn nút **Xuất Excel** của từng bảng để tải file dữ liệu đã lọc.
-- **Phân trang**: Mỗi bảng hiển thị tối đa **10 hàng dữ liệu** trên một trang và phân trang độc lập, chuyển trang bảng này không mất trang của bảng kia.
+- **Phân trang**: Mỗi bảng hiển thị tối đa **10 hàng dữ liệu** trên một trang và phân trang độc lập, chuyển trang bảng này không mất trang của bảng kia và bảo toàn toàn bộ bộ lọc.
 
 ### 2. Nhập Dữ Liệu Nhanh (Top-bar)
 Từ Dashboard, Quản lý có thể truy cập nhanh:

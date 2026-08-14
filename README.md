@@ -22,7 +22,7 @@ Hệ thống phân chia người dùng thành **6 vai trò (Role)** chặt chẽ
 ### Các tính năng liên quan đến tài khoản:
 - **Đăng ký & Phê duyệt**: Người dùng đăng ký sẽ ở trạng thái *Chờ duyệt*. Chỉ Admin mới có thể duyệt, khóa hoặc xóa tài khoản.
 - **Đổi mật khẩu**: Mọi tài khoản đều có thể tự đổi mật khẩu.
-- **Bảo mật phân quyền**: Mọi URL đều được kiểm tra quyền chính xác (HTTP 403 nếu sai quyền, redirect về Login nếu chưa đăng nhập).
+- **Bảo mật & Chuyển hướng tự động**: Mọi trang trong hệ thống đều yêu cầu đăng nhập. Nếu người dùng chưa đăng nhập (hoặc tài khoản chưa duyệt / session không hợp lệ) mà truy cập bất kỳ trang web nào, hệ thống sẽ **tự động chuyển hướng về trang Login (`/login/`)**. Khi đã đăng nhập, mọi URL đều được kiểm tra quyền chính xác (HTTP 403 nếu sai quyền).
 
 ---
 
@@ -61,12 +61,15 @@ Các công đoạn: **Thẻ bài, Gấp hàng, Treo/Đóng thùng**.
    - **Tổng hợp KCS**: Xưởng, Tổ, Tổng SL Đơn hàng, Qua tay, Đạt, Lỗi, Tổng đạt (Ngày / Tổng).
    - **Tổng hợp Hoàn thiện**: Tổng SL Đơn hàng, Tổng Nhập HT, Thẻ bài, Gấp hàng, Treo/Đóng thùng (Ngày / Tổng).
  - **Quy tắc tính ô Ngày / Tổng**: Số Tổng ở góc dưới ô chéo là **tổng lũy kế** tính đến thời điểm của lần nhập đó (giá trị lần đó + tất cả các lần trước đó). Khi có thêm lần nhập mới sau này, số Tổng của các lần nhập trước vẫn được giữ nguyên.
- - **Bộ lọc Excel trên từng cột (Desktop)**: Các cột **Người nhập, Mã hàng, Màu, Xưởng, Tổ** trên cả 4 bảng tổng hợp đều có nút `[▼]` lọc dữ liệu giống hệt Microsoft Excel:
-  - Bấm vào `[▼]` để mở popup danh sách các giá trị thực tế trong bảng.
-  - Tích hợp ô Tìm kiếm nhanh, tùy chọn (Chọn tất cả), chọn lọc đa giá trị linh hoạt.
-  - Hỗ trợ kết hợp lọc nhiều cột cùng lúc, tự động highlight cột đang lọc kèm biểu tượng phễu lọc.
+ - **Bộ lọc Excel trên từng cột (Lọc liên tầng, Toàn bộ dữ liệu & Giữ lọc khi đổi trang)**: Các cột **Người nhập, Mã hàng, Màu, Xưởng, Tổ** trên cả 4 bảng tổng hợp đều có nút `[▼]` lọc dữ liệu giống hệt Microsoft Excel:
+   - **Lọc liên tầng (Cascading)**: Khi lọc một cột bất kỳ (ví dụ Mã hàng = AT01), popup của các cột khác (ví dụ Màu) chỉ hiển thị các giá trị thuộc về các dòng đã được lọc.
+   - Bấm vào `[▼]` để mở popup danh sách các giá trị thực tế.
+   - Tích hợp ô Tìm kiếm nhanh, tùy chọn (Chọn tất cả), chọn lọc đa giá trị linh hoạt.
+   - Khi áp dụng, hệ thống **lọc trên toàn bộ cơ sở dữ liệu** và phân trang tối đa 10 hàng/trang.
+   - **Khi chuyển trang** (Đầu, Trước, Trang 2, Sau, Cuối...), hệ thống **tự động bảo toàn tất cả các bộ lọc cột đang áp dụng**.
+   - Tự động highlight màu cam nổi bật kèm biểu tượng phễu lọc cho cột đang được lọc.
  - **Bộ lọc thời gian riêng biệt**: Lọc theo ngày cho từng bảng, các bảng khác không bị ảnh hưởng.
- - **Phân trang độc lập (10 hàng/trang)**: Mỗi bảng hiển thị tối đa 10 hàng dữ liệu, chuyển trang độc lập qua tham số `p1`, `p2`, `p3`, `p4`.
+ - **Phân trang độc lập (10 hàng/trang)**: Mỗi bảng hiển thị tối đa 10 hàng dữ liệu, chuyển trang độc lập qua tham số `p1`, `p2`, `p3`, `p4` và bảo toàn toàn bộ bộ lọc.
  - **Xuất Excel từng bảng**: Lấy đúng dữ liệu theo bộ lọc đang áp dụng.
  - **Nút nhập liệu nhanh** (top-bar): Nhập DL Cắt, Nhập DL Sản xuất, Nhập DL KCS, Nhập DL Hoàn thiện, Theo dõi Đơn hàng, Quản lý Mã hàng.
 

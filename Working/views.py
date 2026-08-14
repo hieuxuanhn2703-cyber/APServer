@@ -141,6 +141,19 @@ def _dashboard_prod_report_to_row(report: ProcessReport):
 # ---------- Đăng nhập / Đăng xuất ----------
 
 def login_view(request):
+    if request.method == "GET":
+        current_user = get_current_user(request)
+        if current_user and current_user.is_approved:
+            if current_user.role in ["PREMIUM", "QUAN_LY"]:
+                return redirect("premium_dashboard")
+            elif current_user.role == "HOAN_THIEN":
+                return redirect("finishing_web")
+            elif current_user.role == "KCS":
+                return redirect("kcs_web")
+            elif current_user.role == "NHA_CAT":
+                return redirect("cut_web")
+            return redirect("web")
+
     error = None
     if request.method == "POST":
         account = request.POST.get("account", "").strip()
@@ -1039,6 +1052,36 @@ def _dashboard_finishing_report_to_row(report, color_map, fin_cumulative_map, pr
 
 from django.core.paginator import Paginator
 
+def _clean_options(raw_list):
+    cleaned = []
+    for item in raw_list:
+        if item is not None:
+            s = str(item).strip()
+            if s and s not in cleaned:
+                cleaned.append(s)
+    def sort_key(v):
+        try:
+            return (0, int(v))
+        except ValueError:
+            return (1, v.lower())
+    cleaned.sort(key=sort_key)
+    return cleaned
+
+
+def _get_cascade_options(base_qs, active_filters, current_col_key, val_field):
+    """
+    base_qs: QuerySet đã lọc theo ngày
+    active_filters: dict {col_key: (lookup_expression, list_values)}
+    current_col_key: key của cột đang tính options (bỏ qua điều kiện lọc của chính nó để xem tất cả lựa chọn khả dĩ)
+    val_field: tên trường để lấy danh sách distinct
+    """
+    qs = base_qs
+    for key, (lookup, vals) in active_filters.items():
+        if key != current_col_key and vals:
+            qs = qs.filter(**{lookup: vals})
+    return list(qs.values_list(val_field, flat=True).distinct())
+
+
 @login_required
 def premium_dashboard_view(request):
     current_user = get_current_user(request)
@@ -1054,36 +1097,153 @@ def premium_dashboard_view(request):
     cut_start_date = request.GET.get('cut_start_date')
     cut_end_date = request.GET.get('cut_end_date')
     
-    prod_qs = ProcessReport.objects.select_related('nguoi_nhap').all()
-    fin_qs = FinishingReport.objects.select_related('nguoi_nhap').all()
-    kcs_qs = KcsReport.objects.select_related('nguoi_nhap').all()
-    cut_qs = CutReport.objects.select_related('nguoi_nhap').all()
-    
     prod_s, prod_e = parse_date_range(prod_start_date, prod_end_date)
     fin_s, fin_e = parse_date_range(fin_start_date, fin_end_date)
     kcs_s, kcs_e = parse_date_range(kcs_start_date, kcs_end_date)
     cut_s, cut_e = parse_date_range(cut_start_date, cut_end_date)
-    
-    if prod_s:
-        prod_qs = prod_qs.filter(created_at__gte=prod_s)
-    if prod_e:
-        prod_qs = prod_qs.filter(created_at__lte=prod_e)
-        
-    if fin_s:
-        fin_qs = fin_qs.filter(created_at__gte=fin_s)
-    if fin_e:
-        fin_qs = fin_qs.filter(created_at__lte=fin_e)
-        
-    if kcs_s:
-        kcs_qs = kcs_qs.filter(created_at__gte=kcs_s)
-    if kcs_e:
-        kcs_qs = kcs_qs.filter(created_at__lte=kcs_e)
-        
+
+    # 1. BẢNG CẮT - Lọc ngày & lọc cột (Cascading options)
+    cut_base_qs = CutReport.objects.select_related('nguoi_nhap').all()
     if cut_s:
-        cut_qs = cut_qs.filter(created_at__gte=cut_s)
+        cut_base_qs = cut_base_qs.filter(created_at__gte=cut_s)
     if cut_e:
-        cut_qs = cut_qs.filter(created_at__lte=cut_e)
-        
+        cut_base_qs = cut_base_qs.filter(created_at__lte=cut_e)
+
+    cut_filter_nguoi_nhap = [v for v in request.GET.getlist('cut_filter_nguoi_nhap') if v]
+    cut_filter_ma_hang = [v for v in request.GET.getlist('cut_filter_ma_hang') if v]
+    cut_filter_mau = [v for v in request.GET.getlist('cut_filter_mau') if v]
+
+    cut_filters = {
+        'nguoi_nhap': ('nguoi_nhap__name__in', cut_filter_nguoi_nhap),
+        'ma_hang': ('ma_hang__in', cut_filter_ma_hang),
+        'mau': ('mau__in', cut_filter_mau),
+    }
+
+    cut_opt_nguoi_nhap = _get_cascade_options(cut_base_qs, cut_filters, 'nguoi_nhap', 'nguoi_nhap__name')
+    cut_opt_ma_hang = _get_cascade_options(cut_base_qs, cut_filters, 'ma_hang', 'ma_hang')
+    cut_opt_mau = _get_cascade_options(cut_base_qs, cut_filters, 'mau', 'mau')
+
+    cut_qs = cut_base_qs
+    if cut_filter_nguoi_nhap:
+        cut_qs = cut_qs.filter(nguoi_nhap__name__in=cut_filter_nguoi_nhap)
+    if cut_filter_ma_hang:
+        cut_qs = cut_qs.filter(ma_hang__in=cut_filter_ma_hang)
+    if cut_filter_mau:
+        cut_qs = cut_qs.filter(mau__in=cut_filter_mau)
+
+    # 2. BẢNG SẢN XUẤT - Lọc ngày & lọc cột (Cascading options)
+    prod_base_qs = ProcessReport.objects.select_related('nguoi_nhap').all()
+    if prod_s:
+        prod_base_qs = prod_base_qs.filter(created_at__gte=prod_s)
+    if prod_e:
+        prod_base_qs = prod_base_qs.filter(created_at__lte=prod_e)
+
+    prod_filter_nguoi_nhap = [v for v in request.GET.getlist('prod_filter_nguoi_nhap') if v]
+    prod_filter_xuong = [v for v in request.GET.getlist('prod_filter_xuong') if v]
+    prod_filter_to = [v for v in request.GET.getlist('prod_filter_to') if v]
+    prod_filter_ma_hang = [v for v in request.GET.getlist('prod_filter_ma_hang') if v]
+    prod_filter_mau = [v for v in request.GET.getlist('prod_filter_mau') if v]
+
+    prod_xuong_ints = [int(x) for x in prod_filter_xuong if str(x).isdigit()]
+    prod_to_ints = [int(x) for x in prod_filter_to if str(x).isdigit()]
+
+    prod_filters = {
+        'nguoi_nhap': ('nguoi_nhap__name__in', prod_filter_nguoi_nhap),
+        'xuong': ('xuong__in', prod_xuong_ints),
+        'to': ('to__in', prod_to_ints),
+        'ma_hang': ('ma_hang__in', prod_filter_ma_hang),
+        'mau': ('mau__in', prod_filter_mau),
+    }
+
+    prod_opt_nguoi_nhap = _get_cascade_options(prod_base_qs, prod_filters, 'nguoi_nhap', 'nguoi_nhap__name')
+    prod_opt_xuong = _get_cascade_options(prod_base_qs, prod_filters, 'xuong', 'xuong')
+    prod_opt_to = _get_cascade_options(prod_base_qs, prod_filters, 'to', 'to')
+    prod_opt_ma_hang = _get_cascade_options(prod_base_qs, prod_filters, 'ma_hang', 'ma_hang')
+    prod_opt_mau = _get_cascade_options(prod_base_qs, prod_filters, 'mau', 'mau')
+
+    prod_qs = prod_base_qs
+    if prod_filter_nguoi_nhap:
+        prod_qs = prod_qs.filter(nguoi_nhap__name__in=prod_filter_nguoi_nhap)
+    if prod_filter_xuong:
+        prod_qs = prod_qs.filter(xuong__in=prod_xuong_ints)
+    if prod_filter_to:
+        prod_qs = prod_qs.filter(to__in=prod_to_ints)
+    if prod_filter_ma_hang:
+        prod_qs = prod_qs.filter(ma_hang__in=prod_filter_ma_hang)
+    if prod_filter_mau:
+        prod_qs = prod_qs.filter(mau__in=prod_filter_mau)
+
+    # 3. BẢNG KCS - Lọc ngày & lọc cột (Cascading options)
+    kcs_base_qs = KcsReport.objects.select_related('nguoi_nhap').all()
+    if kcs_s:
+        kcs_base_qs = kcs_base_qs.filter(created_at__gte=kcs_s)
+    if kcs_e:
+        kcs_base_qs = kcs_base_qs.filter(created_at__lte=kcs_e)
+
+    kcs_filter_nguoi_nhap = [v for v in request.GET.getlist('kcs_filter_nguoi_nhap') if v]
+    kcs_filter_ma_hang = [v for v in request.GET.getlist('kcs_filter_ma_hang') if v]
+    kcs_filter_mau = [v for v in request.GET.getlist('kcs_filter_mau') if v]
+    kcs_filter_xuong = [v for v in request.GET.getlist('kcs_filter_xuong') if v]
+    kcs_filter_to = [v for v in request.GET.getlist('kcs_filter_to') if v]
+
+    kcs_xuong_ints = [int(x) for x in kcs_filter_xuong if str(x).isdigit()]
+    kcs_to_ints = [int(x) for x in kcs_filter_to if str(x).isdigit()]
+
+    kcs_filters = {
+        'nguoi_nhap': ('nguoi_nhap__name__in', kcs_filter_nguoi_nhap),
+        'ma_hang': ('ma_hang__in', kcs_filter_ma_hang),
+        'mau': ('mau__in', kcs_filter_mau),
+        'xuong': ('xuong__in', kcs_xuong_ints),
+        'to': ('to__in', kcs_to_ints),
+    }
+
+    kcs_opt_nguoi_nhap = _get_cascade_options(kcs_base_qs, kcs_filters, 'nguoi_nhap', 'nguoi_nhap__name')
+    kcs_opt_ma_hang = _get_cascade_options(kcs_base_qs, kcs_filters, 'ma_hang', 'ma_hang')
+    kcs_opt_mau = _get_cascade_options(kcs_base_qs, kcs_filters, 'mau', 'mau')
+    kcs_opt_xuong = _get_cascade_options(kcs_base_qs, kcs_filters, 'xuong', 'xuong')
+    kcs_opt_to = _get_cascade_options(kcs_base_qs, kcs_filters, 'to', 'to')
+
+    kcs_qs = kcs_base_qs
+    if kcs_filter_nguoi_nhap:
+        kcs_qs = kcs_qs.filter(nguoi_nhap__name__in=kcs_filter_nguoi_nhap)
+    if kcs_filter_ma_hang:
+        kcs_qs = kcs_qs.filter(ma_hang__in=kcs_filter_ma_hang)
+    if kcs_filter_mau:
+        kcs_qs = kcs_qs.filter(mau__in=kcs_filter_mau)
+    if kcs_filter_xuong:
+        kcs_qs = kcs_qs.filter(xuong__in=kcs_xuong_ints)
+    if kcs_filter_to:
+        kcs_qs = kcs_qs.filter(to__in=kcs_to_ints)
+
+    # 4. BẢNG HOÀN THIỆN - Lọc ngày & lọc cột (Cascading options)
+    fin_base_qs = FinishingReport.objects.select_related('nguoi_nhap').all()
+    if fin_s:
+        fin_base_qs = fin_base_qs.filter(created_at__gte=fin_s)
+    if fin_e:
+        fin_base_qs = fin_base_qs.filter(created_at__lte=fin_e)
+
+    fin_filter_nguoi_nhap = [v for v in request.GET.getlist('fin_filter_nguoi_nhap') if v]
+    fin_filter_ma_hang = [v for v in request.GET.getlist('fin_filter_ma_hang') if v]
+    fin_filter_mau = [v for v in request.GET.getlist('fin_filter_mau') if v]
+
+    fin_filters = {
+        'nguoi_nhap': ('nguoi_nhap__name__in', fin_filter_nguoi_nhap),
+        'ma_hang': ('ma_hang__in', fin_filter_ma_hang),
+        'mau': ('mau__in', fin_filter_mau),
+    }
+
+    fin_opt_nguoi_nhap = _get_cascade_options(fin_base_qs, fin_filters, 'nguoi_nhap', 'nguoi_nhap__name')
+    fin_opt_ma_hang = _get_cascade_options(fin_base_qs, fin_filters, 'ma_hang', 'ma_hang')
+    fin_opt_mau = _get_cascade_options(fin_base_qs, fin_filters, 'mau', 'mau')
+
+    fin_qs = fin_base_qs
+    if fin_filter_nguoi_nhap:
+        fin_qs = fin_qs.filter(nguoi_nhap__name__in=fin_filter_nguoi_nhap)
+    if fin_filter_ma_hang:
+        fin_qs = fin_qs.filter(ma_hang__in=fin_filter_ma_hang)
+    if fin_filter_mau:
+        fin_qs = fin_qs.filter(mau__in=fin_filter_mau)
+
     prod_rows = [_dashboard_prod_report_to_row(r) for r in prod_qs]
     
     color_map = {}
@@ -1151,6 +1311,45 @@ def premium_dashboard_view(request):
         
     cut_rows = [_dashboard_cut_report_to_row(r, color_map, cut_cumulative_map) for r in cut_qs]
 
+    excel_filter_config = {
+        "cut": {
+            "page_param": "p4",
+            "columns": {
+                "0": { "param": "cut_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(cut_opt_nguoi_nhap), "selected": cut_filter_nguoi_nhap },
+                "3": { "param": "cut_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(cut_opt_ma_hang), "selected": cut_filter_ma_hang },
+                "4": { "param": "cut_filter_mau", "title": "Màu", "options": _clean_options(cut_opt_mau), "selected": cut_filter_mau }
+            }
+        },
+        "prod": {
+            "page_param": "p1",
+            "columns": {
+                "0": { "param": "prod_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(prod_opt_nguoi_nhap), "selected": prod_filter_nguoi_nhap },
+                "2": { "param": "prod_filter_xuong", "title": "Xưởng", "options": _clean_options(prod_opt_xuong), "selected": prod_filter_xuong },
+                "3": { "param": "prod_filter_to", "title": "Tổ", "options": _clean_options(prod_opt_to), "selected": prod_filter_to },
+                "5": { "param": "prod_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(prod_opt_ma_hang), "selected": prod_filter_ma_hang },
+                "6": { "param": "prod_filter_mau", "title": "Màu", "options": _clean_options(prod_opt_mau), "selected": prod_filter_mau }
+            }
+        },
+        "kcs": {
+            "page_param": "p3",
+            "columns": {
+                "0": { "param": "kcs_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(kcs_opt_nguoi_nhap), "selected": kcs_filter_nguoi_nhap },
+                "3": { "param": "kcs_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(kcs_opt_ma_hang), "selected": kcs_filter_ma_hang },
+                "4": { "param": "kcs_filter_mau", "title": "Màu", "options": _clean_options(kcs_opt_mau), "selected": kcs_filter_mau },
+                "5": { "param": "kcs_filter_xuong", "title": "Xưởng", "options": _clean_options(kcs_opt_xuong), "selected": kcs_filter_xuong },
+                "6": { "param": "kcs_filter_to", "title": "Tổ", "options": _clean_options(kcs_opt_to), "selected": kcs_filter_to }
+            }
+        },
+        "fin": {
+            "page_param": "p2",
+            "columns": {
+                "0": { "param": "fin_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(fin_opt_nguoi_nhap), "selected": fin_filter_nguoi_nhap },
+                "3": { "param": "fin_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(fin_opt_ma_hang), "selected": fin_filter_ma_hang },
+                "4": { "param": "fin_filter_mau", "title": "Màu", "options": _clean_options(fin_opt_mau), "selected": fin_filter_mau }
+            }
+        }
+    }
+
     prod_paginator = Paginator(prod_rows, 10)
     page_prod_num = request.GET.get('p1')
     page_prod = prod_paginator.get_page(page_prod_num)
@@ -1174,6 +1373,7 @@ def premium_dashboard_view(request):
         "page_fin": page_fin,
         "page_kcs": page_kcs,
         "page_cut": page_cut,
+        "excel_filter_config": excel_filter_config,
         "display_name": current_user.name if current_user else "",
         "prod_start_date": prod_start_date or '',
         "prod_end_date": prod_end_date or '',
