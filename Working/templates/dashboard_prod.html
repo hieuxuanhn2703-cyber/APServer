@@ -1,0 +1,172 @@
+{% load static %}
+{% load dashboard_tags %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tổng Hợp Quy Trình Sản Xuất - ProcessMonitoring</title>
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Tổng Hợp Quy Trình Sản Xuất</h1>
+                        <span class="header-subtitle">Báo cáo & giám sát dữ liệu quy trình may mặc</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="app-content">
+                {% include 'dashboard_nav_tabs.html' %}
+
+                <div class="dash-card fade-in">
+                    <div class="dash-card-header">
+                        <h3 class="dash-card-title">Bảng Tổng Hợp Sản Xuất</h3>
+                        
+                        <form method="GET" class="dash-filter-form">
+                            <div class="dash-date-group">
+                                <label for="prod_start_date">Từ:</label>
+                                <input type="date" id="prod_start_date" name="prod_start_date" value="{{ prod_start_date }}" class="dash-date-input">
+                            </div>
+                            <div class="dash-date-group">
+                                <label for="prod_end_date">Đến:</label>
+                                <input type="date" id="prod_end_date" name="prod_end_date" value="{{ prod_end_date }}" class="dash-date-input">
+                            </div>
+                            <div class="dash-filter-actions">
+                                <button type="submit" class="btn-dash-filter">Lọc</button>
+                                {% if has_filter %}
+                                <a href="{% url 'dashboard_prod' %}" class="btn-dash-clear">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    Xóa tất cả lọc
+                                </a>
+                                {% endif %}
+                            </div>
+                        </form>
+
+                        <a href="{% url 'export_excel' %}?start_date={{ prod_start_date }}&end_date={{ prod_end_date }}" class="btn-dash-excel">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Xuất Excel
+                        </a>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table data-table-type="prod">
+                            <thead>
+                                <tr>
+                                    {% for header in prod_headers %}
+                                    <th>
+                                        {% if header == 'Người nhập' or header == 'Mã hàng' or header == 'Màu' or header == 'Xưởng' or header == 'Tổ' %}
+                                        <div class="th-filter-wrap">
+                                            <span>{{ header }}</span>
+                                            <button type="button" class="excel-filter-btn" data-col="{{ forloop.counter0 }}" data-title="{{ header }}" title="Lọc {{ header }}">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                        {% else %}
+                                        {{ header }}
+                                        {% endif %}
+                                    </th>
+                                    {% endfor %}
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in page_prod %}
+                                <tr>
+                                    {% for cell in row.values %}
+                                    <td>{% if forloop.counter == 6 %}<strong>{{ cell }}</strong>{% else %}{{ cell }}{% endif %}</td>
+                                    {% endfor %}
+                                    <td>
+                                        <div class="action-btn-group">
+                                            <a class="btn btn-warning" href="{% url 'edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
+                                            <form action="{% url 'delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">Xóa</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="16" class="empty">Chưa có dữ liệu nào được nhập.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Card View -->
+                    <div class="card-list">
+                        {% for row in page_prod %}
+                        <div class="data-card">
+                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <strong class="card-title">{{ row.ma_hang }} — {{ row.mau }} (X{{ row.xuong }}-T{{ row.to }})</strong>
+                                <div class="action-btn-group">
+                                    <a class="btn btn-warning" href="{% url 'edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
+                                    <form action="{% url 'delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Xóa</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-row"><span class="label">Người nhập:</span><span class="value">{{ row.nguoi_nhap }}</span></div>
+                                <div class="card-row"><span class="label">Ngày làm việc:</span><span class="value">{{ row.ngay_lam_viec }}</span></div>
+                                <div class="card-row"><span class="label">Số LĐ:</span><span class="value">{{ row.so_luong_ld }}</span></div>
+                                <div class="card-row"><span class="label">Nhận BTP:</span><span class="value">{{ row.nhan_btp }}</span></div>
+                                <div class="card-row"><span class="label">Ra chuyền:</span><span class="value">{{ row.ra_chuyen }}</span></div>
+                                <div class="card-row"><span class="label">Nhập HT:</span><span class="value">{{ row.nhap_hoan_thien }}</span></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_prod.paginator.num_pages > 1 %}
+                    <div class="pagination-container" style="margin-top: 14px; display: flex; justify-content: center; gap: 4px; align-items: center;">
+                        {% if page_prod.has_previous %}
+                        <a href="{% url_replace p1=1 %}" class="page-link">&laquo;</a>
+                        <a href="{% url_replace p1=page_prod.previous_page_number %}" class="page-link">&lsaquo;</a>
+                        {% endif %}
+                        <span class="page-current" style="padding: 4px 10px; font-weight: 600; font-size: 0.8rem; color: #475569;">Trang {{ page_prod.number }} / {{ page_prod.paginator.num_pages }} (Tổng {{ page_prod.paginator.count }} dòng)</span>
+                        {% if page_prod.has_next %}
+                        <a href="{% url_replace p1=page_prod.next_page_number %}" class="page-link">&rsaquo;</a>
+                        <a href="{% url_replace p1=page_prod.paginator.num_pages %}" class="page-link">&raquo;</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    {{ excel_filter_config|json_script:"excel-filter-config" }}
+    <script src="{% static 'working/js/excel_filter.js' %}"></script>
+</body>
+</html>

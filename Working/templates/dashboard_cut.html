@@ -1,0 +1,220 @@
+{% load static %}
+{% load dashboard_tags %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tổng Hợp Quy Trình Cắt - ProcessMonitoring</title>
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Tổng Hợp Quy Trình Cắt</h1>
+                        <span class="header-subtitle">Báo cáo & giám sát dữ liệu quy trình may mặc</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="app-content">
+                {% include 'dashboard_nav_tabs.html' %}
+
+                <div class="dash-card fade-in">
+                    <div class="dash-card-header">
+                        <h3 class="dash-card-title">Bảng Tổng Hợp Cắt</h3>
+                        
+                        <form method="GET" class="dash-filter-form">
+                            <div class="dash-date-group">
+                                <label for="cut_start_date">Từ:</label>
+                                <input type="date" id="cut_start_date" name="cut_start_date" value="{{ cut_start_date }}" class="dash-date-input">
+                            </div>
+                            <div class="dash-date-group">
+                                <label for="cut_end_date">Đến:</label>
+                                <input type="date" id="cut_end_date" name="cut_end_date" value="{{ cut_end_date }}" class="dash-date-input">
+                            </div>
+                            <div class="dash-filter-actions">
+                                <button type="submit" class="btn-dash-filter">Lọc</button>
+                                {% if has_filter %}
+                                <a href="{% url 'dashboard_cut' %}" class="btn-dash-clear">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    Xóa tất cả lọc
+                                </a>
+                                {% endif %}
+                            </div>
+                        </form>
+
+                        <a href="{% url 'cut_export_excel' %}?start_date={{ cut_start_date }}&end_date={{ cut_end_date }}" class="btn-dash-excel">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Xuất Excel
+                        </a>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table data-table-type="cut">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">
+                                        <div class="th-filter-wrap">
+                                            <span>Người nhập</span>
+                                            <button type="button" class="excel-filter-btn" data-col="0" data-title="Người nhập" title="Lọc Người nhập">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th rowspan="2">Ngày làm việc</th>
+                                    <th rowspan="2">Ngày nhập</th>
+                                    <th rowspan="2">
+                                        <div class="th-filter-wrap">
+                                            <span>Mã hàng</span>
+                                            <button type="button" class="excel-filter-btn" data-col="3" data-title="Mã hàng" title="Lọc Mã hàng">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th rowspan="2">
+                                        <div class="th-filter-wrap">
+                                            <span>Màu</span>
+                                            <button type="button" class="excel-filter-btn" data-col="4" data-title="Màu" title="Lọc Màu">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th rowspan="2">Tổng ĐH</th>
+                                    <th colspan="2">Cắt chính</th>
+                                    <th colspan="2">Cắt lót</th>
+                                    <th colspan="2">Cắt Mex</th>
+                                    <th colspan="2">Cắt bông</th>
+                                    <th rowspan="2">Thao tác</th>
+                                </tr>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in page_cut %}
+                                <tr>
+                                    <td>{{ row.nguoi_nhap }}</td>
+                                    <td>{{ row.ngay_lam_viec }}</td>
+                                    <td>{{ row.ngay_nhap }}</td>
+                                    <td><strong>{{ row.ma_hang }}</strong></td>
+                                    <td>{{ row.mau }}</td>
+                                    <td>{{ row.tong_don_hang }}</td>
+
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.cat_chinh_ngay }}</span>
+                                        <span class="bot-val">{{ row.cat_chinh_tong }}</span>
+                                    </td>
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.cat_lot_ngay }}</span>
+                                        <span class="bot-val">{{ row.cat_lot_tong }}</span>
+                                    </td>
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.cat_mex_ngay }}</span>
+                                        <span class="bot-val">{{ row.cat_mex_tong }}</span>
+                                    </td>
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.cat_bong_ngay }}</span>
+                                        <span class="bot-val">{{ row.cat_bong_tong }}</span>
+                                    </td>
+
+                                    <td>
+                                        <div class="action-btn-group">
+                                            <a class="btn btn-warning" href="{% url 'cut_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
+                                            <form action="{% url 'cut_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">Xóa</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="15" class="empty">Chưa có dữ liệu nào được nhập.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Card View -->
+                    <div class="card-list">
+                        {% for row in page_cut %}
+                        <div class="data-card">
+                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <strong class="card-title">{{ row.ma_hang }} — {{ row.mau }} ({{ row.ngay_lam_viec }})</strong>
+                                <div class="action-btn-group">
+                                    <a class="btn btn-warning" href="{% url 'cut_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
+                                    <form action="{% url 'cut_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Xóa</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-row"><span class="label">Người nhập:</span><span class="value">{{ row.nguoi_nhap }}</span></div>
+                                <div class="card-row"><span class="label">Tổng đơn hàng:</span><span class="value">{{ row.tong_don_hang }}</span></div>
+                                <div class="card-row"><span class="label">Cắt chính (Ngày/Tổng):</span><span class="value">{{ row.cat_chinh_ngay }} / {{ row.cat_chinh_tong }}</span></div>
+                                <div class="card-row"><span class="label">Cắt lót (Ngày/Tổng):</span><span class="value">{{ row.cat_lot_ngay }} / {{ row.cat_lot_tong }}</span></div>
+                                <div class="card-row"><span class="label">Cắt Mex (Ngày/Tổng):</span><span class="value">{{ row.cat_mex_ngay }} / {{ row.cat_mex_tong }}</span></div>
+                                <div class="card-row"><span class="label">Cắt bông (Ngày/Tổng):</span><span class="value">{{ row.cat_bong_ngay }} / {{ row.cat_bong_tong }}</span></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_cut.paginator.num_pages > 1 %}
+                    <div class="pagination-container" style="margin-top: 14px; display: flex; justify-content: center; gap: 4px; align-items: center;">
+                        {% if page_cut.has_previous %}
+                        <a href="{% url_replace p4=1 %}" class="page-link">&laquo;</a>
+                        <a href="{% url_replace p4=page_cut.previous_page_number %}" class="page-link">&lsaquo;</a>
+                        {% endif %}
+                        <span class="page-current" style="padding: 4px 10px; font-weight: 600; font-size: 0.8rem; color: #475569;">Trang {{ page_cut.number }} / {{ page_cut.paginator.num_pages }} (Tổng {{ page_cut.paginator.count }} dòng)</span>
+                        {% if page_cut.has_next %}
+                        <a href="{% url_replace p4=page_cut.next_page_number %}" class="page-link">&rsaquo;</a>
+                        <a href="{% url_replace p4=page_cut.paginator.num_pages %}" class="page-link">&raquo;</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    {{ excel_filter_config|json_script:"excel-filter-config" }}
+    <script src="{% static 'working/js/excel_filter.js' %}"></script>
+</body>
+</html>

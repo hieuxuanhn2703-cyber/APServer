@@ -135,6 +135,21 @@ def _dashboard_prod_report_to_row(report: ProcessReport):
         "row_id": report.id,
         "values": values,
         "pairs": list(zip(DASHBOARD_PROD_HEADERS, values)),
+        "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+        "ngay_lam_viec": format_date(report.ngay_lam_viec),
+        "xuong": report.xuong,
+        "to": report.to,
+        "so_luong_ld": report.so_luong_ld,
+        "ma_hang": report.ma_hang,
+        "mau": report.mau,
+        "co": "N/A",
+        "nhan_btp": report.nhan_btp,
+        "vao_chuyen": report.vao_chuyen,
+        "giua_chuyen": report.giua_chuyen,
+        "ra_chuyen": report.ra_chuyen,
+        "thu_hoa": report.thu_hoa,
+        "la_thanh_pham": report.la_thanh_pham,
+        "nhap_hoan_thien": report.nhap_hoan_thien,
     }
 
 
@@ -211,7 +226,8 @@ def change_password_view(request):
             
     return render(request, "change_password.html", {
         "error": error,
-        "success": success
+        "success": success,
+        "user": current_user,
     })
 
 
@@ -485,7 +501,7 @@ def export_excel_view(request):
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     start_dt, end_dt = parse_date_range(start_date, end_date)
-    reports = ProcessReport.objects.all().order_by("-created_at")
+    reports = ProcessReport.objects.select_related('nguoi_nhap').all().order_by("-created_at")
     if start_dt:
         reports = reports.filter(created_at__gte=start_dt)
     if end_dt:
@@ -539,7 +555,7 @@ def web_view(request):
         "success": success,
         "config": load_config(),
         "display_name": current_user.name if current_user else "",
-        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+        "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
 
 
@@ -552,9 +568,9 @@ def list_view(request):
         raise PermissionDenied("Bạn không có quyền truy cập trang Sản xuất.")
 
     if current_user.role in ["PREMIUM", "QUAN_LY"]:
-        reports = ProcessReport.objects.all()
+        reports = ProcessReport.objects.select_related('nguoi_nhap').all().order_by("-created_at")[:50]
     else:
-        reports = ProcessReport.objects.filter(nguoi_nhap=current_user)
+        reports = ProcessReport.objects.select_related('nguoi_nhap').filter(nguoi_nhap=current_user).order_by("-created_at")[:50]
         
     table_rows = [_report_to_row(r) for r in reports]
 
@@ -562,7 +578,8 @@ def list_view(request):
         "table_rows": table_rows,
         "headers": HEADERS,
         "display_name": current_user.name if current_user else "",
-        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+        "user": current_user,
+        "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
 
 
@@ -595,8 +612,11 @@ def edit_view(request, row_id):
             report.la_thanh_pham = data.get("la_thanh_pham") or 0
             report.nhap_hoan_thien = data.get("nhap_hoan_thien") or 0
             report.save()
+            next_url = request.GET.get("next")
+            if next_url:
+                return redirect(next_url)
             if current_user.role in ["PREMIUM", "QUAN_LY"]:
-                return redirect("premium_dashboard")
+                return redirect("dashboard_prod")
             return redirect("list")
     else:
         initial = {
@@ -636,12 +656,14 @@ def delete_report_view(request, row_id):
         report.delete()
         
     if current_user.role in ["PREMIUM", "QUAN_LY"]:
-        return redirect("premium_dashboard")
+        return redirect("dashboard_prod")
     return redirect("list")
 
-def get_tracking_data():
-    """Hàm phụ trợ để lấy và tính toán dữ liệu tracking."""
+def get_tracking_data(filter_ma_hang=None, filter_mau=None):
+    """Hàm phụ trợ để lấy và tính toán dữ liệu tracking có hỗ trợ lọc."""
     products = Product.objects.prefetch_related('colors').all()
+    if filter_ma_hang:
+        products = products.filter(name__in=filter_ma_hang)
     
     # Tính tổng tất cả các công đoạn cho từng (Mã hàng, Màu)
     report_sums = ProcessReport.objects.values('ma_hang', 'mau').annotate(
@@ -659,6 +681,8 @@ def get_tracking_data():
     
     for product in products:
         for color in product.colors.all():
+            if filter_mau and color.name not in filter_mau:
+                continue
             key = (product.name, color.name)
             stats = sum_map.get(key, {})
             qty = color.quantity
@@ -694,11 +718,52 @@ def tracking_view(request):
     if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
-    tracking_data = get_tracking_data()
+    tracking_filter_ma_hang = [v for v in request.GET.getlist('tracking_filter_ma_hang') if v]
+    tracking_filter_mau = [v for v in request.GET.getlist('tracking_filter_mau') if v]
+
+    # Danh sách options cho bộ lọc cascading
+    all_products = Product.objects.prefetch_related('colors').all()
+    all_ma_hang = sorted(list(set(p.name for p in all_products if p.name)))
+
+    if tracking_filter_ma_hang:
+        opt_mau = sorted(list(set(c.name for p in all_products.filter(name__in=tracking_filter_ma_hang) for c in p.colors.all() if c.name)))
+    else:
+        opt_mau = sorted(list(set(c.name for p in all_products for c in p.colors.all() if c.name)))
+
+    if tracking_filter_mau:
+        opt_ma_hang = sorted(list(set(p.name for p in all_products for c in p.colors.all() if c.name in tracking_filter_mau)))
+    else:
+        opt_ma_hang = all_ma_hang
+
+    tracking_data = get_tracking_data(filter_ma_hang=tracking_filter_ma_hang, filter_mau=tracking_filter_mau)
+
+    excel_filter_config = {
+        "tracking": {
+            "page_param": "p",
+            "columns": {
+                "0": { "param": "tracking_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(opt_ma_hang), "selected": tracking_filter_ma_hang },
+                "1": { "param": "tracking_filter_mau", "title": "Màu", "options": _clean_options(opt_mau), "selected": tracking_filter_mau },
+            }
+        }
+    }
+
+    paginator = Paginator(tracking_data, 50)
+    page_num = request.GET.get('p', 1)
+    page_tracking = paginator.get_page(page_num)
+
+    export_params = request.GET.copy()
+    if 'p' in export_params:
+        export_params.pop('p')
+    export_query_str = export_params.urlencode()
     
     return render(request, "tracking.html", {
-        "tracking_data": tracking_data,
-        "display_name": current_user.name
+        "tracking_data": page_tracking,
+        "excel_filter_config": excel_filter_config,
+        "selected_ma_hang": tracking_filter_ma_hang,
+        "selected_mau": tracking_filter_mau,
+        "export_query_str": export_query_str,
+        "display_name": current_user.name,
+        "user": current_user,
     })
 
 @login_required
@@ -707,13 +772,16 @@ def tracking_export_excel_view(request):
     if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
-    tracking_data = get_tracking_data()
+    tracking_filter_ma_hang = [v for v in request.GET.getlist('tracking_filter_ma_hang') if v]
+    tracking_filter_mau = [v for v in request.GET.getlist('tracking_filter_mau') if v]
+
+    tracking_data = get_tracking_data(filter_ma_hang=tracking_filter_ma_hang, filter_mau=tracking_filter_mau)
     
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Tracking"
     
-    # Row 1: Headers (Merged cells logic applied implicitly by formatting or explicitly)
+    # Row 1: Headers
     ws.append([
         "Mã hàng", "Màu", "Số lượng", 
         "Nhận BTP", "", 
@@ -742,7 +810,7 @@ def tracking_export_excel_view(request):
     ws.merge_cells("B1:B2")
     ws.merge_cells("C1:C2")
     
-    for col_start in range(4, 17, 2):
+    for col_start in range(4, 18, 2):
         ws.merge_cells(start_row=1, start_column=col_start, end_row=1, end_column=col_start+1)
         
     # Styling
@@ -808,7 +876,7 @@ def finishing_web_view(request):
         "success": success,
         "config": load_config(),
         "display_name": current_user.name if current_user else "",
-        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+        "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
 
 FINISHING_HEADERS = [
@@ -846,9 +914,9 @@ def finishing_list_view(request):
         raise PermissionDenied("Bạn không có quyền truy cập trang Hoàn thiện.")
 
     if current_user.role in ["PREMIUM", "QUAN_LY"]:
-        qs = FinishingReport.objects.select_related('nguoi_nhap').all()
+        qs = FinishingReport.objects.select_related('nguoi_nhap').all().order_by("-created_at")
     else:
-        qs = FinishingReport.objects.filter(nguoi_nhap=current_user).select_related('nguoi_nhap')
+        qs = FinishingReport.objects.select_related('nguoi_nhap').filter(nguoi_nhap=current_user).select_related('nguoi_nhap').order_by("-created_at")
     
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
@@ -859,7 +927,7 @@ def finishing_list_view(request):
     if end_dt:
         qs = qs.filter(created_at__lte=end_dt)
         
-    table_rows = [_finishing_report_to_row(r) for r in qs]
+    table_rows = [_finishing_report_to_row(r) for r in qs[:50]]
     return render(request, "finishing_list.html", {
         "table_rows": table_rows,
         "headers": FINISHING_HEADERS,
@@ -867,7 +935,7 @@ def finishing_list_view(request):
         "start_date": start_date or '',
         "end_date": end_date or '',
         "user": current_user,
-        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+        "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
 
 @login_required
@@ -890,8 +958,11 @@ def finishing_edit_view(request, row_id):
             report.gap_hang = data.get("gap_hang") or 0
             report.treo_dong_thung = data.get("treo_dong_thung") or 0
             report.save()
+            next_url = request.GET.get("next")
+            if next_url:
+                return redirect(next_url)
             if current_user.role in ["PREMIUM", "QUAN_LY"]:
-                return redirect("premium_dashboard")
+                return redirect("dashboard_finishing")
             return redirect("finishing_list")
     else:
         initial = {
@@ -923,7 +994,7 @@ def finishing_delete_report_view(request, row_id):
         report.delete()
         
     if current_user.role in ["PREMIUM", "QUAN_LY"]:
-        return redirect("premium_dashboard")
+        return redirect("dashboard_finishing")
     return redirect("finishing_list")
 
 @login_required
@@ -967,7 +1038,7 @@ def _calculate_cumulative_totals_finishing():
     """
     running = defaultdict(lambda: {'the_bai': 0, 'gap_hang': 0, 'treo_dong_thung': 0})
     cumulative_map = {}
-    for r in FinishingReport.objects.order_by('created_at', 'id'):
+    for r in FinishingReport.objects.select_related('nguoi_nhap').order_by('created_at', 'id'):
         key = (r.ma_hang, r.mau)
         running[key]['the_bai'] += (r.the_bai or 0)
         running[key]['gap_hang'] += (r.gap_hang or 0)
@@ -987,7 +1058,7 @@ def _calculate_cumulative_totals_kcs():
     """
     running = defaultdict(lambda: {'qua_tay': 0, 'dat': 0, 'loi': 0, 'tong_dat': 0})
     cumulative_map = {}
-    for r in KcsReport.objects.order_by('created_at', 'id'):
+    for r in KcsReport.objects.select_related('nguoi_nhap').order_by('created_at', 'id'):
         key = (r.ma_hang, r.mau)
         running[key]['qua_tay'] += (r.qua_tay or 0)
         running[key]['dat'] += (r.dat or 0)
@@ -1009,7 +1080,7 @@ def _calculate_cumulative_totals_cut():
     """
     running = defaultdict(lambda: {'cat_chinh': 0, 'cat_lot': 0, 'cat_mex': 0, 'cat_bong': 0})
     cumulative_map = {}
-    for r in CutReport.objects.order_by('created_at', 'id'):
+    for r in CutReport.objects.select_related('nguoi_nhap').order_by('created_at', 'id'):
         key = (r.ma_hang, r.mau)
         running[key]['cat_chinh'] += (r.cat_chinh or 0)
         running[key]['cat_lot'] += (r.cat_lot or 0)
@@ -1082,27 +1153,21 @@ def _get_cascade_options(base_qs, active_filters, current_col_key, val_field):
     return list(qs.values_list(val_field, flat=True).distinct())
 
 
+
+# ==========================================
+# DASHBOARD BÁO CÁO TỔNG HỢP (4 TRANG RIÊNG BIỆT)
+# ==========================================
+
 @login_required
-def premium_dashboard_view(request):
+def dashboard_cut_view(request):
     current_user = get_current_user(request)
     if current_user.role not in ['PREMIUM', 'QUAN_LY']:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
-        
-    prod_start_date = request.GET.get('prod_start_date')
-    prod_end_date = request.GET.get('prod_end_date')
-    fin_start_date = request.GET.get('fin_start_date')
-    fin_end_date = request.GET.get('fin_end_date')
-    kcs_start_date = request.GET.get('kcs_start_date')
-    kcs_end_date = request.GET.get('kcs_end_date')
+
     cut_start_date = request.GET.get('cut_start_date')
     cut_end_date = request.GET.get('cut_end_date')
-    
-    prod_s, prod_e = parse_date_range(prod_start_date, prod_end_date)
-    fin_s, fin_e = parse_date_range(fin_start_date, fin_end_date)
-    kcs_s, kcs_e = parse_date_range(kcs_start_date, kcs_end_date)
     cut_s, cut_e = parse_date_range(cut_start_date, cut_end_date)
 
-    # 1. BẢNG CẮT - Lọc ngày & lọc cột (Cascading options)
     cut_base_qs = CutReport.objects.select_related('nguoi_nhap').all()
     if cut_s:
         cut_base_qs = cut_base_qs.filter(created_at__gte=cut_s)
@@ -1131,7 +1196,74 @@ def premium_dashboard_view(request):
     if cut_filter_mau:
         cut_qs = cut_qs.filter(mau__in=cut_filter_mau)
 
-    # 2. BẢNG SẢN XUẤT - Lọc ngày & lọc cột (Cascading options)
+    color_map = {}
+    for color in ProductColor.objects.all().select_related('product'):
+        color_map[(color.product.name, color.name)] = color.quantity
+
+    cut_cumulative_map = _calculate_cumulative_totals_cut()
+
+    def _dashboard_cut_report_to_row(report, color_map, cut_cumulative_map):
+        key = (report.ma_hang, report.mau)
+        tong_don_hang = color_map.get(key, 0)
+        totals = cut_cumulative_map.get(report.id, {})
+        return {
+            "row_id": report.id,
+            "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+            "ngay_lam_viec": format_date(report.ngay_lam_viec),
+            "ngay_nhap": format_datetime(report.created_at),
+            "ma_hang": report.ma_hang,
+            "mau": report.mau,
+            "tong_don_hang": tong_don_hang,
+            "cat_chinh_ngay": report.cat_chinh,
+            "cat_chinh_tong": totals.get('total_cat_chinh', report.cat_chinh or 0),
+            "cat_lot_ngay": report.cat_lot,
+            "cat_lot_tong": totals.get('total_cat_lot', report.cat_lot or 0),
+            "cat_mex_ngay": report.cat_mex,
+            "cat_mex_tong": totals.get('total_cat_mex', report.cat_mex or 0),
+            "cat_bong_ngay": report.cat_bong,
+            "cat_bong_tong": totals.get('total_cat_bong', report.cat_bong or 0),
+        }
+
+    cut_rows = [_dashboard_cut_report_to_row(r, color_map, cut_cumulative_map) for r in cut_qs]
+
+    excel_filter_config = {
+        "cut": {
+            "page_param": "p4",
+            "columns": {
+                "0": { "param": "cut_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(cut_opt_nguoi_nhap), "selected": cut_filter_nguoi_nhap },
+                "3": { "param": "cut_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(cut_opt_ma_hang), "selected": cut_filter_ma_hang },
+                "4": { "param": "cut_filter_mau", "title": "Màu", "options": _clean_options(cut_opt_mau), "selected": cut_filter_mau }
+            }
+        }
+    }
+
+    cut_paginator = Paginator(cut_rows, 50)
+    page_cut_num = request.GET.get('p4', 1)
+    page_cut = cut_paginator.get_page(page_cut_num)
+
+    has_filter = bool(cut_start_date or cut_end_date or cut_filter_nguoi_nhap or cut_filter_ma_hang or cut_filter_mau)
+
+    return render(request, "dashboard_cut.html", {
+        "active_tab": "cut",
+        "page_cut": page_cut,
+        "excel_filter_config": excel_filter_config,
+        "cut_start_date": cut_start_date or '',
+        "cut_end_date": cut_end_date or '',
+        "has_filter": has_filter,
+        "user": current_user,
+    })
+
+
+@login_required
+def dashboard_prod_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ['PREMIUM', 'QUAN_LY']:
+        raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
+
+    prod_start_date = request.GET.get('prod_start_date')
+    prod_end_date = request.GET.get('prod_end_date')
+    prod_s, prod_e = parse_date_range(prod_start_date, prod_end_date)
+
     prod_base_qs = ProcessReport.objects.select_related('nguoi_nhap').all()
     if prod_s:
         prod_base_qs = prod_base_qs.filter(created_at__gte=prod_s)
@@ -1173,7 +1305,49 @@ def premium_dashboard_view(request):
     if prod_filter_mau:
         prod_qs = prod_qs.filter(mau__in=prod_filter_mau)
 
-    # 3. BẢNG KCS - Lọc ngày & lọc cột (Cascading options)
+    prod_rows = [_dashboard_prod_report_to_row(r) for r in prod_qs]
+
+    excel_filter_config = {
+        "prod": {
+            "page_param": "p1",
+            "columns": {
+                "0": { "param": "prod_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(prod_opt_nguoi_nhap), "selected": prod_filter_nguoi_nhap },
+                "2": { "param": "prod_filter_xuong", "title": "Xưởng", "options": _clean_options(prod_opt_xuong), "selected": prod_filter_xuong },
+                "3": { "param": "prod_filter_to", "title": "Tổ", "options": _clean_options(prod_opt_to), "selected": prod_filter_to },
+                "5": { "param": "prod_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(prod_opt_ma_hang), "selected": prod_filter_ma_hang },
+                "6": { "param": "prod_filter_mau", "title": "Màu", "options": _clean_options(prod_opt_mau), "selected": prod_filter_mau }
+            }
+        }
+    }
+
+    prod_paginator = Paginator(prod_rows, 50)
+    page_prod_num = request.GET.get('p1', 1)
+    page_prod = prod_paginator.get_page(page_prod_num)
+
+    has_filter = bool(prod_start_date or prod_end_date or prod_filter_nguoi_nhap or prod_filter_xuong or prod_filter_to or prod_filter_ma_hang or prod_filter_mau)
+
+    return render(request, "dashboard_prod.html", {
+        "active_tab": "prod",
+        "prod_headers": DASHBOARD_PROD_HEADERS,
+        "page_prod": page_prod,
+        "excel_filter_config": excel_filter_config,
+        "prod_start_date": prod_start_date or '',
+        "prod_end_date": prod_end_date or '',
+        "has_filter": has_filter,
+        "user": current_user,
+    })
+
+
+@login_required
+def dashboard_kcs_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ['PREMIUM', 'QUAN_LY']:
+        raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
+
+    kcs_start_date = request.GET.get('kcs_start_date')
+    kcs_end_date = request.GET.get('kcs_end_date')
+    kcs_s, kcs_e = parse_date_range(kcs_start_date, kcs_end_date)
+
     kcs_base_qs = KcsReport.objects.select_related('nguoi_nhap').all()
     if kcs_s:
         kcs_base_qs = kcs_base_qs.filter(created_at__gte=kcs_s)
@@ -1215,7 +1389,78 @@ def premium_dashboard_view(request):
     if kcs_filter_to:
         kcs_qs = kcs_qs.filter(to__in=kcs_to_ints)
 
-    # 4. BẢNG HOÀN THIỆN - Lọc ngày & lọc cột (Cascading options)
+    color_map = {}
+    for color in ProductColor.objects.all().select_related('product'):
+        color_map[(color.product.name, color.name)] = color.quantity
+
+    kcs_cumulative_map = _calculate_cumulative_totals_kcs()
+
+    def _dashboard_kcs_report_to_row(report, color_map, kcs_cumulative_map):
+        key = (report.ma_hang, report.mau)
+        tong_don_hang = color_map.get(key, 0)
+        totals = kcs_cumulative_map.get(report.id, {})
+        return {
+            "row_id": report.id,
+            "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+            "ngay_lam_viec": format_date(report.ngay_lam_viec),
+            "ngay_nhap": format_datetime(report.created_at),
+            "ma_hang": report.ma_hang,
+            "mau": report.mau,
+            "xuong": report.xuong,
+            "to": report.to,
+            "tong_don_hang": tong_don_hang,
+            "qua_tay_ngay": report.qua_tay,
+            "qua_tay_tong": totals.get('total_qua_tay', report.qua_tay or 0),
+            "dat_ngay": report.dat,
+            "dat_tong": totals.get('total_dat', report.dat or 0),
+            "loi_ngay": report.loi,
+            "loi_tong": totals.get('total_loi', report.loi or 0),
+            "tong_dat_ngay": report.tong_dat,
+            "tong_dat_tong": totals.get('total_tong_dat', report.tong_dat or 0),
+        }
+
+    kcs_rows = [_dashboard_kcs_report_to_row(r, color_map, kcs_cumulative_map) for r in kcs_qs]
+
+    excel_filter_config = {
+        "kcs": {
+            "page_param": "p3",
+            "columns": {
+                "0": { "param": "kcs_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(kcs_opt_nguoi_nhap), "selected": kcs_filter_nguoi_nhap },
+                "3": { "param": "kcs_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(kcs_opt_ma_hang), "selected": kcs_filter_ma_hang },
+                "4": { "param": "kcs_filter_mau", "title": "Màu", "options": _clean_options(kcs_opt_mau), "selected": kcs_filter_mau },
+                "5": { "param": "kcs_filter_xuong", "title": "Xưởng", "options": _clean_options(kcs_opt_xuong), "selected": kcs_filter_xuong },
+                "6": { "param": "kcs_filter_to", "title": "Tổ", "options": _clean_options(kcs_opt_to), "selected": kcs_filter_to }
+            }
+        }
+    }
+
+    kcs_paginator = Paginator(kcs_rows, 50)
+    page_kcs_num = request.GET.get('p3', 1)
+    page_kcs = kcs_paginator.get_page(page_kcs_num)
+
+    has_filter = bool(kcs_start_date or kcs_end_date or kcs_filter_nguoi_nhap or kcs_filter_ma_hang or kcs_filter_mau or kcs_filter_xuong or kcs_filter_to)
+
+    return render(request, "dashboard_kcs.html", {
+        "active_tab": "kcs",
+        "page_kcs": page_kcs,
+        "excel_filter_config": excel_filter_config,
+        "kcs_start_date": kcs_start_date or '',
+        "kcs_end_date": kcs_end_date or '',
+        "has_filter": has_filter,
+        "user": current_user,
+    })
+
+
+@login_required
+def dashboard_finishing_view(request):
+    current_user = get_current_user(request)
+    if current_user.role not in ['PREMIUM', 'QUAN_LY']:
+        raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
+
+    fin_start_date = request.GET.get('fin_start_date')
+    fin_end_date = request.GET.get('fin_end_date')
+    fin_s, fin_e = parse_date_range(fin_start_date, fin_end_date)
+
     fin_base_qs = FinishingReport.objects.select_related('nguoi_nhap').all()
     if fin_s:
         fin_base_qs = fin_base_qs.filter(created_at__gte=fin_s)
@@ -1244,102 +1489,20 @@ def premium_dashboard_view(request):
     if fin_filter_mau:
         fin_qs = fin_qs.filter(mau__in=fin_filter_mau)
 
-    prod_rows = [_dashboard_prod_report_to_row(r) for r in prod_qs]
-    
     color_map = {}
     for color in ProductColor.objects.all().select_related('product'):
         color_map[(color.product.name, color.name)] = color.quantity
-        
+
     prod_nhap_totals = ProcessReport.objects.values('ma_hang', 'mau').annotate(
         total_nhap=Sum('nhap_hoan_thien')
     )
     prod_nhap_totals_map = {(row['ma_hang'], row['mau']): row['total_nhap'] for row in prod_nhap_totals}
-    
-    fin_cumulative_map = _calculate_cumulative_totals_finishing()
-    kcs_cumulative_map = _calculate_cumulative_totals_kcs()
-    cut_cumulative_map = _calculate_cumulative_totals_cut()
-    
-    fin_rows = [_dashboard_finishing_report_to_row(r, color_map, fin_cumulative_map, prod_nhap_totals_map) for r in fin_qs]
-    
-    def _dashboard_kcs_report_to_row(report, color_map, kcs_cumulative_map):
-        key = (report.ma_hang, report.mau)
-        tong_don_hang = color_map.get(key, 0)
-        totals = kcs_cumulative_map.get(report.id, {})
-        return {
-            "row_id": report.id,
-            "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
-            "ngay_lam_viec": format_date(report.ngay_lam_viec),
-            "ngay_nhap": format_datetime(report.created_at),
-            "ma_hang": report.ma_hang,
-            "mau": report.mau,
-            "xuong": report.xuong,
-            "to": report.to,
-            "tong_don_hang": tong_don_hang,
-            "qua_tay_ngay": report.qua_tay,
-            "qua_tay_tong": totals.get('total_qua_tay', report.qua_tay or 0),
-            "dat_ngay": report.dat,
-            "dat_tong": totals.get('total_dat', report.dat or 0),
-            "loi_ngay": report.loi,
-            "loi_tong": totals.get('total_loi', report.loi or 0),
-            "tong_dat_ngay": report.tong_dat,
-            "tong_dat_tong": totals.get('total_tong_dat', report.tong_dat or 0),
-        }
-        
-    kcs_rows = [_dashboard_kcs_report_to_row(r, color_map, kcs_cumulative_map) for r in kcs_qs]
 
-    def _dashboard_cut_report_to_row(report, color_map, cut_cumulative_map):
-        key = (report.ma_hang, report.mau)
-        tong_don_hang = color_map.get(key, 0)
-        totals = cut_cumulative_map.get(report.id, {})
-        return {
-            "row_id": report.id,
-            "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
-            "ngay_lam_viec": format_date(report.ngay_lam_viec),
-            "ngay_nhap": format_datetime(report.created_at),
-            "ma_hang": report.ma_hang,
-            "mau": report.mau,
-            "tong_don_hang": tong_don_hang,
-            "cat_chinh_ngay": report.cat_chinh,
-            "cat_chinh_tong": totals.get('total_cat_chinh', report.cat_chinh or 0),
-            "cat_lot_ngay": report.cat_lot,
-            "cat_lot_tong": totals.get('total_cat_lot', report.cat_lot or 0),
-            "cat_mex_ngay": report.cat_mex,
-            "cat_mex_tong": totals.get('total_cat_mex', report.cat_mex or 0),
-            "cat_bong_ngay": report.cat_bong,
-            "cat_bong_tong": totals.get('total_cat_bong', report.cat_bong or 0),
-        }
-        
-    cut_rows = [_dashboard_cut_report_to_row(r, color_map, cut_cumulative_map) for r in cut_qs]
+    fin_cumulative_map = _calculate_cumulative_totals_finishing()
+
+    fin_rows = [_dashboard_finishing_report_to_row(r, color_map, fin_cumulative_map, prod_nhap_totals_map) for r in fin_qs]
 
     excel_filter_config = {
-        "cut": {
-            "page_param": "p4",
-            "columns": {
-                "0": { "param": "cut_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(cut_opt_nguoi_nhap), "selected": cut_filter_nguoi_nhap },
-                "3": { "param": "cut_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(cut_opt_ma_hang), "selected": cut_filter_ma_hang },
-                "4": { "param": "cut_filter_mau", "title": "Màu", "options": _clean_options(cut_opt_mau), "selected": cut_filter_mau }
-            }
-        },
-        "prod": {
-            "page_param": "p1",
-            "columns": {
-                "0": { "param": "prod_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(prod_opt_nguoi_nhap), "selected": prod_filter_nguoi_nhap },
-                "2": { "param": "prod_filter_xuong", "title": "Xưởng", "options": _clean_options(prod_opt_xuong), "selected": prod_filter_xuong },
-                "3": { "param": "prod_filter_to", "title": "Tổ", "options": _clean_options(prod_opt_to), "selected": prod_filter_to },
-                "5": { "param": "prod_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(prod_opt_ma_hang), "selected": prod_filter_ma_hang },
-                "6": { "param": "prod_filter_mau", "title": "Màu", "options": _clean_options(prod_opt_mau), "selected": prod_filter_mau }
-            }
-        },
-        "kcs": {
-            "page_param": "p3",
-            "columns": {
-                "0": { "param": "kcs_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(kcs_opt_nguoi_nhap), "selected": kcs_filter_nguoi_nhap },
-                "3": { "param": "kcs_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(kcs_opt_ma_hang), "selected": kcs_filter_ma_hang },
-                "4": { "param": "kcs_filter_mau", "title": "Màu", "options": _clean_options(kcs_opt_mau), "selected": kcs_filter_mau },
-                "5": { "param": "kcs_filter_xuong", "title": "Xưởng", "options": _clean_options(kcs_opt_xuong), "selected": kcs_filter_xuong },
-                "6": { "param": "kcs_filter_to", "title": "Tổ", "options": _clean_options(kcs_opt_to), "selected": kcs_filter_to }
-            }
-        },
         "fin": {
             "page_param": "p2",
             "columns": {
@@ -1350,42 +1513,26 @@ def premium_dashboard_view(request):
         }
     }
 
-    prod_paginator = Paginator(prod_rows, 10)
-    page_prod_num = request.GET.get('p1')
-    page_prod = prod_paginator.get_page(page_prod_num)
-    
-    fin_paginator = Paginator(fin_rows, 10)
-    page_fin_num = request.GET.get('p2')
+    fin_paginator = Paginator(fin_rows, 50)
+    page_fin_num = request.GET.get('p2', 1)
     page_fin = fin_paginator.get_page(page_fin_num)
-    
-    kcs_paginator = Paginator(kcs_rows, 10)
-    page_kcs_num = request.GET.get('p3')
-    page_kcs = kcs_paginator.get_page(page_kcs_num)
-    
-    cut_paginator = Paginator(cut_rows, 10)
-    page_cut_num = request.GET.get('p4')
-    page_cut = cut_paginator.get_page(page_cut_num)
-    
-    return render(request, "premium_dashboard.html", {
-        "prod_headers": DASHBOARD_PROD_HEADERS,
+
+    has_filter = bool(fin_start_date or fin_end_date or fin_filter_nguoi_nhap or fin_filter_ma_hang or fin_filter_mau)
+
+    return render(request, "dashboard_finishing.html", {
+        "active_tab": "finishing",
         "fin_headers": FINISHING_HEADERS,
-        "page_prod": page_prod,
         "page_fin": page_fin,
-        "page_kcs": page_kcs,
-        "page_cut": page_cut,
         "excel_filter_config": excel_filter_config,
-        "display_name": current_user.name if current_user else "",
-        "prod_start_date": prod_start_date or '',
-        "prod_end_date": prod_end_date or '',
         "fin_start_date": fin_start_date or '',
         "fin_end_date": fin_end_date or '',
-        "kcs_start_date": kcs_start_date or '',
-        "kcs_end_date": kcs_end_date or '',
-        "cut_start_date": cut_start_date or '',
-        "cut_end_date": cut_end_date or '',
+        "has_filter": has_filter,
         "user": current_user,
-        "is_premium": current_user.role == "PREMIUM"
     })
+
+# Alias for backward compatibility
+premium_dashboard_view = dashboard_cut_view
+
 
 
 # ---------- QUY TRÌNH KCS ----------
@@ -1453,7 +1600,7 @@ def kcs_web_view(request):
         "success": success,
         "config": load_config(),
         "display_name": current_user.name if current_user else "",
-        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+        "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
 
 @login_required
@@ -1462,7 +1609,7 @@ def kcs_list_view(request):
     if current_user.role not in ["KCS", "PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Bạn không có quyền truy cập trang này.")
 
-    qs = KcsReport.objects.all()
+    qs = KcsReport.objects.select_related('nguoi_nhap').all().order_by("-created_at")
     if current_user.role not in ["PREMIUM", "QUAN_LY"]:
         qs = qs.filter(nguoi_nhap=current_user)
     else:
@@ -1477,20 +1624,17 @@ def kcs_list_view(request):
         if to_date:
             qs = qs.filter(ngay_lam_viec__lte=to_date)
 
-    data_rows = [_kcs_report_to_row(r) for r in qs]
-    
-    # Phân trang
-    page_number = request.GET.get('page', 1)
-    paginator = Paginator(data_rows, 50)
-    page_obj = paginator.get_page(page_number)
+    data_rows = [_kcs_report_to_row(r) for r in qs[:50]]
 
     all_users = AppUser.objects.filter(role="KCS") if current_user.role in ["PREMIUM", "QUAN_LY"] else []
 
     return render(request, "kcs_list.html", {
         "headers": KCS_HEADERS,
-        "page_obj": page_obj,
+        "table_rows": data_rows,
+        "page_obj": data_rows,
         "display_name": current_user.name if current_user else "",
-        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+        "user": current_user,
+        "is_premium": (current_user.role == "PREMIUM") if current_user else False,
         "all_users": all_users,
         "u_id": request.GET.get('u_id', ''),
         "from_date": request.GET.get('from_date', ''),
@@ -1520,6 +1664,9 @@ def kcs_edit_view(request, row_id):
             report.loi = data.get("loi") or 0
             report.tong_dat = data.get("tong_dat") or 0
             report.save()
+            next_url = request.GET.get("next")
+            if next_url:
+                return redirect(next_url)
             if current_user.role in ["PREMIUM", "QUAN_LY"]:
                 return redirect("premium_dashboard")
             return redirect("kcs_list")
@@ -1556,7 +1703,7 @@ def kcs_delete_report_view(request, row_id):
         report.delete()
         
     if current_user.role in ["PREMIUM", "QUAN_LY"]:
-        return redirect("premium_dashboard")
+        return redirect("dashboard_kcs")
     return redirect("kcs_list")
 
 @login_required
@@ -1627,7 +1774,7 @@ def cut_web_view(request):
         "success": success,
         "config": load_config(),
         "display_name": current_user.name if current_user else "",
-        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+        "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
 
 
@@ -1670,9 +1817,9 @@ def cut_list_view(request):
         raise PermissionDenied("Bạn không có quyền truy cập trang Cắt.")
 
     if current_user.role in ["PREMIUM", "QUAN_LY"]:
-        reports = CutReport.objects.all()
+        reports = CutReport.objects.select_related('nguoi_nhap').all().order_by("-created_at")[:50]
     else:
-        reports = CutReport.objects.filter(nguoi_nhap=current_user)
+        reports = CutReport.objects.select_related('nguoi_nhap').filter(nguoi_nhap=current_user).order_by("-created_at")[:50]
         
     table_rows = [_cut_report_to_row(r) for r in reports]
 
@@ -1680,7 +1827,8 @@ def cut_list_view(request):
         "table_rows": table_rows,
         "headers": CUT_HEADERS,
         "display_name": current_user.name if current_user else "",
-        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+        "user": current_user,
+        "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
 
 
@@ -1704,8 +1852,11 @@ def cut_edit_view(request, row_id):
             report.cat_mex = data.get("cat_mex") or 0
             report.cat_bong = data.get("cat_bong") or 0
             report.save()
+            next_url = request.GET.get("next")
+            if next_url:
+                return redirect(next_url)
             if current_user.role in ["PREMIUM", "QUAN_LY"]:
-                return redirect("premium_dashboard")
+                return redirect("dashboard_cut")
             return redirect("cut_list")
     else:
         form = CutForm(initial={
@@ -1724,7 +1875,7 @@ def cut_edit_view(request, row_id):
         "thoi_gian": format_datetime(report.created_at),
         "config": load_config(),
         "display_name": current_user.name if current_user else "",
-        "is_premium": current_user.role in ["PREMIUM", "QUAN_LY"] if current_user else False,
+        "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
 
 
@@ -1740,7 +1891,7 @@ def cut_delete_report_view(request, row_id):
         report.delete()
         
     if current_user.role in ["PREMIUM", "QUAN_LY"]:
-        return redirect("premium_dashboard")
+        return redirect("dashboard_cut")
     return redirect("cut_list")
 
 

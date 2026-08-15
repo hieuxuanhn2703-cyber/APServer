@@ -2,74 +2,165 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nhập liệu quy trình Cắt</title>
-    <link rel="stylesheet" href="{% static 'working/css/web.css' %}">
+    <title>Nhập liệu quy trình Cắt - ProcessMonitoring</title>
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
 </head>
 <body>
-    <div class="container">
-        <h2>Nhập dữ liệu quy trình Cắt</h2>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <span style="font-size:0.9rem; color:#555; font-weight: 500;">Xin chào, <strong>{{ display_name }}</strong></span>
-            <a href="{% url 'change_password' %}" style="padding: 6px 12px; background: #3498db; color: white; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: bold; display: inline-block; margin-right: 5px;">Đổi mật khẩu</a>
-            <a href="{% url 'logout' %}" style="padding: 6px 12px; background: #c0392b; color: white; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: bold; display: inline-block;">Đăng xuất</a>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- App Topbar Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    {% else %}
+                    <div style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; background: #ffffff; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; margin-right: 4px;">
+                        <img src="{% static 'working/images/logo_anphat.png' %}" alt="An Phát" width="28" height="28" style="width: 28px; height: 28px; object-fit: contain;">
+                    </div>
+                    {% endif %}
+                    <div class="header-title-box">
+                        <h1 class="header-title">Nhập Dữ Liệu Cắt</h1>
+                        <span class="header-subtitle">Báo cáo sản lượng cắt chính, lót, mex, bông</span>
+                    </div>
+                </div>
+                <div class="header-right" style="display:flex; align-items:center; gap:8px;">
+                    {% if user.role != 'PREMIUM' and user.role != 'QUAN_LY' %}
+                    <a href="{% url 'change_password' %}" class="btn-entry-list" style="min-height: 34px; padding: 4px 10px; font-size: 0.82rem;" title="Đổi mật khẩu">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        Đổi MK
+                    </a>
+                    <a href="{% url 'logout' %}" class="btn-entry-list" style="min-height: 34px; padding: 4px 10px; font-size: 0.82rem; color: #dc2626; border-color: #fca5a5;" title="Đăng xuất">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        Đăng xuất
+                    </a>
+                    {% else %}
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- App Content Body -->
+            <main class="app-content">
+                <div class="entry-card fade-in">
+                    <div class="entry-card-header">
+                        <div class="entry-card-title">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="6" cy="6" r="3"></circle>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                                <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                                <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                            </svg>
+                            Biểu Mẫu Báo Cáo Quy Trình Cắt
+                        </div>
+                    </div>
+
+                    <div class="entry-card-body">
+                        {% if success %}
+                        <div class="entry-success-card">
+                            <div class="entry-success-header">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                <span>Đã lưu dữ liệu Cắt thành công!</span>
+                            </div>
+                            <div class="entry-success-buttons">
+                                <a href="{% url 'cut_list' %}" class="btn-success-view-list">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                                    </svg>
+                                    Xem Danh Sách Dữ Liệu Đã Nhập
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {{ config|json_script:"config-data" }}
+
+                        <form method="post">
+                            {% csrf_token %}
+
+                            <!-- Phần 1: Ngày làm việc & Sản phẩm -->
+                            <div class="entry-section-header">1. Thông tin chung & Sản phẩm</div>
+                            <div class="entry-grid grid-cols-3">
+                                <div class="entry-form-group">
+                                    <label for="id_ngay_lam_viec" class="entry-label">Ngày làm việc (*)</label>
+                                    {{ form.ngay_lam_viec }}
+                                    {{ form.ngay_lam_viec.errors }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_ma_hang" class="entry-label">Mã hàng (*)</label>
+                                    <select id="id_ma_hang" name="ma_hang" class="entry-select" data-initial="{{ form.ma_hang.value|default:'' }}"></select>
+                                    {{ form.ma_hang.errors }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_mau" class="entry-label">Màu sắc (*)</label>
+                                    <select id="id_mau" name="mau" class="entry-select" data-initial="{{ form.mau.value|default:'' }}"></select>
+                                    {{ form.mau.errors }}
+                                </div>
+                                <div style="display: none;">
+                                    <select id="id_co" name="co" data-initial="N/A"></select>
+                                </div>
+                            </div>
+
+                            <!-- Phần 2: Sản lượng cắt -->
+                            <div class="entry-section-header">2. Số lượng chi tiết các loại cắt</div>
+                            <div class="entry-grid grid-cols-4">
+                                <div class="entry-form-group">
+                                    <label for="id_cat_chinh" class="entry-label">Cắt Chính</label>
+                                    {{ form.cat_chinh }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_cat_lot" class="entry-label">Cắt Lót</label>
+                                    {{ form.cat_lot }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_cat_mex" class="entry-label">Cắt Mex</label>
+                                    {{ form.cat_mex }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_cat_bong" class="entry-label">Cắt Bông</label>
+                                    {{ form.cat_bong }}
+                                </div>
+                            </div>
+
+                            <!-- Nút hành động -->
+                            <div class="entry-actions-row">
+                                <button type="submit" class="btn-entry-submit">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    Lưu Dữ Liệu Cắt
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
         </div>
-        {% if success %}
-            <div class="success-msg">
-                Đã lưu dữ liệu thành công! 
-                {% if is_premium %}
-                <a href="{% url 'premium_dashboard' %}">Xem danh sách dữ liệu</a>
-                {% else %}
-                <a href="{% url 'cut_list' %}">Xem danh sách dữ liệu</a>
-                {% endif %}
-            </div>
-        {% endif %}
-
-        {{ config|json_script:"config-data" }}
-
-        <form method="post">
-            {% csrf_token %}
-
-            <div class="row">
-                <div class="form-group">
-                    <label for="id_ngay_lam_viec">Ngày làm việc</label>
-                    {{ form.ngay_lam_viec }}
-                    {{ form.ngay_lam_viec.errors }}
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="form-group">
-                    <label for="id_ma_hang">Mã hàng</label>
-                    <select id="id_ma_hang" name="ma_hang" data-initial="{{ form.ma_hang.value|default:'' }}"></select>
-                    {{ form.ma_hang.errors }}
-                </div>
-                <div class="form-group">
-                    <label for="id_mau">Màu</label>
-                    <select id="id_mau" name="mau" data-initial="{{ form.mau.value|default:'' }}"></select>
-                    {{ form.mau.errors }}
-                </div>
-                <!-- Ẩn cột cỡ -->
-                <div style="display: none;">
-                    <select id="id_co" name="co" data-initial="N/A"></select>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="form-group">{{ form.cat_chinh.label_tag }} {{ form.cat_chinh }}</div>
-                <div class="form-group">{{ form.cat_lot.label_tag }} {{ form.cat_lot }}</div>
-                <div class="form-group">{{ form.cat_mex.label_tag }} {{ form.cat_mex }}</div>
-                <div class="form-group">{{ form.cat_bong.label_tag }} {{ form.cat_bong }}</div>
-            </div>
-
-            <button type="submit">Lưu dữ liệu</button>
-        </form>
-
-        {% if is_premium %}
-            <a class="list-link" href="{% url 'premium_dashboard' %}" style="background: #8e44ad; color: white; padding: 10px; border-radius: 4px; display: block; text-align: center; font-weight: bold; margin-top: 15px;">🔙 Dashboard dữ liệu</a>
-        {% else %}
-            <a class="list-link" href="{% url 'cut_list' %}">🔙 Xem danh sách dữ liệu Cắt</a>
-        {% endif %}
     </div>
 
     <script src="{% static 'working/js/cascade_select.js' %}"></script>

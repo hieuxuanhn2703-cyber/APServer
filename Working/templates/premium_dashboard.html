@@ -5,20 +5,16 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Quản Trị Viên (Premium)</title>
-    <link rel="stylesheet" href="{% static 'working/css/list.css' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
     <style>
         body {
-            padding: 10px !important;
-        }
-        .container.dashboard-container {
-            width: 100% !important;
-            max-width: 98vw !important;
-            padding: 15px !important;
-            margin: 0 auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background-color: var(--bg-body) !important;
         }
         @media (min-width: 900px) {
             body {
-                padding: 10px 15px !important;
+                padding: 0 !important;
             }
             .container.dashboard-container {
                 width: 100% !important;
@@ -123,69 +119,76 @@
         .excel-filter-popup {
             position: absolute;
             z-index: 9999;
-            background: #ffffff;
-            border: 1px solid #ccd0d5;
-            border-radius: 6px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-            width: 220px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            width: 240px;
             font-size: 13px;
             font-family: inherit;
             color: #333333;
             display: none;
             flex-direction: column;
             text-align: left;
-            animation: ef-fade-in 0.12s ease-out;
+            animation: ef-fade-in 0.2s ease-out;
         }
         @keyframes ef-fade-in {
-            from { opacity: 0; transform: translateY(-4px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(-8px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .ef-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
-            background: #f4f6f8;
-            border-bottom: 1px solid #e1e4e8;
-            border-radius: 6px 6px 0 0;
+            padding: 10px 14px;
+            background: rgba(244, 246, 248, 0.6);
+            border-bottom: 1px solid rgba(225, 228, 232, 0.5);
+            border-radius: 12px 12px 0 0;
             font-weight: bold;
-            font-size: 12px;
-            color: #2c3e50;
+            font-size: 13px;
+            color: #1e293b;
         }
         .ef-close-btn {
             background: none;
             border: none;
-            font-size: 18px;
+            font-size: 20px;
             cursor: pointer;
-            color: #888;
+            color: #94a3b8;
             padding: 0;
             line-height: 1;
+            transition: color 0.2s;
         }
-        .ef-close-btn:hover { color: #333; }
+        .ef-close-btn:hover { color: #ef4444; }
         .ef-search-box {
-            padding: 8px 10px;
-            border-bottom: 1px solid #eee;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(238, 238, 238, 0.5);
         }
         .ef-search-input {
             width: 100%;
-            padding: 5px 8px;
+            padding: 8px 10px;
             font-size: 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
             outline: none;
             box-sizing: border-box;
+            background: rgba(255,255,255,0.7);
+            transition: all 0.2s;
         }
         .ef-search-input:focus {
-            border-color: #3498db;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+            background: #fff;
         }
         .ef-options-container {
             padding: 4px 0;
-            max-height: 180px;
+            max-height: 200px;
             overflow-y: auto;
         }
         .ef-select-all {
-            padding: 6px 12px;
-            border-bottom: 1px solid #f0f0f0;
+            padding: 8px 14px;
+            border-bottom: 1px solid rgba(240, 240, 240, 0.5);
             font-weight: 600;
         }
         .ef-list {
@@ -195,72 +198,87 @@
         .ef-option-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 5px 12px;
+            gap: 10px;
+            padding: 6px 14px;
             cursor: pointer;
             user-select: none;
             font-size: 12px;
+            transition: background 0.15s;
         }
         .ef-option-item:hover {
-            background: #f0f7ff;
+            background: rgba(240, 247, 255, 0.8);
         }
         .ef-option-item input[type="checkbox"] {
             cursor: pointer;
             margin: 0;
+            width: 14px;
+            height: 14px;
+            accent-color: #3b82f6;
         }
         .ef-footer {
             display: flex;
             justify-content: flex-end;
-            gap: 6px;
-            padding: 8px 10px;
-            background: #fafbfc;
-            border-top: 1px solid #e1e4e8;
-            border-radius: 0 0 6px 6px;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(250, 251, 252, 0.6);
+            border-top: 1px solid rgba(225, 228, 232, 0.5);
+            border-radius: 0 0 12px 12px;
         }
         .ef-btn {
-            padding: 4px 10px;
-            font-size: 11.5px;
+            padding: 6px 12px;
+            font-size: 12px;
             font-weight: 600;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             border: 1px solid transparent;
+            transition: all 0.2s;
         }
         .ef-btn-apply {
-            background: #27ae60;
+            background: #3b82f6;
             color: #fff;
         }
-        .ef-btn-apply:hover { background: #219653; }
+        .ef-btn-apply:hover { background: #2563eb; transform: translateY(-1px); }
         .ef-btn-clear {
-            background: #e2e6ea;
-            color: #495057;
-            border-color: #dae0e5;
+            background: #f1f5f9;
+            color: #475569;
+            border-color: #cbd5e1;
         }
-        .ef-btn-clear:hover { background: #dbe0e5; }
+        .ef-btn-clear:hover { background: #e2e8f0; }
     </style>
 </head>
 
 <body>
-    <div class="container dashboard-container">
-        <div class="top-bar">
-            <h2>Dashboard Dữ Liệu</h2>
-            <div style="display:flex; gap:8px; flex-wrap: wrap;">
-                {% if user.role == 'QUAN_LY' %}
-                <a class="back-btn" style="background:#27ae60;" href="{% url 'cut_web' %}">Nhập DL Cắt</a>
-                <a class="back-btn" style="background:#3498db;" href="{% url 'web' %}">Nhập DL Sản xuất</a>
-                <a class="back-btn" style="background:#e67e22;" href="{% url 'kcs_web' %}">Nhập DL KCS</a>
-                <a class="back-btn" style="background:#f39c12;" href="{% url 'finishing_web' %}">Nhập DL Hoàn thiện</a>
-                {% endif %}
-                <a class="back-btn" style="background:#16a085;" href="{% url 'tracking' %}">Theo dõi Đơn hàng</a>
-                <a class="back-btn" style="background:#8e44ad;" href="{% url 'config_list' %}">Quản lý Mã hàng</a>
-                {% if is_premium %}
-                <a class="back-btn" style="background:#2ecc71;" href="{% url 'manage_accounts' %}">Quản lý Tài khoản</a>
-                {% endif %}
-                <a class="back-btn" style="background:#3498db;" href="{% url 'change_password' %}">Đổi mật khẩu</a>
-                <a class="back-btn" style="background:#c0392b;" href="{% url 'logout' %}">Đăng xuất</a>
-            </div>
-        </div>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
 
-        <div style="display: flex; flex-direction: column; gap: 25px;">
+        <!-- Main Dashboard Content -->
+        <div class="app-main">
+            <!-- App Topbar Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Dashboard Dữ Liệu</h1>
+                        <span class="header-subtitle">Giám sát tiến độ & báo cáo quy trình may mặc</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- App Content Body -->
+            <main class="app-content">
+                <div style="display: flex; flex-direction: column; gap: 25px;">
             <!-- 1. BẢNG TỔNG HỢP CẮT -->
             <div style="background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
@@ -373,10 +391,10 @@
 
                                 <td>
                                     <div class="action-btn-group">
-                                        <a class="edit-btn" href="{% url 'cut_edit' row.row_id %}">Sửa</a>
+                                        <a class="btn btn-warning" href="{% url 'cut_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
                                         <form action="{% url 'cut_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
                                             {% csrf_token %}
-                                            <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white;">Xóa</button>
+                                            <button type="submit" class="btn btn-danger">Xóa</button>
                                         </form>
                                     </div>
                                 </td>
@@ -397,10 +415,10 @@
                         <div class="card-header">
                             <span class="card-title">{{ row.ma_hang }} — {{ row.mau }} ({{ row.ngay_lam_viec }})</span>
                             <div class="action-btn-group">
-                                <a class="edit-btn" href="{% url 'cut_edit' row.row_id %}">Sửa</a>
+                                <a class="btn btn-warning" href="{% url 'cut_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
                                 <form action="{% url 'cut_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white;">Xóa</button>
+                                    <button type="submit" class="btn btn-danger">Xóa</button>
                                 </form>
                             </div>
                         </div>
@@ -496,10 +514,10 @@
                                 {% endfor %}
                                 <td>
                                     <div class="action-btn-group">
-                                        <a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a>
+                                        <a class="btn btn-warning" href="{% url 'edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
                                         <form action="{% url 'delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
                                             {% csrf_token %}
-                                            <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white;">Xóa</button>
+                                            <button type="submit" class="btn btn-danger">Xóa</button>
                                         </form>
                                     </div>
                                 </td>
@@ -520,10 +538,10 @@
                         <div class="card-header">
                             <span class="card-title">{{ row.values.5 }} — {{ row.values.6 }} ({{ row.values.1 }})</span>
                             <div class="action-btn-group">
-                                <a class="edit-btn" href="{% url 'edit' row.row_id %}">Sửa</a>
+                                <a class="btn btn-warning" href="{% url 'edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
                                 <form action="{% url 'delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white;">Xóa</button>
+                                    <button type="submit" class="btn btn-danger">Xóa</button>
                                 </form>
                             </div>
                         </div>
@@ -686,10 +704,10 @@
 
                                 <td>
                                     <div class="action-btn-group">
-                                        <a class="edit-btn" href="{% url 'kcs_edit' row.row_id %}">Sửa</a>
+                                        <a class="btn btn-warning" href="{% url 'kcs_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
                                         <form action="{% url 'kcs_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
                                             {% csrf_token %}
-                                            <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white;">Xóa</button>
+                                            <button type="submit" class="btn btn-danger">Xóa</button>
                                         </form>
                                     </div>
                                 </td>
@@ -710,10 +728,10 @@
                         <div class="card-header">
                             <span class="card-title">{{ row.ma_hang }} — {{ row.mau }} ({{ row.ngay_lam_viec }})</span>
                             <div class="action-btn-group">
-                                <a class="edit-btn" href="{% url 'kcs_edit' row.row_id %}">Sửa</a>
+                                <a class="btn btn-warning" href="{% url 'kcs_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
                                 <form action="{% url 'kcs_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white;">Xóa</button>
+                                    <button type="submit" class="btn btn-danger">Xóa</button>
                                 </form>
                             </div>
                         </div>
@@ -855,10 +873,10 @@
 
                                 <td>
                                     <div class="action-btn-group">
-                                        <a class="edit-btn" href="{% url 'finishing_edit' row.row_id %}">Sửa</a>
+                                        <a class="btn btn-warning" href="{% url 'finishing_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
                                         <form action="{% url 'finishing_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
                                             {% csrf_token %}
-                                            <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white;">Xóa</button>
+                                            <button type="submit" class="btn btn-danger">Xóa</button>
                                         </form>
                                     </div>
                                 </td>
@@ -879,10 +897,10 @@
                         <div class="card-header">
                             <span class="card-title">{{ row.ma_hang }} — {{ row.mau }} ({{ row.ngay_lam_viec }})</span>
                             <div class="action-btn-group">
-                                <a class="edit-btn" href="{% url 'finishing_edit' row.row_id %}">Sửa</a>
+                                <a class="btn btn-warning" href="{% url 'finishing_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
                                 <form action="{% url 'finishing_delete_report' row.row_id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xoá dòng dữ liệu này không?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="edit-btn" style="background: #e74c3c; border: none; cursor: pointer; color: white;">Xóa</button>
+                                    <button type="submit" class="btn btn-danger">Xóa</button>
                                 </form>
                             </div>
                         </div>
@@ -913,11 +931,26 @@
                 </div>
             </div>
 
+            </main>
         </div>
     </div>
 
     {{ excel_filter_config|json_script:"excel-filter-config" }}
     <script src="{% static 'working/js/excel_filter.js' %}"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('appSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (sidebar && backdrop) {
+                if (window.innerWidth <= 1024) {
+                    sidebar.classList.toggle('open');
+                    backdrop.classList.toggle('active');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                }
+            }
+        }
+    </script>
 </body>
 
 </html>

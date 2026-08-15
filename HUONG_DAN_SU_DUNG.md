@@ -1,6 +1,6 @@
 # HƯỚNG DẪN SỬ DỤNG HỆ THỐNG QUẢN LÝ TIẾN ĐỘ SẢN XUẤT
 
-Chào mừng bạn đến với Hệ thống Quản lý và Theo dõi Tiến độ Cắt – Sản xuất – KCS – Hoàn thiện. Hệ thống được phân chia thành **6 vai trò (Role)** với các chức năng tương ứng nhằm đảm bảo tính bảo mật và thuận tiện trong quá trình làm việc.
+Chào mừng bạn đến với Hệ thống Quản lý và Theo dõi Tiến độ Cắt – Sản xuất – KCS – Hoàn thiện. Hệ thống được phân chia thành **6 vai trò (Role)** với các chức năng tương ứng nhằm đảm bảo tính bảo mật và thuận tiện trong quá trình làm việc. Giao diện hệ thống được thiết kế đặc biệt dễ dàng thao tác trên màn hình điện thoại.
 
 > **Lưu ý về thời gian:** Hệ thống tự động ghi nhận thời gian nhập liệu (`dd/mm/yyyy hh:mm:ss`) theo **giờ Việt Nam** ngay khi người dùng ấn **Lưu dữ liệu**. Thông tin này không thể chỉnh sửa thủ công, đảm bảo tính chính xác và trung thực của dữ liệu.
 
@@ -9,80 +9,79 @@ Chào mừng bạn đến với Hệ thống Quản lý và Theo dõi Tiến đ�
 ## I. DÀNH CHO TẤT CẢ NGƯỜI DÙNG
 
 ### 1. Đăng ký & Đăng nhập
-- **Đăng ký:** Truy cập trang Đăng nhập → chọn **"Chưa có tài khoản? Đăng ký ngay"** → Điền Họ tên, Tên tài khoản, Mật khẩu và chọn đúng **Vai trò** phù hợp với bộ phận của bạn:
-  - **Sản xuất** – nhân viên dây chuyền sản xuất
-  - **Nhà cắt** – nhân viên tổ cắt
-  - **KCS** – nhân viên kiểm tra chất lượng
-  - **Hoàn thiện** – nhân viên bộ phận hoàn thiện
-  - **Quản lý** – cán bộ quản lý tổng hợp
+- **Đăng ký:** Truy cập trang Đăng nhập → chọn **"Chưa có tài khoản? Đăng ký ngay"** → Điền Họ tên, Tên tài khoản, Mật khẩu và chọn đúng **Vai trò** phù hợp với bộ phận của bạn.
 - **Lưu ý:** Tài khoản mới sẽ ở trạng thái *Chờ duyệt*. Bạn cần báo cho Admin phê duyệt thì mới có thể đăng nhập.
-- **Đăng nhập:** Nhập Tên tài khoản và Mật khẩu. Hệ thống tự chuyển hướng vào màn hình làm việc đúng với vai trò của bạn.
+- **Đăng nhập:** Nhập Tên tài khoản và Mật khẩu (có thể bấm biểu tượng con mắt để xem mật khẩu). Hệ thống tự chuyển hướng vào màn hình làm việc đúng với vai trò của bạn.
 - **Bảo mật truy cập:** Trường hợp người dùng **chưa đăng nhập** mà truy cập vào bất kỳ đường dẫn nào trên hệ thống, hệ thống sẽ **tự động chuyển hướng về trang Đăng nhập (`/login/`)**.
 
 ### 2. Đổi mật khẩu
-Khi đã đăng nhập, bấm nút **"Đổi mật khẩu"** ở góc trên trang để tự đổi mật khẩu cá nhân.
+- Khi đã đăng nhập, bạn có thể tự đổi mật khẩu.
+- Đối với nhân viên sản xuất, nhà cắt, KCS và hoàn thiện: Nút đổi mật khẩu nằm trực tiếp ở góc trên trang.
+- Đối với Quản lý và Admin (Premium): Chức năng Đổi mật khẩu nằm trong thanh menu Sidebar trượt từ bên trái.
+- Có nút quay lại dễ dàng ở màn hình đổi mật khẩu nếu muốn hủy bỏ.
 
 ---
 
 ## II. HƯỚNG DẪN NHÂN VIÊN SẢN XUẤT (Quyền BASIC)
 
-Trang làm việc: `/` (sau khi đăng nhập)
+Trang làm việc chính: Màn hình **Nhập Báo Cáo Sản Xuất**
 
 - **Thêm Báo Cáo:**
   1. Chọn **Mã Hàng** → danh sách **Màu** sẽ tự hiện ra, chọn Màu.
   2. Nhập **Xưởng**, **Tổ** (bắt buộc, không được bằng 0) và **Số lượng LĐ**.
   3. Nhập số lượng các công đoạn: Nhận BTP, Vào chuyền, Giữa chuyền, Ra chuyền, Thu hóa, Là TP, Nhập HT.
   4. Ấn **Lưu dữ liệu**.
-- **Xem Danh sách:** Vào `/list/` để xem các báo cáo **do chính bạn** đã nhập.
-- **Lưu ý:** Nhân viên Sản xuất **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý.
+- **Xem Danh sách:** Bấm **Xem danh sách đã nhập** để xem lại **50 báo cáo mới nhất** do chính bạn đã nhập. Để quay lại nhập liệu, hãy bấm nút **+ Nhập Mới** trên góc phải.
+- **Lưu ý:** Nhân viên Sản xuất **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý. Hệ thống không có thanh Sidebar để tối đa diện tích màn hình.
 
 ---
 
 ## III. HƯỚNG DẪN TỔ CẮT (Quyền NHA_CAT)
 
-Trang làm việc: `/cut/`
+Trang làm việc chính: Màn hình **Nhập Báo Cáo Cắt**
 
 - **Thêm Báo Cáo:**
   1. Chọn **Mã Hàng** → chọn **Màu**.
   2. Nhập số lượng các công đoạn cắt: **Cắt chính, Cắt lót, Cắt Mex, Cắt bông**.
   3. Ấn **Lưu dữ liệu**. *(Không cần nhập Xưởng hay Tổ.)*
-- **Xem Danh sách:** Vào `/cut/list/` để xem các báo cáo cắt do chính bạn nhập.
-- **Lưu ý:** Nhà cắt **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý.
+- **Xem Danh sách:** Bấm **Xem danh sách đã nhập** để xem lại 50 báo cáo mới nhất do chính bạn đã nhập.
+- **Lưu ý:** Nhà cắt **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý. Không có thanh Sidebar.
 
 ---
 
 ## IV. HƯỚNG DẪN NHÂN VIÊN KCS (Quyền KCS)
 
-Trang làm việc: `/kcs/`
+Trang làm việc chính: Màn hình **Nhập Báo Cáo KCS**
 
 - **Thêm Báo Cáo:**
   1. Chọn **Mã Hàng** → chọn **Màu**.
   2. Nhập **Xưởng**, **Tổ**.
   3. Nhập số liệu kiểm tra: **Qua tay, Đạt, Lỗi, Tổng đạt**.
   4. Ấn **Lưu dữ liệu**.
-- **Xem Danh sách:** Vào `/kcs/list/` để xem các báo cáo KCS do chính bạn nhập.
-  - Cột bảng theo thứ tự: Mã hàng → Màu → Xưởng → Tổ → Cỡ → Qua tay → Đạt → Lỗi → Tổng đạt.
-- **Lưu ý:** Nhân viên KCS **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý.
+- **Xem Danh sách:** Bấm **Xem danh sách đã nhập** để xem 50 báo cáo mới nhất do chính bạn đã nhập.
+- **Lưu ý:** Nhân viên KCS **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý. Không có thanh Sidebar.
 
 ---
 
 ## V. HƯỚNG DẪN NHÂN VIÊN HOÀN THIỆN (Quyền HOAN_THIEN)
 
-Trang làm việc: `/finishing/`
+Trang làm việc chính: Màn hình **Nhập Báo Cáo Hoàn Thiện**
 
 - **Thêm Báo Cáo:**
   1. Chọn **Mã Hàng** → chọn **Màu**.
   2. Nhập số lượng: **Thẻ bài, Gấp hàng, Treo/Đóng thùng**.
   3. Ấn **Lưu dữ liệu**.
-- **Xem Danh sách:** Vào `/finishing/list/` để xem các báo cáo hoàn thiện do chính bạn nhập.
-- **Lưu ý:** Nhân viên Hoàn thiện **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý.
+- **Xem Danh sách:** Bấm **Xem danh sách đã nhập** để xem 50 báo cáo mới nhất.
+- **Lưu ý:** Nhân viên Hoàn thiện **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý. Không có thanh Sidebar.
 
 ---
 
 ## VI. HƯỚNG DẪN QUẢN LÝ (Quyền QUAN_LY)
 
+Quản lý có thể nhìn thấy thanh menu mở rộng (Sidebar) bên trái màn hình với đầy đủ chức năng.
+
 ### 1. Bảng Điều Khiển — Dashboard (`/dashboard/`)
-Ngay khi đăng nhập, Quản lý thấy **Dashboard Dữ Liệu** với **4 bảng tổng hợp độc lập** (được tối ưu giao diện rộng toàn màn hình trên máy tính, hiển thị đầy đủ các cột mà không cần kéo ngang):
+Ngay khi đăng nhập, Quản lý thấy **Dashboard Dữ Liệu** với **4 bảng tổng hợp độc lập** hiển thị đầy đủ thông tin trên màn hình rộng mà không cần kéo ngang:
 
 | Thứ tự | Bảng | Nội dung |
 |---|---|---|
@@ -92,26 +91,16 @@ Ngay khi đăng nhập, Quản lý thấy **Dashboard Dữ Liệu** với **4 b�
 | 4 | **Tổng hợp Hoàn thiện** | Số liệu tổng hợp từng (Mã hàng, Màu) của bộ phận Hoàn thiện (Thẻ bài, Gấp hàng, Treo/Đóng thùng) |
 
 - **Lọc thời gian độc lập**: Mỗi bảng có bộ lọc riêng (Từ ngày – Đến ngày). Lọc bảng này không ảnh hưởng bảng kia.
-- **Quy tắc tính ô Ngày / Tổng (Lũy kế theo thời gian)**: Số Tổng ở góc dưới ô chéo là **tổng lũy kế** của lần nhập đó cộng với tất cả các lần nhập trước đó (cùng Mã hàng + Màu). Khi có các lần nhập mới sau đó, giá trị Tổng của lần nhập cũ vẫn giữ nguyên không đổi.
-- **Bộ lọc dạng Excel trên từng cột (Lọc liên tầng, Toàn bộ dữ liệu & Giữ lọc khi đổi trang)**: Các cột **Người nhập, Mã hàng, Màu, Xưởng, Tổ** trên cả 4 bảng đều có nút lọc `[▼]` giống Excel:
-  - **Lọc liên tầng (Cascading Filter)**: Khi lọc một hoặc nhiều cột (ví dụ Mã hàng = AT01), popup của các cột khác (ví dụ Màu) sẽ tự động thu hẹp và **chỉ hiển thị những giá trị thực tế của các dòng đã được lọc** bởi các bộ lọc trước đó, hoàn toàn giống cách hoạt động của Excel.
-  - Bấm vào nút `[▼]` trên tiêu đề cột để mở popup danh sách các giá trị phân biệt.
-  - Hỗ trợ ô **Tìm kiếm**, checkbox **(Chọn tất cả)**, chọn lọc nhiều giá trị linh hoạt.
-  - Khi ấn **"Áp dụng"**, hệ thống sẽ **lọc trên toàn bộ dữ liệu** trong cơ sở dữ liệu, sau đó phân trang hiển thị tối đa 10 hàng/trang.
-  - Khi **chuyển trang** (Trang 1, 2, Sau, Cuối...), hệ thống **tự động giữ nguyên tất cả các bộ lọc cột đang chọn**.
-  - Cột đang có bộ lọc sẽ đổi màu cam nổi bật kèm biểu tượng phễu lọc.
-  - Bấm **"Xóa lọc"** trên popup để hủy lọc cột đó.
-- **Xuất Excel**: Ấn nút **Xuất Excel** của từng bảng để tải file dữ liệu đã lọc.
-- **Phân trang**: Mỗi bảng hiển thị tối đa **10 hàng dữ liệu** trên một trang và phân trang độc lập, chuyển trang bảng này không mất trang của bảng kia và bảo toàn toàn bộ bộ lọc.
+- **Quy tắc tính ô Ngày / Tổng (Lũy kế theo thời gian)**: Số Tổng ở góc dưới ô chéo là **tổng lũy kế** của lần nhập đó cộng với tất cả các lần nhập trước đó. Khi có các lần nhập mới sau đó, giá trị Tổng của lần nhập cũ vẫn giữ nguyên không đổi.
+- **Bộ lọc dạng Excel trên từng cột (Lọc liên tầng, Toàn bộ dữ liệu & Giữ lọc khi đổi trang)**: Các cột **Người nhập, Mã hàng, Màu, Xưởng, Tổ** đều có nút lọc `[▼]` giống Excel.
+- **Xuất Excel**: Ấn nút **Xuất Excel** của từng bảng để tải file dữ liệu đã lọc trên Dashboard.
+- **Phân trang**: Mỗi bảng hiển thị tối đa **10 hàng dữ liệu** trên một trang.
 
-### 2. Nhập Dữ Liệu Nhanh (Top-bar)
-Từ Dashboard, Quản lý có thể truy cập nhanh:
-- **Nhập DL Cắt** → `/cut/`
-- **Nhập DL Sản xuất** → `/`
-- **Nhập DL KCS** → `/kcs/`
-- **Nhập DL Hoàn thiện** → `/finishing/`
-- **Theo dõi Đơn hàng** → `/tracking/`
-- **Quản lý Mã hàng** → `/config/`
+### 2. Các chức năng trên Sidebar
+Quản lý có thể truy cập nhanh trên Sidebar:
+- **BÁO CÁO TỔNG HỢP**: Tổng hợp dữ liệu (Dashboard) & Theo dõi Đơn hàng (Tracking).
+- **QUY TRÌNH SẢN XUẤT**: Cho phép Quản lý tự thao tác **Nhập DL Cắt, Sản xuất, KCS, Hoàn thiện**.
+- **HỆ THỐNG & QUẢN TRỊ**: Quản lý Mã hàng & Màu sắc.
 
 ### 3. Quản Lý & Sửa/Xóa Dữ Liệu
 - Quản lý có thể **Sửa** hoặc **Xóa** bất kỳ dòng dữ liệu nào của bất kỳ ai từ cả 4 bộ phận.
@@ -133,9 +122,11 @@ Bảng tổng hợp theo dõi tiến độ toàn bộ đơn hàng theo (Mã hàn
 
 ## VII. HƯỚNG DẪN ADMIN (Quyền PREMIUM)
 
-Admin có toàn bộ quyền hạn như Quản lý, cộng thêm:
+Tài khoản `PREMIUM` là quản trị viên hệ thống. Role này sẽ tập trung vào xem báo cáo tổng quan và quản trị người dùng, **không thực hiện nhập liệu quy trình sản xuất**. Trên Sidebar, mục "Quy trình sản xuất" sẽ không được hiển thị.
 
-### Quản Lý Người Dùng (`/manage-accounts/`)
+Admin có quyền hạn xem Dashboard như Quản lý, và có thêm đặc quyền:
+
+### Quản Lý Người Dùng (`/manage-accounts/`) (Trên Sidebar)
 - **Phê duyệt**: Duyệt tài khoản mới đăng ký để họ có thể đăng nhập.
 - **Phân quyền**: Thay đổi vai trò (Role) của từng tài khoản.
 - **Khóa/Mở**: Tạm thời khóa hoặc mở khóa quyền đăng nhập.

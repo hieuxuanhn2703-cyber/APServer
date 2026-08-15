@@ -68,6 +68,10 @@ class AppUser(models.Model):
         verbose_name = "Tài khoản người dùng"
         verbose_name_plural = "Tài khoản người dùng"
 
+    @property
+    def username(self):
+        return self.account
+
     def __str__(self):
         return f"{self.name} ({self.account})"
 

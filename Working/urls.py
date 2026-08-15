@@ -9,7 +9,11 @@ urlpatterns = [
     path("manage-accounts/", views.manage_accounts_view, name="manage_accounts"),
     path("toggle-account/<int:user_id>/", views.toggle_account_view, name="toggle_account"),
     path("delete-account/<int:user_id>/", views.delete_account_view, name="delete_account"),
-    path("dashboard/", views.premium_dashboard_view, name="premium_dashboard"),
+    path("dashboard/", views.dashboard_cut_view, name="premium_dashboard"),
+    path("dashboard/cut/", views.dashboard_cut_view, name="dashboard_cut"),
+    path("dashboard/prod/", views.dashboard_prod_view, name="dashboard_prod"),
+    path("dashboard/kcs/", views.dashboard_kcs_view, name="dashboard_kcs"),
+    path("dashboard/finishing/", views.dashboard_finishing_view, name="dashboard_finishing"),
     
     path("config/", views.config_list_view, name="config_list"),
     path("config/product/add/", views.config_add_product_view, name="config_add_product"),

@@ -1,73 +1,224 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thêm cấu hình</title>
-    <link rel="stylesheet" href="{% static 'working/css/login.css' %}">
+    <title>
+        {% if type == 'product' %}Thêm Mã Hàng Mới
+        {% elif type == 'color' %}Thêm Màu Sắc
+        {% else %}Cấu hình{% endif %} - ProcessMonitoring
+    </title>
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+    <style>
+        .config-form-card {
+            max-width: 620px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            padding: 28px 32px;
+        }
+
+        .config-form-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .config-form-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .form-input-styled {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: #1e293b;
+            background: #ffffff;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .form-input-styled:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            outline: none;
+        }
+
+        .form-label-styled {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .form-hint {
+            margin-top: 5px;
+            font-size: 0.78rem;
+            color: #64748b;
+        }
+
+        .form-actions-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .btn-submit-large {
+            flex: 1;
+            padding: 12px 24px;
+            background: #10b981;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn-submit-large:hover {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-cancel-large {
+            padding: 12px 20px;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel-large:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+    </style>
 </head>
-
 <body>
-    <div class="login-container">
-        <h2>
-            {% if type == 'product' %}Thêm Mã Hàng Mới
-            {% elif type == 'color' %}Thêm Màu cho {{ parent.name }}
-            {% elif type == 'size' %}Thêm Cỡ cho màu {{ parent.name }} ({{ parent.product.name }})
-            {% endif %}
-        </h2>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
 
-        {% if error %}
-        <div style="background-color: #f8d7da; color: #721c24; padding: 10px; margin-bottom: 15px; border: 1px solid #f5c6cb; border-radius: 4px; font-size: 14px;">
-            {{ error }}
-        </div>
-        {% endif %}
-
-        <form method="post">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="name">
-                    {% if type == 'product' %}Tên Mã Hàng (VD: AT1)
-                    {% elif type == 'color' %}Tên Màu (VD: Đen)
-                    {% elif type == 'size' %}Cỡ (Nhập nhiều cỡ cách nhau bằng dấu phẩy, VD: S, M, L)
-                    {% endif %}
-                </label>
-                <input type="text" id="name" name="name" required autocomplete="off">
-            </div>
-
-            {% if type == 'color' %}
-            <div class="form-group" style="margin-top: 15px;">
-                <label for="quantity">Số lượng (*)</label>
-                <input type="number" id="quantity" name="quantity" min="0" autocomplete="off" required>
-            </div>
-            {% endif %}
-
-            {% if type == 'product' %}
-            <div class="form-group" style="margin-top: 15px;">
-                <label for="colors">Các Màu (Bắt buộc phải có số lượng, VD: Đỏ - 100)</label>
-                <textarea id="colors" name="colors" autocomplete="off" placeholder="Đỏ - 150&#10;Xanh&#10;Vàng - 50" style="width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; resize: vertical;"></textarea>
-            </div>
-            
-            <!-- TẠM ẨN CẤU HÌNH CỠ
-            <div class="form-group" style="margin-top: 15px;">
-                <label>Các Cỡ chung cho các Màu trên</label>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
-                    {% for s in default_sizes %}
-                    <label style="cursor: pointer;">
-                        <input type="checkbox" name="sizes" value="{{ s }}" style="display:none;" onchange="this.nextElementSibling.style.backgroundColor = this.checked ? '#007bff' : '#ffffff'; this.nextElementSibling.style.color = this.checked ? 'white' : '#333333'; this.nextElementSibling.style.borderColor = this.checked ? '#007bff' : '#cccccc';">
-                        <span style="display: inline-block; padding: 6px 12px; background-color: #ffffff; border-radius: 4px; border: 1px solid #cccccc; user-select: none; transition: 0.2s; color: #333333;">{{ s }}</span>
-                    </label>
-                    {% endfor %}
+        <div class="app-main">
+            <!-- App Topbar Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">
+                            {% if type == 'product' %}Thêm Mã Hàng Mới
+                            {% elif type == 'color' %}Thêm Màu Sắc Cho Mã Hàng
+                            {% else %}Cấu hình{% endif %}
+                        </h1>
+                        <span class="header-subtitle">Nhập thông tin mã hàng và số lượng kế hoạch</span>
+                    </div>
                 </div>
-            </div>
-            -->
-            {% endif %}
-            <button type="submit" style="background:#2ecc71;">Lưu</button>
-            <div style="margin-top: 15px; text-align: center;">
-                <a href="{% url 'config_list' %}" style="color: #e74c3c; text-decoration: none;">Huỷ bỏ</a>
-            </div>
-        </form>
+                <div class="header-right">
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- App Content Body -->
+            <main class="app-content">
+                <div class="fade-in">
+                    <div class="config-form-card">
+                        <div class="config-form-header">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="16"></line>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                            </svg>
+                            <h2>
+                                {% if type == 'product' %}Thông Tin Mã Hàng & Màu Sắc
+                                {% elif type == 'color' %}Thông Tin Màu Sắc
+                                {% else %}Thêm Mới{% endif %}
+                            </h2>
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="name" class="form-label-styled">
+                                    {% if type == 'product' %}Tên Mã Hàng (*):
+                                    {% elif type == 'color' %}Tên Màu (*):
+                                    {% else %}Tên:
+                                    {% endif %}
+                                </label>
+                                <input type="text" id="name" name="name" class="form-input-styled" placeholder="{% if type == 'product' %}Ví dụ: AT01, SM02...{% else %}Ví dụ: Đỏ, Xanh, Đen...{% endif %}" required autocomplete="off">
+                                <span class="form-hint">Nhập tên viết tắt hoặc mã định danh của sản phẩm</span>
+                            </div>
+
+                            {% if type == 'color' %}
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="quantity" class="form-label-styled">Số lượng Kế hoạch (*):</label>
+                                <input type="number" id="quantity" name="quantity" min="0" class="form-input-styled" placeholder="Ví dụ: 100, 250..." autocomplete="off" required>
+                                <span class="form-hint">Tổng số lượng sản phẩm dự kiến sản xuất cho màu này</span>
+                            </div>
+                            {% endif %}
+
+                            {% if type == 'product' %}
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label for="colors" class="form-label-styled">Danh sách Màu & Số lượng (Mỗi màu 1 dòng):</label>
+                                <textarea id="colors" name="colors" class="form-input-styled" autocomplete="off" placeholder="Đỏ - 100&#10;Xanh - 200&#10;Đen - 150" style="height: 120px; resize: vertical; line-height: 1.5;"></textarea>
+                                <span class="form-hint">Cú pháp: <strong>Tên màu - Số lượng</strong> (Ví dụ: <code>Đỏ - 100</code>). Nếu không nhập số lượng thì mặc định là 0.</span>
+                            </div>
+                            {% endif %}
+
+                            <div class="form-actions-bar">
+                                <button type="submit" class="btn-submit-large">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    Lưu Dữ Liệu
+                                </button>
+                                <a href="{% url 'config_list' %}" class="btn-cancel-large">
+                                    Hủy bỏ
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
 </body>
-
 </html>

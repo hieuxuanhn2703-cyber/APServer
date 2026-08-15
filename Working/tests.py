@@ -273,71 +273,75 @@ class ComprehensiveSystemTests(TestCase):
 
 
     # ==========================================
-    # 2. TEST DASHBOARD DỮ LIỆU (PREMIUM)
+    # 2. TEST DASHBOARD DỮ LIỆU (4 TRANG TỔNG HỢP)
     # ==========================================
     def test_premium_dashboard_view(self):
         self._login_as(self.premium_user)
-        res = self.client.get(reverse('premium_dashboard'))
-        self.assertEqual(res.status_code, 200)
-        self.assertIn("Dashboard Dữ Liệu", res.content.decode('utf-8'))
-        self.assertIn("Tổng hợp Sản xuất", res.content.decode('utf-8'))
-        self.assertIn("Tổng hợp Hoàn thiện", res.content.decode('utf-8'))
-        self.assertIn("Quản lý Mã hàng", res.content.decode('utf-8'))
-        self.assertIn("Quản lý Tài khoản", res.content.decode('utf-8'))
-        self.assertIn("Đăng xuất", res.content.decode('utf-8'))
         
-        # Admin (PREMIUM) thì KHÔNG thấy 2 nút nhập dữ liệu ở Dashboard
-        self.assertNotIn("Nhập DL Sản xuất", res.content.decode('utf-8'))
-        self.assertNotIn("Nhập DL Hoàn thiện", res.content.decode('utf-8'))
+        # 1. Test Dashboard Cắt
+        res_cut = self.client.get(reverse('dashboard_cut'))
+        self.assertEqual(res_cut.status_code, 200)
+        self.assertIn("Tổng Hợp Quy Trình Cắt", res_cut.content.decode('utf-8'))
+        self.assertEqual(res_cut.context['page_cut'].paginator.per_page, 50)
+        self.assertIn('data-title="Mã hàng"', res_cut.content.decode('utf-8'))
+        
+        # 2. Test Dashboard Sản xuất
+        res_prod = self.client.get(reverse('dashboard_prod'))
+        self.assertEqual(res_prod.status_code, 200)
+        self.assertIn("Tổng Hợp Quy Trình Sản Xuất", res_prod.content.decode('utf-8'))
+        self.assertEqual(res_prod.context['page_prod'].paginator.per_page, 50)
+        self.assertNotIn("Thời gian", res_prod.context['prod_headers'])
+        self.assertIn("Số lượng LĐ", res_prod.context['prod_headers'])
 
-        # Dashboard tổng hợp sản xuất không hiển thị cột Thời gian
-        self.assertNotIn("Thời gian", res.context['prod_headers'])
-        self.assertIn("Số lượng LĐ", res.context['prod_headers'])
+        # 3. Test Dashboard KCS
+        res_kcs = self.client.get(reverse('dashboard_kcs'))
+        self.assertEqual(res_kcs.status_code, 200)
+        self.assertIn("Tổng Hợp Quy Trình KCS", res_kcs.content.decode('utf-8'))
+        self.assertEqual(res_kcs.context['page_kcs'].paginator.per_page, 50)
 
-        # Kiểm tra sự hiện diện của bộ lọc Excel
-        self.assertIn("excel_filter.js", res.content.decode('utf-8'))
-        self.assertIn("excel-filter-btn", res.content.decode('utf-8'))
-        self.assertIn('data-title="Mã hàng"', res.content.decode('utf-8'))
-        self.assertIn('data-title="Màu"', res.content.decode('utf-8'))
-        self.assertIn('data-title="Người nhập"', res.content.decode('utf-8'))
-        self.assertIn('data-title="Xưởng"', res.content.decode('utf-8'))
-        self.assertIn('data-title="Tổ"', res.content.decode('utf-8'))
+        # 4. Test Dashboard Hoàn thiện
+        res_fin = self.client.get(reverse('dashboard_finishing'))
+        self.assertEqual(res_fin.status_code, 200)
+        self.assertIn("Tổng Hợp Quy Trình Hoàn Thiện", res_fin.content.decode('utf-8'))
+        self.assertEqual(res_fin.context['page_fin'].paginator.per_page, 50)
 
-        # Kiểm tra mỗi bảng trong Dashboard chỉ hiển thị tối đa 10 hàng dữ liệu
-        self.assertEqual(res.context['page_prod'].paginator.per_page, 10)
-        self.assertEqual(res.context['page_fin'].paginator.per_page, 10)
-        self.assertEqual(res.context['page_kcs'].paginator.per_page, 10)
-        self.assertEqual(res.context['page_cut'].paginator.per_page, 10)
+        # Common checks
+        self.assertIn("Quản lý Mã hàng", res_cut.content.decode('utf-8'))
+        self.assertIn("Quản lý Tài khoản", res_cut.content.decode('utf-8'))
+        self.assertIn("Đăng xuất", res_cut.content.decode('utf-8'))
+        self.assertIn("excel_filter.js", res_cut.content.decode('utf-8'))
+        self.assertIn("excel-filter-btn", res_cut.content.decode('utf-8'))
 
 
     def test_quanly_dashboard_view(self):
         self._login_as(self.quanly_user)
-        res = self.client.get(reverse('premium_dashboard'))
+        res = self.client.get(reverse('dashboard_cut'))
         self.assertEqual(res.status_code, 200)
-        self.assertIn("Dashboard Dữ Liệu", res.content.decode('utf-8'))
         self.assertNotIn("Quản lý Tài khoản", res.content.decode('utf-8'))
-        
-        # Quản lý (QUAN_LY) thì CÓ thấy 2 nút nhập dữ liệu ở Dashboard
+        self.assertIn("Nhập DL Cắt", res.content.decode('utf-8'))
         self.assertIn("Nhập DL Sản xuất", res.content.decode('utf-8'))
         self.assertIn("Nhập DL Hoàn thiện", res.content.decode('utf-8'))
 
     def test_dashboard_date_filter(self):
         self._login_as(self.premium_user)
-        # Dùng localtime để lấy đúng ngày theo múi giờ Asia/Ho_Chi_Minh
-        # vì parse_date_range trong views cũng dùng make_aware (Asia/Ho_Chi_Minh)
         from django.utils import timezone as tz
         prod_date = tz.localtime(self.prod_report.created_at).strftime('%Y-%m-%d')
         fin_date = tz.localtime(self.fin_report.created_at).strftime('%Y-%m-%d')
-        res = self.client.get(f"{reverse('premium_dashboard')}?prod_start_date={prod_date}&prod_end_date={prod_date}&fin_start_date={fin_date}&fin_end_date={fin_date}")
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(len(res.context['page_prod']), 1)
-        self.assertEqual(len(res.context['page_fin']), 1)
+
+        # Lọc ngày bảng Sản xuất
+        res_p = self.client.get(f"{reverse('dashboard_prod')}?prod_start_date={prod_date}&prod_end_date={prod_date}")
+        self.assertEqual(res_p.status_code, 200)
+        self.assertEqual(len(res_p.context['page_prod']), 1)
+
+        # Lọc ngày bảng Hoàn thiện
+        res_f = self.client.get(f"{reverse('dashboard_finishing')}?fin_start_date={fin_date}&fin_end_date={fin_date}")
+        self.assertEqual(res_f.status_code, 200)
+        self.assertEqual(len(res_f.context['page_fin']), 1)
 
         # Lọc ngày trong tương lai -> Không có dữ liệu
-        res_empty = self.client.get(f"{reverse('premium_dashboard')}?prod_start_date=2099-01-01&prod_end_date=2099-12-31&fin_start_date=2099-01-01&fin_end_date=2099-12-31")
+        res_empty = self.client.get(f"{reverse('dashboard_prod')}?prod_start_date=2099-01-01&prod_end_date=2099-12-31")
         self.assertEqual(res_empty.status_code, 200)
         self.assertEqual(len(res_empty.context['page_prod']), 0)
-        self.assertEqual(len(res_empty.context['page_fin']), 0)
 
     def test_dashboard_cumulative_running_totals(self):
         """
@@ -424,11 +428,10 @@ class ComprehensiveSystemTests(TestCase):
             tong_dat=65
         )
 
-        res = self.client.get(reverse('premium_dashboard'))
-        self.assertEqual(res.status_code, 200)
-
         # Kiểm tra bảng Cắt
-        cut_page = res.context['page_cut']
+        res_cut = self.client.get(reverse('dashboard_cut'))
+        self.assertEqual(res_cut.status_code, 200)
+        cut_page = res_cut.context['page_cut']
         cut_dict = {row['row_id']: row for row in cut_page}
         # Bản ghi 1: Ngày 300 / Tổng 300
         self.assertEqual(cut_dict[cut1.id]['cat_chinh_ngay'], 300)
@@ -438,7 +441,9 @@ class ComprehensiveSystemTests(TestCase):
         self.assertEqual(cut_dict[cut2.id]['cat_chinh_tong'], 500)
 
         # Kiểm tra bảng Hoàn thiện
-        fin_page = res.context['page_fin']
+        res_fin = self.client.get(reverse('dashboard_finishing'))
+        self.assertEqual(res_fin.status_code, 200)
+        fin_page = res_fin.context['page_fin']
         fin_dict = {row['row_id']: row for row in fin_page}
         # Bản ghi 1: 100 / 100
         self.assertEqual(fin_dict[fin1.id]['the_bai_ngay'], 100)
@@ -448,7 +453,9 @@ class ComprehensiveSystemTests(TestCase):
         self.assertEqual(fin_dict[fin2.id]['the_bai_tong'], 250)
 
         # Kiểm tra bảng KCS
-        kcs_page = res.context['page_kcs']
+        res_kcs = self.client.get(reverse('dashboard_kcs'))
+        self.assertEqual(res_kcs.status_code, 200)
+        kcs_page = res_kcs.context['page_kcs']
         kcs_dict = {row['row_id']: row for row in kcs_page}
         # Bản ghi 1: 50 / 50
         self.assertEqual(kcs_dict[kcs1.id]['qua_tay_ngay'], 50)
@@ -540,7 +547,7 @@ class ComprehensiveSystemTests(TestCase):
         self.assertEqual(new_report.xuong, 3)
         self.assertEqual(new_report.so_luong_ld, 25)
 
-        # 3. Sửa bởi PREMIUM -> Chuyển về 'premium_dashboard'
+        # 3. Sửa bởi PREMIUM -> Chuyển về 'dashboard_prod'
         self._login_as(self.premium_user)
         res_edit_prem = self.client.post(reverse('edit', args=[new_report.id]), {
             'ngay_lam_viec': today_str,
@@ -558,7 +565,7 @@ class ComprehensiveSystemTests(TestCase):
             'la_thanh_pham': 50,
             'nhap_hoan_thien': 50,
         })
-        self.assertRedirects(res_edit_prem, reverse('premium_dashboard'))
+        self.assertRedirects(res_edit_prem, reverse('dashboard_prod'))
         new_report.refresh_from_db()
         self.assertEqual(new_report.nhan_btp, 50)
         self.assertEqual(new_report.so_luong_ld, 35)
@@ -575,10 +582,10 @@ class ComprehensiveSystemTests(TestCase):
         })
         self.assertEqual(res_denied.status_code, 403)
 
-        # 5. Xóa bởi PREMIUM -> Chuyển về 'premium_dashboard'
+        # 5. Xóa bởi PREMIUM -> Chuyển về 'dashboard_prod'
         self._login_as(self.premium_user)
         res_del = self.client.post(reverse('delete_report', args=[new_report.id]))
-        self.assertRedirects(res_del, reverse('premium_dashboard'))
+        self.assertRedirects(res_del, reverse('dashboard_prod'))
         self.assertFalse(ProcessReport.objects.filter(id=new_report.id).exists())
 
     # ==========================================
@@ -606,7 +613,12 @@ class ComprehensiveSystemTests(TestCase):
         self.assertEqual(res_fin_list.status_code, 200)
         self.assertNotIn("<th>Thao tác</th>", res_fin_list.content.decode('utf-8'))
         
-        # Nhưng QUAN_LY (hoặc PREMIUM) thì thấy
+        # Nhưng PREMIUM và QUAN_LY thì thấy
+        self._login_as(self.premium_user)
+        res_fin_list_prem = self.client.get(reverse('finishing_list'))
+        self.assertEqual(res_fin_list_prem.status_code, 200)
+        self.assertIn("<th>Thao tác</th>", res_fin_list_prem.content.decode('utf-8'))
+
         self._login_as(self.quanly_user)
         res_fin_list_quanly = self.client.get(reverse('finishing_list'))
         self.assertEqual(res_fin_list_quanly.status_code, 200)
@@ -628,7 +640,7 @@ class ComprehensiveSystemTests(TestCase):
         new_fin.refresh_from_db()
         self.assertEqual(new_fin.the_bai, 25)
 
-        # 3. Sửa bởi PREMIUM -> Chuyển về 'premium_dashboard'
+        # 3. Sửa bởi PREMIUM -> Chuyển về 'dashboard_finishing'
         self._login_as(self.premium_user)
         res_edit_prem = self.client.post(reverse('finishing_edit', args=[new_fin.id]), {
             'ngay_lam_viec': today_str,
@@ -638,7 +650,7 @@ class ComprehensiveSystemTests(TestCase):
             'gap_hang': 35,
             'treo_dong_thung': 35,
         })
-        self.assertRedirects(res_edit_prem, reverse('premium_dashboard'))
+        self.assertRedirects(res_edit_prem, reverse('dashboard_finishing'))
         new_fin.refresh_from_db()
         self.assertEqual(new_fin.the_bai, 35)
 
@@ -651,10 +663,10 @@ class ComprehensiveSystemTests(TestCase):
         })
         self.assertEqual(res_denied.status_code, 403)
 
-        # 5. Xóa bởi PREMIUM -> Chuyển về 'premium_dashboard'
+        # 5. Xóa bởi PREMIUM -> Chuyển về 'dashboard_finishing'
         self._login_as(self.premium_user)
         res_del = self.client.post(reverse('finishing_delete_report', args=[new_fin.id]))
-        self.assertRedirects(res_del, reverse('premium_dashboard'))
+        self.assertRedirects(res_del, reverse('dashboard_finishing'))
         self.assertFalse(FinishingReport.objects.filter(id=new_fin.id).exists())
 
     # ==========================================
@@ -867,9 +879,9 @@ class ComprehensiveSystemTests(TestCase):
         self._login_as(self.premium_user)
         today = datetime.date.today()
 
-        # Tạo 25 báo cáo Cắt: 15 cho AT01, 10 cho AT02
+        # Tạo 60 báo cáo Cắt: 35 cho AT01, 25 cho AT02 -> 2 trang (50, 10)
         CutReport.objects.all().delete()
-        for i in range(15):
+        for i in range(35):
             CutReport.objects.create(
                 ngay_lam_viec=today,
                 ma_hang="AT01",
@@ -880,7 +892,7 @@ class ComprehensiveSystemTests(TestCase):
                 cat_bong=10,
                 nguoi_nhap=self.premium_user
             )
-        for i in range(10):
+        for i in range(25):
             CutReport.objects.create(
                 ngay_lam_viec=today,
                 ma_hang="AT02",
@@ -892,53 +904,50 @@ class ComprehensiveSystemTests(TestCase):
                 nguoi_nhap=self.quanly_user
             )
 
-        # 1. Chưa lọc: tổng 25 bản ghi -> 3 trang (10, 10, 5)
-        res_no_filter = self.client.get(reverse('premium_dashboard'))
+        # 1. Chưa lọc: tổng 60 bản ghi -> 2 trang (50, 10)
+        res_no_filter = self.client.get(reverse('dashboard_cut'))
         self.assertEqual(res_no_filter.status_code, 200)
         page_cut = res_no_filter.context['page_cut']
-        self.assertEqual(page_cut.paginator.count, 25)
-        self.assertEqual(page_cut.paginator.num_pages, 3)
-        self.assertEqual(len(page_cut.object_list), 10)
+        self.assertEqual(page_cut.paginator.count, 60)
+        self.assertEqual(page_cut.paginator.per_page, 50)
+        self.assertEqual(page_cut.paginator.num_pages, 2)
+        self.assertEqual(len(page_cut.object_list), 50)
 
-        # 2. Lọc cột Mã hàng = AT01: 15 bản ghi -> 2 trang (10, 5)
-        res_filter_at01 = self.client.get(reverse('premium_dashboard') + '?cut_filter_ma_hang=AT01')
+        # 2. Lọc cột Mã hàng = AT01: 35 bản ghi -> 1 trang (35)
+        res_filter_at01 = self.client.get(reverse('dashboard_cut') + '?cut_filter_ma_hang=AT01')
         self.assertEqual(res_filter_at01.status_code, 200)
         page_cut_filtered = res_filter_at01.context['page_cut']
-        self.assertEqual(page_cut_filtered.paginator.count, 15)
-        self.assertEqual(page_cut_filtered.paginator.num_pages, 2)
-        self.assertEqual(len(page_cut_filtered.object_list), 10)
+        self.assertEqual(page_cut_filtered.paginator.count, 35)
+        self.assertEqual(page_cut_filtered.paginator.num_pages, 1)
+        self.assertEqual(len(page_cut_filtered.object_list), 35)
         for row in page_cut_filtered.object_list:
             self.assertEqual(row['ma_hang'], 'AT01')
 
-        # 3. Sang trang 2 vẫn giữ lọc Mã hàng = AT01
-        res_page2_filtered = self.client.get(reverse('premium_dashboard') + '?cut_filter_ma_hang=AT01&p4=2')
-        self.assertEqual(res_page2_filtered.status_code, 200)
-        page_cut_p2 = res_page2_filtered.context['page_cut']
+        # 3. Sang trang 2 không lọc
+        res_page2 = self.client.get(reverse('dashboard_cut') + '?p4=2')
+        self.assertEqual(res_page2.status_code, 200)
+        page_cut_p2 = res_page2.context['page_cut']
         self.assertEqual(page_cut_p2.number, 2)
-        self.assertEqual(len(page_cut_p2.object_list), 5)
-        for row in page_cut_p2.object_list:
-            self.assertEqual(row['ma_hang'], 'AT01')
+        self.assertEqual(len(page_cut_p2.object_list), 10)
 
-        # 4. Lọc kết hợp nhiều cột: Mã hàng = AT01 VÀ Màu = Đỏ (8 bản ghi -> 1 trang)
-        res_multi_filter = self.client.get(reverse('premium_dashboard') + '?cut_filter_ma_hang=AT01&cut_filter_mau=%C4%90%E1%BB%8F')
+        # 4. Lọc kết hợp nhiều cột: Mã hàng = AT01 VÀ Màu = Đỏ (18 bản ghi -> 1 trang)
+        res_multi_filter = self.client.get(reverse('dashboard_cut') + '?cut_filter_ma_hang=AT01&cut_filter_mau=%C4%90%E1%BB%8F')
         self.assertEqual(res_multi_filter.status_code, 200)
         page_cut_multi = res_multi_filter.context['page_cut']
-        self.assertEqual(page_cut_multi.paginator.count, 8)
+        self.assertEqual(page_cut_multi.paginator.count, 18)
         self.assertEqual(page_cut_multi.paginator.num_pages, 1)
         for row in page_cut_multi.object_list:
             self.assertEqual(row['ma_hang'], 'AT01')
             self.assertEqual(row['mau'], 'Đỏ')
 
         # 5. Kiểm tra tính năng lọc liên tầng (Cascading Options) trong excel_filter_config
-        # Khi lọc ma_hang=AT01: options của cột Màu (cột 4) CHỈ chứa ['Đỏ', 'Xanh'], KHÔNG chứa 'Vàng' (do 'Vàng' thuộc AT02)
-        res_cascade_at01 = self.client.get(reverse('premium_dashboard') + '?cut_filter_ma_hang=AT01')
+        res_cascade_at01 = self.client.get(reverse('dashboard_cut') + '?cut_filter_ma_hang=AT01')
         cfg_at01 = res_cascade_at01.context['excel_filter_config']['cut']['columns']
         self.assertIn('Đỏ', cfg_at01['4']['options'])
         self.assertIn('Xanh', cfg_at01['4']['options'])
         self.assertNotIn('Vàng', cfg_at01['4']['options'])
 
-        # Khi lọc màu=Đỏ: options của cột Mã hàng (cột 3) CHỈ chứa ['AT01'], KHÔNG chứa 'AT02'
-        res_cascade_red = self.client.get(reverse('premium_dashboard') + '?cut_filter_mau=%C4%90%E1%BB%8F')
+        res_cascade_red = self.client.get(reverse('dashboard_cut') + '?cut_filter_mau=%C4%90%E1%BB%8F')
         cfg_red = res_cascade_red.context['excel_filter_config']['cut']['columns']
         self.assertIn('AT01', cfg_red['3']['options'])
         self.assertNotIn('AT02', cfg_red['3']['options'])
@@ -961,13 +970,12 @@ class ComprehensiveSystemTests(TestCase):
                 nhan_btp=20, vao_chuyen=20, giua_chuyen=20, ra_chuyen=20, thu_hoa=20, la_thanh_pham=20, nhap_hoan_thien=20,
                 nguoi_nhap=self.basic_user
             )
-        res_prod_filter = self.client.get(reverse('premium_dashboard') + '?prod_filter_xuong=1&prod_filter_to=1&p1=2')
+        res_prod_filter = self.client.get(reverse('dashboard_prod') + '?prod_filter_xuong=1&prod_filter_to=1')
         self.assertEqual(res_prod_filter.status_code, 200)
         page_prod = res_prod_filter.context['page_prod']
         self.assertEqual(page_prod.paginator.count, 12)
-        self.assertEqual(page_prod.paginator.num_pages, 2)
-        self.assertEqual(page_prod.number, 2)
-        self.assertEqual(len(page_prod.object_list), 2)
+        self.assertEqual(page_prod.paginator.per_page, 50)
+        self.assertEqual(len(page_prod.object_list), 12)
 
         # 7. Test bảng KCS (15 bản ghi) lọc theo Mã hàng và Xưởng
         KcsReport.objects.all().delete()
@@ -980,11 +988,11 @@ class ComprehensiveSystemTests(TestCase):
                 qua_tay=10, dat=10, loi=0, tong_dat=10,
                 nguoi_nhap=self.quanly_user
             )
-        res_kcs_filter = self.client.get(reverse('premium_dashboard') + '?kcs_filter_xuong=1&p3=1')
+        res_kcs_filter = self.client.get(reverse('dashboard_kcs') + '?kcs_filter_xuong=1')
         self.assertEqual(res_kcs_filter.status_code, 200)
         page_kcs = res_kcs_filter.context['page_kcs']
         self.assertEqual(page_kcs.paginator.count, 10)
-        self.assertEqual(page_kcs.paginator.num_pages, 1)
+        self.assertEqual(page_kcs.paginator.per_page, 50)
 
         # 8. Test bảng Hoàn thiện (18 bản ghi) lọc theo Màu
         FinishingReport.objects.all().delete()
@@ -995,11 +1003,46 @@ class ComprehensiveSystemTests(TestCase):
                 the_bai=10, gap_hang=10, treo_dong_thung=10,
                 nguoi_nhap=self.finishing_user
             )
-        res_fin_filter = self.client.get(reverse('premium_dashboard') + '?fin_filter_mau=%C4%90%E1%BB%8F&p2=2')
+        res_fin_filter = self.client.get(reverse('dashboard_finishing') + '?fin_filter_mau=%C4%90%E1%BB%8F')
         self.assertEqual(res_fin_filter.status_code, 200)
         page_fin = res_fin_filter.context['page_fin']
         self.assertEqual(page_fin.paginator.count, 14)
-        self.assertEqual(page_fin.paginator.num_pages, 2)
-        self.assertEqual(page_fin.number, 2)
-        self.assertEqual(len(page_fin.object_list), 4)
+        self.assertEqual(page_fin.paginator.per_page, 50)
+        self.assertEqual(len(page_fin.object_list), 14)
+
+    def test_tracking_view_with_column_filters(self):
+        self._login_as(self.premium_user)
+        # Tạo thêm sản phẩm và màu
+        p2 = Product.objects.create(name="SM02")
+        ProductColor.objects.create(product=p2, name="Trắng", quantity=150)
+        ProductColor.objects.create(product=p2, name="Đen", quantity=120)
+
+        # 1. Xem trang tracking không lọc
+        res_tracking = self.client.get(reverse('tracking'))
+        self.assertEqual(res_tracking.status_code, 200)
+        page_tracking = res_tracking.context['tracking_data']
+        # Tổng 4 dòng (AT01-Đỏ, AT01-Xanh, SM02-Trắng, SM02-Đen)
+        self.assertEqual(len(page_tracking.object_list), 4)
+
+        # 2. Lọc theo Mã hàng SM02
+        res_filter_ma = self.client.get(reverse('tracking') + '?tracking_filter_ma_hang=SM02')
+        self.assertEqual(res_filter_ma.status_code, 200)
+        page_filtered = res_filter_ma.context['tracking_data']
+        self.assertEqual(len(page_filtered.object_list), 2)
+        for row in page_filtered.object_list:
+            self.assertEqual(row['ma_hang'], 'SM02')
+
+        # 3. Lọc theo Màu Đỏ
+        res_filter_mau = self.client.get(reverse('tracking') + '?tracking_filter_mau=%C4%90%E1%BB%8F')
+        self.assertEqual(res_filter_mau.status_code, 200)
+        page_filtered_mau = res_filter_mau.context['tracking_data']
+        self.assertEqual(len(page_filtered_mau.object_list), 1)
+        self.assertEqual(page_filtered_mau.object_list[0]['ma_hang'], 'AT01')
+        self.assertEqual(page_filtered_mau.object_list[0]['mau'], 'Đỏ')
+
+        # 4. Test Xuất Excel tracking có lọc
+        res_export = self.client.get(reverse('tracking_export_excel') + '?tracking_filter_ma_hang=SM02')
+        self.assertEqual(res_export.status_code, 200)
+        self.assertEqual(res_export['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
 

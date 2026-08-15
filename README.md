@@ -2,7 +2,7 @@
 
 Đây là hệ thống quản lý và giám sát tiến độ quy trình **Cắt – Sản xuất – KCS – Hoàn thiện**, cho phép nhân viên từng bộ phận nhập báo cáo sản lượng, và cấp quản lý theo dõi toàn diện, xuất báo cáo cũng như quản trị cấu trúc sản phẩm và nhân sự.
 
-Hệ thống được phát triển bằng **Django** (Python) và sử dụng cơ sở dữ liệu **MySQL**.
+Hệ thống được phát triển bằng **Django** (Python) và sử dụng cơ sở dữ liệu **MySQL/SQLite**. Giao diện được tối ưu hóa cực tốt cho điện thoại di động (Mobile-first).
 
 ---
 
@@ -12,23 +12,23 @@ Hệ thống phân chia người dùng thành **6 vai trò (Role)** chặt chẽ
 
 | Vai trò | Mã | Quyền hạn |
 |---|---|---|
-| **Sản xuất** | `BASIC` | Nhập & xem báo cáo Sản xuất của chính mình. Không sửa/xóa. |
-| **Nhà cắt** | `NHA_CAT` | Nhập & xem báo cáo Cắt (Mã hàng, Màu, Cắt chính/lót/Mex/bông) của chính mình. Không cần nhập Xưởng/Tổ. Không sửa/xóa. |
-| **KCS** | `KCS` | Nhập & xem báo cáo KCS (Mã hàng, Màu, Xưởng, Tổ, Qua tay, Đạt, Lỗi, Tổng đạt) của chính mình. Không sửa/xóa. |
-| **Hoàn thiện** | `HOAN_THIEN` | Nhập & xem báo cáo Hoàn thiện (Thẻ bài, Gấp hàng, Treo/Đóng thùng) của chính mình. Không sửa/xóa. |
-| **Quản lý** | `QUAN_LY` | Xem Dashboard 4 bảng (Sản xuất, Hoàn thiện, KCS, Cắt), tự nhập liệu cho cả 4 bộ phận, sửa/xóa mọi báo cáo, xuất Excel, quản lý Mã hàng, xem Tracking. Không quản lý tài khoản. |
-| **Admin** | `PREMIUM` | Toàn quyền như Quản lý, cộng thêm **Quản trị Tài khoản** (Phê duyệt, Khóa, Xóa người dùng). |
+| **Sản xuất** | `BASIC` | Nhập & xem lịch sử báo cáo Sản xuất (50 bản ghi gần nhất). Không có Sidebar. |
+| **Nhà cắt** | `NHA_CAT` | Nhập & xem lịch sử báo cáo Cắt (Mã hàng, Màu, Cắt chính/lót/Mex/bông). Không có Sidebar. |
+| **KCS** | `KCS` | Nhập & xem lịch sử báo cáo KCS (Qua tay, Đạt, Lỗi, Tổng đạt). Không có Sidebar. |
+| **Hoàn thiện** | `HOAN_THIEN` | Nhập & xem lịch sử báo cáo Hoàn thiện (Thẻ bài, Gấp hàng, Treo/Đóng thùng). Không có Sidebar. |
+| **Quản lý** | `QUAN_LY` | Quản lý xưởng: Có Sidebar điều hướng. Xem Dashboard 4 bảng, tự nhập liệu cho 4 bộ phận, xem danh sách 50 dòng mới nhất, xuất Excel tại Dashboard, quản lý Mã hàng, xem Tracking. |
+| **Admin** | `PREMIUM` | Quản trị cấp cao: Có Sidebar. Chỉ tập trung xem Dashboard, Quản lý Hệ thống (Tài khoản, Mã hàng), xem Tracking. **Không hiển thị các mục Nhập liệu báo cáo**. |
 
 ### Các tính năng liên quan đến tài khoản:
 - **Đăng ký & Phê duyệt**: Người dùng đăng ký sẽ ở trạng thái *Chờ duyệt*. Chỉ Admin mới có thể duyệt, khóa hoặc xóa tài khoản.
-- **Đổi mật khẩu**: Mọi tài khoản đều có thể tự đổi mật khẩu.
-- **Bảo mật & Chuyển hướng tự động**: Mọi trang trong hệ thống đều yêu cầu đăng nhập. Nếu người dùng chưa đăng nhập (hoặc tài khoản chưa duyệt / session không hợp lệ) mà truy cập bất kỳ trang web nào, hệ thống sẽ **tự động chuyển hướng về trang Login (`/login/`)**. Khi đã đăng nhập, mọi URL đều được kiểm tra quyền chính xác (HTTP 403 nếu sai quyền).
+- **Đổi mật khẩu**: Mọi tài khoản đều có thể tự đổi mật khẩu. Có nút "Quay lại" thông minh cho các tài khoản công nhân khi ở trang đổi mật khẩu.
+- **Bảo mật & Chuyển hướng tự động**: Mọi trang trong hệ thống đều yêu cầu đăng nhập. Nếu người dùng chưa đăng nhập, hệ thống sẽ **tự động chuyển hướng về trang Login (`/login/`)**.
 
 ---
 
 ## 2. Quản lý Báo cáo Tiến độ (4 bộ phận)
 
-Hệ thống có **4 luồng dữ liệu độc lập** với giao diện nhập liệu, danh sách, sửa, xóa và xuất Excel riêng:
+Hệ thống có **4 luồng dữ liệu độc lập** với giao diện nhập liệu và danh sách lịch sử riêng:
 
 ### 2.1 Sản xuất (`/`)
 Thông tin chung: Xưởng, Tổ, **Số lượng LĐ**.
@@ -38,15 +38,16 @@ Các công đoạn: Nhận BTP, Vào chuyền, Giữa chuyền, Ra chuyền, Thu
 Các công đoạn: **Cắt chính, Cắt lót, Cắt Mex, Cắt bông**. Không yêu cầu nhập Xưởng/Tổ.
 
 ### 2.3 KCS (`/kcs/`)
-Các chỉ số: **Qua tay, Đạt, Lỗi, Tổng đạt**. Có Xưởng và Tổ. Thứ tự cột bảng: Mã hàng → Màu → Xưởng → Tổ.
+Các chỉ số: **Qua tay, Đạt, Lỗi, Tổng đạt**. Có Xưởng và Tổ.
 
 ### 2.4 Hoàn thiện (`/finishing/`)
 Các công đoạn: **Thẻ bài, Gấp hàng, Treo/Đóng thùng**.
 
 ### Tính năng chung:
 - **Cascade Dropdown**: Chọn Mã hàng → tự hiện danh sách Màu tương ứng theo cấu hình.
-- **Thời gian nhập tự động**: Cột "Ngày nhập" ghi lại đúng thời điểm thực tế (`dd/mm/yyyy hh:mm:ss`) theo giờ Việt Nam (Asia/Ho_Chi_Minh) khi người dùng ấn Lưu — không cho phép chỉnh sửa.
-- **Responsive**: Dạng Bảng cuộn ngang trên máy tính, dạng Thẻ (Card) trên điện thoại.
+- **Thời gian nhập tự động**: Cột "Ngày nhập" ghi lại đúng thời điểm thực tế theo giờ Việt Nam (Asia/Ho_Chi_Minh) khi người dùng ấn Lưu — không cho phép chỉnh sửa.
+- **Giao diện tối ưu Mobile**: Giao diện đăng nhập, đăng ký và form nhập liệu được thiết kế lại tối ưu 100% trên điện thoại. Ô nhập ngày, nhập số lớn dễ thao tác, có nút ẩn/hiện mật khẩu.
+- **Danh sách báo cáo tinh gọn**: Tại trang danh sách của các bộ phận, hệ thống giới hạn hiển thị **50 bản ghi mới nhất**, thanh công cụ Header chỉ có nút `+ Nhập Mới` để giao diện đơn giản nhất.
 
 ---
 
@@ -54,24 +55,17 @@ Các công đoạn: **Thẻ bài, Gấp hàng, Treo/Đóng thùng**.
  
  Dành cho Quản lý (`QUAN_LY`) và Admin (`PREMIUM`).
  
- - **Khung hiển thị mở rộng (Full-width Desktop)**: Dashboard được thiết kế rộng toàn màn hình máy tính, tối ưu hóa kích thước cột và ô chéo giúp hiển thị trọn vẹn tất cả các cột mà không cần kéo thanh cuộn ngang (overflow-x).
+ - **Khung hiển thị mở rộng (Full-width Desktop)**: Dashboard được thiết kế rộng toàn màn hình máy tính, giúp hiển thị trọn vẹn tất cả các cột mà không cần kéo thanh cuộn ngang (overflow-x).
  - **Thứ tự 4 bảng tổng hợp độc lập**: **Tổng hợp Cắt → Tổng hợp Sản Xuất → Tổng hợp KCS → Tổng hợp Hoàn Thiện**.
-   - **Tổng hợp Cắt**: Cắt chính, Cắt lót, Cắt Mex, Cắt bông (Ngày / Tổng), Tổng SL Đơn hàng.
-   - **Tổng hợp Sản xuất**: Người nhập, Ngày làm việc, Xưởng, Tổ, Số lượng LĐ, Mã hàng, Màu, Cỡ, Nhận BTP, Vào chuyền, Giữa chuyền, Ra chuyền, Thu hóa, Là TP, Nhập HT (bỏ cột Thời gian để giao diện gọn gàng).
-   - **Tổng hợp KCS**: Xưởng, Tổ, Tổng SL Đơn hàng, Qua tay, Đạt, Lỗi, Tổng đạt (Ngày / Tổng).
-   - **Tổng hợp Hoàn thiện**: Tổng SL Đơn hàng, Tổng Nhập HT, Thẻ bài, Gấp hàng, Treo/Đóng thùng (Ngày / Tổng).
  - **Quy tắc tính ô Ngày / Tổng**: Số Tổng ở góc dưới ô chéo là **tổng lũy kế** tính đến thời điểm của lần nhập đó (giá trị lần đó + tất cả các lần trước đó). Khi có thêm lần nhập mới sau này, số Tổng của các lần nhập trước vẫn được giữ nguyên.
  - **Bộ lọc Excel trên từng cột (Lọc liên tầng, Toàn bộ dữ liệu & Giữ lọc khi đổi trang)**: Các cột **Người nhập, Mã hàng, Màu, Xưởng, Tổ** trên cả 4 bảng tổng hợp đều có nút `[▼]` lọc dữ liệu giống hệt Microsoft Excel:
-   - **Lọc liên tầng (Cascading)**: Khi lọc một cột bất kỳ (ví dụ Mã hàng = AT01), popup của các cột khác (ví dụ Màu) chỉ hiển thị các giá trị thuộc về các dòng đã được lọc.
+   - **Lọc liên tầng (Cascading)**: Khi lọc một cột bất kỳ (ví dụ Mã hàng), popup của các cột khác (ví dụ Màu) chỉ hiển thị các giá trị thuộc về các dòng đã được lọc.
    - Bấm vào `[▼]` để mở popup danh sách các giá trị thực tế.
    - Tích hợp ô Tìm kiếm nhanh, tùy chọn (Chọn tất cả), chọn lọc đa giá trị linh hoạt.
    - Khi áp dụng, hệ thống **lọc trên toàn bộ cơ sở dữ liệu** và phân trang tối đa 10 hàng/trang.
-   - **Khi chuyển trang** (Đầu, Trước, Trang 2, Sau, Cuối...), hệ thống **tự động bảo toàn tất cả các bộ lọc cột đang áp dụng**.
-   - Tự động highlight màu cam nổi bật kèm biểu tượng phễu lọc cho cột đang được lọc.
+   - **Khi chuyển trang**, hệ thống **tự động bảo toàn tất cả các bộ lọc cột đang áp dụng**.
  - **Bộ lọc thời gian riêng biệt**: Lọc theo ngày cho từng bảng, các bảng khác không bị ảnh hưởng.
- - **Phân trang độc lập (10 hàng/trang)**: Mỗi bảng hiển thị tối đa 10 hàng dữ liệu, chuyển trang độc lập qua tham số `p1`, `p2`, `p3`, `p4` và bảo toàn toàn bộ bộ lọc.
- - **Xuất Excel từng bảng**: Lấy đúng dữ liệu theo bộ lọc đang áp dụng.
- - **Nút nhập liệu nhanh** (top-bar): Nhập DL Cắt, Nhập DL Sản xuất, Nhập DL KCS, Nhập DL Hoàn thiện, Theo dõi Đơn hàng, Quản lý Mã hàng.
+ - **Xuất Excel từng bảng**: Lấy đúng dữ liệu theo bộ lọc đang áp dụng. Dành riêng tại Dashboard.
 
 ---
 
@@ -95,15 +89,7 @@ Cấu trúc phân cấp: `Product (Mã hàng)` → `ProductColor (Màu + Số l�
 
 ## 6. Công nghệ & Cấu trúc mã nguồn chính
 
-- **Backend**: Python 3.14, Django 6.x.
+- **Backend**: Python, Django 5.x.
 - **Database**: MySQL (có thể dùng SQLite cho dev).
-- **Múi giờ**: Asia/Ho_Chi_Minh — toàn bộ thời gian nhập liệu đều chính xác theo giờ Việt Nam.
-- **Models chính (`models.py`)**:
-  - `AppUser`: Phân quyền 6 roles, trạng thái phê duyệt.
-  - `Product`, `ProductColor`: Cấu trúc Mã hàng – Màu.
-  - `ProcessReport`: Dữ liệu Sản xuất.
-  - `FinishingReport`: Dữ liệu Hoàn thiện.
-  - `KcsReport`: Dữ liệu KCS.
-  - `CutReport`: Dữ liệu Tổ Cắt.
-- **Giao diện (`templates/`)**: HTML/CSS thuần túy, 100% Mobile-Friendly.
-- **Kiểm thử tự động**: 16 unit tests bao phủ toàn bộ luồng phân quyền, nhập liệu, CRUD, xuất Excel và lọc theo thời gian.
+- **Giao diện (`templates/`)**: HTML/CSS thuần túy, 100% Mobile-Friendly (CSS hiện đại, hiệu ứng nổi bật).
+- **Kiểm thử tự động**: Tích hợp các unit tests bao phủ luồng phân quyền, nhập liệu, UI controls, và lọc dữ liệu (100% passed).

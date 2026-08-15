@@ -5,18 +5,39 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Danh sách dữ liệu KCS đã nhập</title>
-    <link rel="stylesheet" href="{% static 'working/css/list.css' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
 </head>
 
 <body>
-    <div class="container">
-        <div class="top-bar">
-            <h2>Danh sách dữ liệu KCS đã nhập</h2>
-            <div style="display:flex; gap:8px; flex-wrap: wrap;">
-                <a class="back-btn" href="{% url 'kcs_web' %}">+ Nhập mới</a>
-                <a class="back-btn" style="background:#3498db;" href="{% url 'change_password' %}">Đổi mật khẩu</a>
-                <a class="back-btn" style="background:#c0392b;" href="{% url 'logout' %}">Đăng xuất</a>
-            </div>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+        <div class="app-main">
+            <header class="app-header">
+                <div class="header-left">
+                    {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    {% else %}
+                    <div style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; background: #ffffff; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; margin-right: 4px;">
+                        <img src="{% static 'working/images/logo_anphat.png' %}" alt="An Phát" width="28" height="28" style="width: 28px; height: 28px; object-fit: contain;">
+                    </div>
+                    {% endif %}
+                    <div class="header-title-box">
+                        <h1 class="header-title">Danh sách Báo cáo KCS</h1>
+                        <span class="header-subtitle">Dữ liệu báo cáo chi tiết</span>
+                    </div>
+                </div>
+                <div class="header-right" style="display:flex; align-items:center; gap:8px;">
+                    <a class="btn btn-primary" style="background:#2563eb; padding: 6px 12px; font-size: 0.84rem;" href="{% url 'kcs_web' %}">+ Nhập Mới</a>
+                </div>
+            </header>
+            <main class="app-content">
+        <div class="fade-in" style="width:100%;">
         </div>
 
         {% if page_obj %}
@@ -28,7 +49,7 @@
                         {% for h in headers %}
                         <th>{{ h }}</th>
                         {% endfor %}
-                        {% if is_premium %}
+                        {% if is_manager %}
                         <th>Thao tác</th>
                         {% endif %}
                     </tr>
@@ -39,15 +60,15 @@
                         {% for value in row.values %}
                         <td>{{ value }}</td>
                         {% endfor %}
-                        {% if is_premium %}
+                        {% if is_manager %}
                         <td>
                             <div style="display: flex; gap: 5px;">
-                                <a class="edit-btn" href="{% url 'kcs_edit' row.row_id %}">Sửa</a>
+                                <a class="btn btn-warning" href="{% url 'kcs_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
                                 <form action="{% url 'kcs_delete_report' row.row_id %}" method="post"
                                     onsubmit="return confirm('Bạn có chắc muốn xóa báo cáo này không?');"
                                     style="margin: 0;">
                                     {% csrf_token %}
-                                    <button type="submit" class="edit-btn"
+                                    <button type="submit" class="btn btn-warning"
                                         style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
                                 </form>
                             </div>
@@ -67,11 +88,11 @@
                     <span class="card-title">{{ row.values.3 }} — {{ row.values.4 }} ({{ row.values.1 }})</span>
                     {% if is_premium %}
                     <div style="display: flex; gap: 5px;">
-                        <a class="edit-btn" href="{% url 'kcs_edit' row.row_id %}">Sửa</a>
+                        <a class="btn btn-warning" href="{% url 'kcs_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
                         <form action="{% url 'kcs_delete_report' row.row_id %}" method="post"
                             onsubmit="return confirm('Bạn có chắc muốn xóa báo cáo này không?');" style="margin: 0;">
                             {% csrf_token %}
-                            <button type="submit" class="edit-btn"
+                            <button type="submit" class="btn btn-warning"
                                 style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
                         </form>
                     </div>
@@ -89,6 +110,9 @@
         {% else %}
         <p class="empty">Chưa có dữ liệu nào được ghi nhận.</p>
         {% endif %}
+    </div>
+            </main>
+        </div>
     </div>
 </body>
 

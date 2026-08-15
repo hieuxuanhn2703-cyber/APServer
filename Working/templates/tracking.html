@@ -1,130 +1,202 @@
 {% load static %}
+{% load dashboard_tags %}
 <!DOCTYPE html>
 <html lang="vi">
 
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracking Sản Xuất</title>
-    <link rel="stylesheet" href="{% static 'working/css/list.css' %}">
+    <title>Theo Dõi Đơn Hàng - ProcessMonitoring</title>
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
     <style>
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin-top: 10px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 1200px; /* Bảng to, ép chiều ngang tối thiểu */
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-
-        th {
-            background-color: #2c3e50;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .sub-header th {
-            background-color: #34495e;
-            font-size: 0.9em;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-
-        tr:hover {
-            background-color: #e9ecef;
-        }
-        
         .con-lai-am {
-            color: #e74c3c;
-            font-weight: bold;
+            color: #ef4444 !important;
+            font-weight: 700 !important;
+        }
+        .th-sub-head {
+            font-size: 0.72rem !important;
+            padding: 4px 2px !important;
+            background: #f1f5f9 !important;
+            color: #475569 !important;
+            font-weight: 600 !important;
         }
     </style>
 </head>
 
 <body>
-    <div class="top-bar">
-        <h2>Tracking Sản Xuất</h2>
-        <div style="display:flex; gap:8px;">
-            <a class="back-btn" style="background:#2ecc71;" href="{% url 'tracking_export_excel' %}">Xuất Excel</a>
-            <a class="back-btn" href="{% url 'premium_dashboard' %}">Quay lại</a>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- App Topbar Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Theo Dõi Đơn Hàng</h1>
+                        <span class="header-subtitle">Tiến độ chi tiết từng công đoạn theo Mã hàng & Màu sắc</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- App Content Body -->
+            <main class="app-content">
+                <div class="dash-card fade-in">
+                    <div class="dash-card-header">
+                        <h3 class="dash-card-title">Bảng Tiến Độ Đơn Hàng</h3>
+
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            {% if selected_ma_hang or selected_mau %}
+                            <a href="{% url 'tracking' %}" class="btn-dash-clear">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                                Xóa tất cả lọc
+                            </a>
+                            {% endif %}
+
+                            <a href="{% url 'tracking_export_excel' %}{% if export_query_str %}?{{ export_query_str }}{% endif %}" class="btn-dash-excel">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Xuất Excel
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Table -->
+                    <div class="table-wrapper">
+                        <table data-table-type="tracking">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">
+                                        <div class="th-filter-wrap">
+                                            <span>Mã hàng</span>
+                                            <button type="button" class="excel-filter-btn" data-col="0" data-title="Mã hàng" title="Lọc Mã hàng">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th rowspan="2">
+                                        <div class="th-filter-wrap">
+                                            <span>Màu</span>
+                                            <button type="button" class="excel-filter-btn" data-col="1" data-title="Màu" title="Lọc Màu">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th rowspan="2">Số lượng ĐH</th>
+                                    <th colspan="2">Nhận BTP</th>
+                                    <th colspan="2">Vào Chuyền</th>
+                                    <th colspan="2">Giữa chuyền</th>
+                                    <th colspan="2">Ra Chuyền</th>
+                                    <th colspan="2">Thu Hoá</th>
+                                    <th colspan="2">Là thành phẩm</th>
+                                    <th colspan="2">Nhập Hoàn Thiện</th>
+                                </tr>
+                                <tr>
+                                    <th class="th-sub-head">Đã Nhập</th><th class="th-sub-head">Còn lại</th>
+                                    <th class="th-sub-head">Đã Vào</th><th class="th-sub-head">Còn lại</th>
+                                    <th class="th-sub-head">Đã Ra</th><th class="th-sub-head">Còn lại</th>
+                                    <th class="th-sub-head">Đã Ra</th><th class="th-sub-head">Còn lại</th>
+                                    <th class="th-sub-head">Đã Thu</th><th class="th-sub-head">Còn lại</th>
+                                    <th class="th-sub-head">Đã Làm</th><th class="th-sub-head">Còn lại</th>
+                                    <th class="th-sub-head">Đã Nhập</th><th class="th-sub-head">Còn lại</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in tracking_data %}
+                                <tr>
+                                    <td><strong>{{ row.ma_hang }}</strong></td>
+                                    <td>{{ row.mau }}</td>
+                                    <td><strong style="color: #2563eb;">{{ row.so_luong }}</strong></td>
+
+                                    <td>{{ row.nhan_btp_nhap }}</td>
+                                    <td class="{% if row.nhan_btp_con < 0 %}con-lai-am{% endif %}">{{ row.nhan_btp_con }}</td>
+
+                                    <td>{{ row.vao_chuyen_vao }}</td>
+                                    <td class="{% if row.vao_chuyen_con < 0 %}con-lai-am{% endif %}">{{ row.vao_chuyen_con }}</td>
+
+                                    <td>{{ row.giua_chuyen_ra }}</td>
+                                    <td class="{% if row.giua_chuyen_con < 0 %}con-lai-am{% endif %}">{{ row.giua_chuyen_con }}</td>
+
+                                    <td>{{ row.ra_chuyen_ra }}</td>
+                                    <td class="{% if row.ra_chuyen_con < 0 %}con-lai-am{% endif %}">{{ row.ra_chuyen_con }}</td>
+
+                                    <td>{{ row.thu_hoa_thu }}</td>
+                                    <td class="{% if row.thu_hoa_con < 0 %}con-lai-am{% endif %}">{{ row.thu_hoa_con }}</td>
+
+                                    <td>{{ row.la_thanh_pham_lam }}</td>
+                                    <td class="{% if row.la_thanh_pham_con < 0 %}con-lai-am{% endif %}">{{ row.la_thanh_pham_con }}</td>
+
+                                    <td>{{ row.nhap_hoan_thien_nhap }}</td>
+                                    <td class="{% if row.nhap_hoan_thien_con < 0 %}con-lai-am{% endif %}">{{ row.nhap_hoan_thien_con }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="17" class="empty">Không tìm thấy dữ liệu đơn hàng phù hợp.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Card List -->
+                    <div class="card-list">
+                        {% for row in tracking_data %}
+                        <div class="data-card">
+                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <strong class="card-title">{{ row.ma_hang }} — {{ row.mau }}</strong>
+                                <span style="font-weight: 700; color: #2563eb; font-size: 0.88rem;">SL ĐH: {{ row.so_luong }}</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-row"><span class="label">Nhận BTP (Nhập/Còn):</span><span class="value">{{ row.nhan_btp_nhap }} / <span class="{% if row.nhan_btp_con < 0 %}con-lai-am{% endif %}">{{ row.nhan_btp_con }}</span></span></div>
+                                <div class="card-row"><span class="label">Vào Chuyền (Vào/Còn):</span><span class="value">{{ row.vao_chuyen_vao }} / <span class="{% if row.vao_chuyen_con < 0 %}con-lai-am{% endif %}">{{ row.vao_chuyen_con }}</span></span></div>
+                                <div class="card-row"><span class="label">Giữa Chuyền (Ra/Còn):</span><span class="value">{{ row.giua_chuyen_ra }} / <span class="{% if row.giua_chuyen_con < 0 %}con-lai-am{% endif %}">{{ row.giua_chuyen_con }}</span></span></div>
+                                <div class="card-row"><span class="label">Ra Chuyền (Ra/Còn):</span><span class="value">{{ row.ra_chuyen_ra }} / <span class="{% if row.ra_chuyen_con < 0 %}con-lai-am{% endif %}">{{ row.ra_chuyen_con }}</span></span></div>
+                                <div class="card-row"><span class="label">Thu Hoá (Thu/Còn):</span><span class="value">{{ row.thu_hoa_thu }} / <span class="{% if row.thu_hoa_con < 0 %}con-lai-am{% endif %}">{{ row.thu_hoa_con }}</span></span></div>
+                                <div class="card-row"><span class="label">Là TP (Làm/Còn):</span><span class="value">{{ row.la_thanh_pham_lam }} / <span class="{% if row.la_thanh_pham_con < 0 %}con-lai-am{% endif %}">{{ row.la_thanh_pham_con }}</span></span></div>
+                                <div class="card-row"><span class="label">Nhập HT (Nhập/Còn):</span><span class="value">{{ row.nhap_hoan_thien_nhap }} / <span class="{% if row.nhap_hoan_thien_con < 0 %}con-lai-am{% endif %}">{{ row.nhap_hoan_thien_con }}</span></span></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if tracking_data.paginator.num_pages > 1 %}
+                    <div class="pagination-container" style="margin-top: 14px; display: flex; justify-content: center; gap: 4px; align-items: center;">
+                        {% if tracking_data.has_previous %}
+                        <a href="{% url_replace p=1 %}" class="page-link">&laquo;</a>
+                        <a href="{% url_replace p=tracking_data.previous_page_number %}" class="page-link">&lsaquo;</a>
+                        {% endif %}
+                        <span class="page-current" style="padding: 4px 10px; font-weight: 600; font-size: 0.8rem; color: #475569;">Trang {{ tracking_data.number }} / {{ tracking_data.paginator.num_pages }} (Tổng {{ tracking_data.paginator.count }} dòng)</span>
+                        {% if tracking_data.has_next %}
+                        <a href="{% url_replace p=tracking_data.next_page_number %}" class="page-link">&rsaquo;</a>
+                        <a href="{% url_replace p=tracking_data.paginator.num_pages %}" class="page-link">&raquo;</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </main>
         </div>
     </div>
-    
-    <div style="margin: 0 15px;">
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th rowspan="2">Mã hàng</th>
-                        <th rowspan="2">Màu</th>
-                        <th rowspan="2">Số lượng</th>
-                        <th colspan="2">Nhận BTP</th>
-                        <th colspan="2">Vào Chuyền</th>
-                        <th colspan="2">Giữa chuyền</th>
-                        <th colspan="2">Ra Chuyền</th>
-                        <th colspan="2">Thu Hoá</th>
-                        <th colspan="2">Là thành phẩm</th>
-                        <th colspan="2">Nhập Hoàn Thiện</th>
-                    </tr>
-                    <tr class="sub-header">
-                        <th>Đã Nhập</th><th>Còn lại</th>
-                        <th>Đã Vào</th><th>Còn lại</th>
-                        <th>Đã Ra</th><th>Còn Lại</th>
-                        <th>Đã Ra</th><th>Còn Lại</th>
-                        <th>Đã Thu</th><th>Còn lại</th>
-                        <th>Đã Làm</th><th>Còn lại</th>
-                        <th>Đã Nhập</th><th>Còn lại</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in tracking_data %}
-                    <tr>
-                        <td style="font-weight: bold;">{{ row.ma_hang }}</td>
-                        <td>{{ row.mau }}</td>
-                        <td style="font-weight: bold; color: #2980b9;">{{ row.so_luong }}</td>
-                        
-                        <td>{{ row.nhan_btp_nhap }}</td>
-                        <td class="{% if row.nhan_btp_con < 0 %}con-lai-am{% endif %}">{{ row.nhan_btp_con }}</td>
-                        
-                        <td>{{ row.vao_chuyen_vao }}</td>
-                        <td class="{% if row.vao_chuyen_con < 0 %}con-lai-am{% endif %}">{{ row.vao_chuyen_con }}</td>
-                        
-                        <td>{{ row.giua_chuyen_ra }}</td>
-                        <td class="{% if row.giua_chuyen_con < 0 %}con-lai-am{% endif %}">{{ row.giua_chuyen_con }}</td>
-                        
-                        <td>{{ row.ra_chuyen_ra }}</td>
-                        <td class="{% if row.ra_chuyen_con < 0 %}con-lai-am{% endif %}">{{ row.ra_chuyen_con }}</td>
-                        
-                        <td>{{ row.thu_hoa_thu }}</td>
-                        <td class="{% if row.thu_hoa_con < 0 %}con-lai-am{% endif %}">{{ row.thu_hoa_con }}</td>
-                        
-                        <td>{{ row.la_thanh_pham_lam }}</td>
-                        <td class="{% if row.la_thanh_pham_con < 0 %}con-lai-am{% endif %}">{{ row.la_thanh_pham_con }}</td>
-                        
-                        <td>{{ row.nhap_hoan_thien_nhap }}</td>
-                        <td class="{% if row.nhap_hoan_thien_con < 0 %}con-lai-am{% endif %}">{{ row.nhap_hoan_thien_con }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="17" style="padding: 20px; color: #7f8c8d;">Chưa có dữ liệu. Hãy cấu hình Mã Hàng và Màu Sắc trước.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+
+    {{ excel_filter_config|json_script:"excel-filter-config" }}
+    <script src="{% static 'working/js/excel_filter.js' %}"></script>
 </body>
 </html>

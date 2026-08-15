@@ -3,60 +3,259 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng ký tài khoản</title>
-    <link rel="stylesheet" href="{% static 'working/css/login.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đăng ký tài khoản - An Phát</title>
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+    <style>
+        body {
+            margin: 0;
+            padding: 16px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            box-sizing: border-box;
+        }
+        .auth-wrapper {
+            width: 100%;
+            max-width: 440px;
+            margin: auto;
+        }
+        .auth-card {
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.04);
+            padding: 28px 24px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-sizing: border-box;
+        }
+        .auth-header {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+        .auth-logo-box {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 10px;
+            background: #ffffff;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
+            border: 1px solid #e2e8f0;
+        }
+        .auth-logo-box img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+        }
+        .auth-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 4px;
+        }
+        .auth-subtitle {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin: 0;
+            font-weight: 500;
+        }
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .auth-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-align: left;
+        }
+        .auth-field label {
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: #334155;
+        }
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            height: 48px;
+            padding: 0 14px;
+            font-size: 16px !important;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #0f172a;
+            font-weight: 600;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .input-group select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 36px;
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #2563eb;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+        .btn-submit-auth {
+            width: 100%;
+            height: 48px;
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.02rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+            margin-top: 6px;
+            touch-action: manipulation;
+        }
+        .btn-submit-auth:active {
+            transform: scale(0.98);
+        }
+        .auth-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            margin-bottom: 14px;
+            text-align: left;
+        }
+        .auth-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .auth-footer {
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid #f1f5f9;
+            text-align: center;
+        }
+        .btn-register-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+    </style>
 </head>
 <body>
-    <div class="login-container">
-        <h2>Đăng ký tài khoản</h2>
+    <div class="auth-wrapper fade-in">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo-box">
+                    <img src="{% static 'working/images/logo_anphat.png' %}" alt="An Phát Logo">
+                </div>
+                <h1 class="auth-title">Đăng Ký Tài Khoản</h1>
+                <p class="auth-subtitle">Tạo tài khoản làm việc mới</p>
+            </div>
 
-        {% if error %}
-            <div class="error-msg">{{ error }}</div>
-        {% endif %}
-        
-        {% if success %}
-            <div class="error-msg" style="background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
-                Đăng ký thành công! Tài khoản của bạn đang chờ phê duyệt.
+            {% if error %}
+            <div class="auth-error">
+                {{ error }}
             </div>
-            <div style="margin-top: 15px; text-align: center;">
-                <a href="{% url 'login' %}" style="color: #3498db; text-decoration: none;">Quay lại đăng nhập</a>
-            </div>
-        {% else %}
-            <form method="post">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label for="name">Họ tên</label>
-                    <input type="text" id="name" name="name" required>
+            {% endif %}
+            
+            {% if success %}
+                <div class="auth-success">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 8px; display: block;">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    Đăng ký thành công! Tài khoản của bạn đang chờ quản lý phê duyệt trước khi sử dụng.
                 </div>
-                <div class="form-group">
-                    <label for="account">Tài khoản</label>
-                    <input type="text" id="account" name="account" autocomplete="username" required>
+                <div class="auth-footer">
+                    <a href="{% url 'login' %}" class="btn-submit-auth" style="text-decoration: none;">
+                        ← Quay lại đăng nhập
+                    </a>
                 </div>
-                <div class="form-group">
-                    <label for="role">Vai trò</label>
-                    <select id="role" name="role" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                        <option value="BASIC">Sản xuất</option>
-                        <option value="HOAN_THIEN">Hoàn thiện</option>
-                        <option value="KCS">KCS</option>
-                        <option value="NHA_CAT">Nhà cắt</option>
-                        <option value="QUAN_LY">Quản lý</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="password">Mật khẩu</label>
-                    <input type="password" id="password" name="password" autocomplete="new-password" required>
-                </div>
-                <div class="form-group">
-                    <label for="confirm_password">Nhập lại mật khẩu</label>
-                    <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
-                </div>
-                <button type="submit">Đăng ký</button>
-                <div style="margin-top: 15px; text-align: center;">
-                    <a href="{% url 'login' %}" style="color: #3498db; text-decoration: none;">Đã có tài khoản? Đăng nhập</a>
-                </div>
-            </form>
-        {% endif %}
+            {% else %}
+                <form method="post" class="auth-form">
+                    {% csrf_token %}
+                    <div class="auth-field">
+                        <label for="name">Họ và tên</label>
+                        <div class="input-group">
+                            <input type="text" id="name" name="name" placeholder="Ví dụ: Nguyễn Văn A" required>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label for="account">Tên tài khoản (viết liền không dấu)</label>
+                        <div class="input-group">
+                            <input type="text" id="account" name="account" placeholder="Ví dụ: nguyenvana" autocomplete="username" autocapitalize="none" autocorrect="off" required>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label for="role">Bộ phận / Vai trò</label>
+                        <div class="input-group">
+                            <select id="role" name="role" required>
+                                <option value="BASIC">Sản xuất (May / Chuyền)</option>
+                                <option value="NHA_CAT">Tổ Cắt</option>
+                                <option value="KCS">Tổ KCS</option>
+                                <option value="HOAN_THIEN">Tổ Hoàn Thiện</option>
+                                <option value="QUAN_LY">Quản lý xưởng / Quản đốc</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label for="password">Mật khẩu</label>
+                        <div class="input-group">
+                            <input type="password" id="password" name="password" placeholder="Nhập mật khẩu" autocomplete="new-password" required>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label for="confirm_password">Nhập lại mật khẩu</label>
+                        <div class="input-group">
+                            <input type="password" id="confirm_password" name="confirm_password" placeholder="Xác nhận lại mật khẩu" autocomplete="new-password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-submit-auth">
+                        Đăng Ký Tài Khoản
+                    </button>
+                    <div class="auth-footer">
+                        <a href="{% url 'login' %}" class="btn-register-link">
+                            <span>Đã có tài khoản?</span>
+                            <span style="text-decoration: underline;">Đăng nhập ngay</span>
+                        </a>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
     </div>
 </body>
 </html>
