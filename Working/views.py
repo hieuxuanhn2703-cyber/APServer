@@ -112,45 +112,41 @@ def _report_to_row(report: ProcessReport):
     }
 
 
-def _dashboard_prod_report_to_row(report: ProcessReport):
-    """Chuyển 1 đối tượng ProcessReport thành dict hiển thị trên Dashboard (bỏ cột Thời gian)."""
-    values = [
-        report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
-        format_date(report.ngay_lam_viec),
-        report.xuong,
-        report.to,
-        report.so_luong_ld,
-        report.ma_hang,
-        report.mau,
-        "N/A",  # Tạm thời ép hiển thị cỡ là N/A
-        report.nhan_btp,
-        report.vao_chuyen,
-        report.giua_chuyen,
-        report.ra_chuyen,
-        report.thu_hoa,
-        report.la_thanh_pham,
-        report.nhap_hoan_thien,
-    ]
+def _dashboard_prod_report_to_row(report: ProcessReport, color_map=None, prod_cumulative_map=None):
+    """Chuyển 1 đối tượng ProcessReport thành dict hiển thị trên Dashboard Tổng Hợp Sản Xuất (Ngày / Tổng)."""
+    color_map = color_map or {}
+    prod_cumulative_map = prod_cumulative_map or {}
+    key = (report.ma_hang, report.mau)
+    tong_don_hang = color_map.get(key, 0)
+    totals = prod_cumulative_map.get(report.id, {})
+
     return {
         "row_id": report.id,
-        "values": values,
-        "pairs": list(zip(DASHBOARD_PROD_HEADERS, values)),
         "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
         "ngay_lam_viec": format_date(report.ngay_lam_viec),
+        "ngay_nhap": format_datetime(report.created_at),
+        "ma_hang": report.ma_hang,
+        "mau": report.mau,
         "xuong": report.xuong,
         "to": report.to,
         "so_luong_ld": report.so_luong_ld,
-        "ma_hang": report.ma_hang,
-        "mau": report.mau,
-        "co": "N/A",
-        "nhan_btp": report.nhan_btp,
-        "vao_chuyen": report.vao_chuyen,
-        "giua_chuyen": report.giua_chuyen,
-        "ra_chuyen": report.ra_chuyen,
-        "thu_hoa": report.thu_hoa,
-        "la_thanh_pham": report.la_thanh_pham,
-        "nhap_hoan_thien": report.nhap_hoan_thien,
+        "tong_don_hang": tong_don_hang,
+        "nhan_btp_ngay": report.nhan_btp,
+        "nhan_btp_tong": totals.get('total_nhan_btp', report.nhan_btp or 0),
+        "vao_chuyen_ngay": report.vao_chuyen,
+        "vao_chuyen_tong": totals.get('total_vao_chuyen', report.vao_chuyen or 0),
+        "giua_chuyen_ngay": report.giua_chuyen,
+        "giua_chuyen_tong": totals.get('total_giua_chuyen', report.giua_chuyen or 0),
+        "ra_chuyen_ngay": report.ra_chuyen,
+        "ra_chuyen_tong": totals.get('total_ra_chuyen', report.ra_chuyen or 0),
+        "thu_hoa_ngay": report.thu_hoa,
+        "thu_hoa_tong": totals.get('total_thu_hoa', report.thu_hoa or 0),
+        "la_thanh_pham_ngay": report.la_thanh_pham,
+        "la_thanh_pham_tong": totals.get('total_la_thanh_pham', report.la_thanh_pham or 0),
+        "nhap_hoan_thien_ngay": report.nhap_hoan_thien,
+        "nhap_hoan_thien_tong": totals.get('total_nhap_hoan_thien', report.nhap_hoan_thien or 0),
     }
+
 
 
 # ---------- Đăng nhập / Đăng xuất ----------
@@ -572,15 +568,21 @@ def list_view(request):
     else:
         reports = ProcessReport.objects.select_related('nguoi_nhap').filter(nguoi_nhap=current_user).order_by("-created_at")[:50]
         
-    table_rows = [_report_to_row(r) for r in reports]
+    color_map = {}
+    for color in ProductColor.objects.all().select_related('product'):
+        color_map[(color.product.name, color.name)] = color.quantity
+
+    prod_cumulative_map = _calculate_cumulative_totals_prod()
+
+    table_rows = [_dashboard_prod_report_to_row(r, color_map, prod_cumulative_map) for r in reports]
 
     return render(request, "list.html", {
         "table_rows": table_rows,
-        "headers": HEADERS,
         "display_name": current_user.name if current_user else "",
         "user": current_user,
         "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
+
 
 
 # ---------- Sửa dữ liệu (chỉ dòng của chính người đăng nhập) ----------
@@ -927,16 +929,27 @@ def finishing_list_view(request):
     if end_dt:
         qs = qs.filter(created_at__lte=end_dt)
         
-    table_rows = [_finishing_report_to_row(r) for r in qs[:50]]
+    color_map = {}
+    for color in ProductColor.objects.all().select_related('product'):
+        color_map[(color.product.name, color.name)] = color.quantity
+
+    prod_nhap_totals = ProcessReport.objects.values('ma_hang', 'mau').annotate(
+        total_nhap=Sum('nhap_hoan_thien')
+    )
+    prod_nhap_totals_map = {(row['ma_hang'], row['mau']): row['total_nhap'] for row in prod_nhap_totals}
+
+    fin_cumulative_map = _calculate_cumulative_totals_finishing()
+        
+    table_rows = [_dashboard_finishing_report_to_row(r, color_map, fin_cumulative_map, prod_nhap_totals_map) for r in qs[:50]]
     return render(request, "finishing_list.html", {
         "table_rows": table_rows,
-        "headers": FINISHING_HEADERS,
         "display_name": current_user.name if current_user else "",
         "start_date": start_date or '',
         "end_date": end_date or '',
         "user": current_user,
         "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
+
 
 @login_required
 def finishing_edit_view(request, row_id):
@@ -1095,6 +1108,52 @@ def _calculate_cumulative_totals_cut():
     return cumulative_map
 
 
+def _calculate_cumulative_totals_prod():
+    """
+    Tính tổng lũy kế cho từng báo cáo Sản xuất theo thứ tự thời gian nhập (created_at, id).
+    Tổng lũy kế được gom nhóm theo (mã hàng, màu, xưởng, tổ).
+    Trả về dict: report.id -> {
+        'total_nhan_btp': int,
+        'total_vao_chuyen': int,
+        'total_giua_chuyen': int,
+        'total_ra_chuyen': int,
+        'total_thu_hoa': int,
+        'total_la_thanh_pham': int,
+        'total_nhap_hoan_thien': int,
+    }
+    """
+    running = defaultdict(lambda: {
+        'nhan_btp': 0,
+        'vao_chuyen': 0,
+        'giua_chuyen': 0,
+        'ra_chuyen': 0,
+        'thu_hoa': 0,
+        'la_thanh_pham': 0,
+        'nhap_hoan_thien': 0,
+    })
+    cumulative_map = {}
+    for r in ProcessReport.objects.select_related('nguoi_nhap').order_by('created_at', 'id'):
+        key = (r.ma_hang, r.mau, r.xuong, r.to)
+        running[key]['nhan_btp'] += (r.nhan_btp or 0)
+        running[key]['vao_chuyen'] += (r.vao_chuyen or 0)
+        running[key]['giua_chuyen'] += (r.giua_chuyen or 0)
+        running[key]['ra_chuyen'] += (r.ra_chuyen or 0)
+        running[key]['thu_hoa'] += (r.thu_hoa or 0)
+        running[key]['la_thanh_pham'] += (r.la_thanh_pham or 0)
+        running[key]['nhap_hoan_thien'] += (r.nhap_hoan_thien or 0)
+        cumulative_map[r.id] = {
+            'total_nhan_btp': running[key]['nhan_btp'],
+            'total_vao_chuyen': running[key]['vao_chuyen'],
+            'total_giua_chuyen': running[key]['giua_chuyen'],
+            'total_ra_chuyen': running[key]['ra_chuyen'],
+            'total_thu_hoa': running[key]['thu_hoa'],
+            'total_la_thanh_pham': running[key]['la_thanh_pham'],
+            'total_nhap_hoan_thien': running[key]['nhap_hoan_thien'],
+        }
+    return cumulative_map
+
+
+
 def _dashboard_finishing_report_to_row(report, color_map, fin_cumulative_map, prod_nhap_totals_map):
     key = (report.ma_hang, report.mau)
     tong_don_hang = color_map.get(key, 0)
@@ -1119,6 +1178,54 @@ def _dashboard_finishing_report_to_row(report, color_map, fin_cumulative_map, pr
         "gap_hang_tong": tong_gap_hang,
         "treo_dong_thung_ngay": report.treo_dong_thung,
         "treo_dong_thung_tong": tong_treo,
+    }
+
+
+def _dashboard_cut_report_to_row(report, color_map, cut_cumulative_map):
+    key = (report.ma_hang, report.mau)
+    tong_don_hang = color_map.get(key, 0)
+    totals = cut_cumulative_map.get(report.id, {})
+    return {
+        "row_id": report.id,
+        "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+        "ngay_lam_viec": format_date(report.ngay_lam_viec),
+        "ngay_nhap": format_datetime(report.created_at),
+        "ma_hang": report.ma_hang,
+        "mau": report.mau,
+        "tong_don_hang": tong_don_hang,
+        "cat_chinh_ngay": report.cat_chinh,
+        "cat_chinh_tong": totals.get('total_cat_chinh', report.cat_chinh or 0),
+        "cat_lot_ngay": report.cat_lot,
+        "cat_lot_tong": totals.get('total_cat_lot', report.cat_lot or 0),
+        "cat_mex_ngay": report.cat_mex,
+        "cat_mex_tong": totals.get('total_cat_mex', report.cat_mex or 0),
+        "cat_bong_ngay": report.cat_bong,
+        "cat_bong_tong": totals.get('total_cat_bong', report.cat_bong or 0),
+    }
+
+
+def _dashboard_kcs_report_to_row(report, color_map, kcs_cumulative_map):
+    key = (report.ma_hang, report.mau)
+    tong_don_hang = color_map.get(key, 0)
+    totals = kcs_cumulative_map.get(report.id, {})
+    return {
+        "row_id": report.id,
+        "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
+        "ngay_lam_viec": format_date(report.ngay_lam_viec),
+        "ngay_nhap": format_datetime(report.created_at),
+        "ma_hang": report.ma_hang,
+        "mau": report.mau,
+        "xuong": report.xuong,
+        "to": report.to,
+        "tong_don_hang": tong_don_hang,
+        "qua_tay_ngay": report.qua_tay,
+        "qua_tay_tong": totals.get('total_qua_tay', report.qua_tay or 0),
+        "dat_ngay": report.dat,
+        "dat_tong": totals.get('total_dat', report.dat or 0),
+        "loi_ngay": report.loi,
+        "loi_tong": totals.get('total_loi', report.loi or 0),
+        "tong_dat_ngay": report.tong_dat,
+        "tong_dat_tong": totals.get('total_tong_dat', report.tong_dat or 0),
     }
 
 from django.core.paginator import Paginator
@@ -1202,27 +1309,6 @@ def dashboard_cut_view(request):
 
     cut_cumulative_map = _calculate_cumulative_totals_cut()
 
-    def _dashboard_cut_report_to_row(report, color_map, cut_cumulative_map):
-        key = (report.ma_hang, report.mau)
-        tong_don_hang = color_map.get(key, 0)
-        totals = cut_cumulative_map.get(report.id, {})
-        return {
-            "row_id": report.id,
-            "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
-            "ngay_lam_viec": format_date(report.ngay_lam_viec),
-            "ngay_nhap": format_datetime(report.created_at),
-            "ma_hang": report.ma_hang,
-            "mau": report.mau,
-            "tong_don_hang": tong_don_hang,
-            "cat_chinh_ngay": report.cat_chinh,
-            "cat_chinh_tong": totals.get('total_cat_chinh', report.cat_chinh or 0),
-            "cat_lot_ngay": report.cat_lot,
-            "cat_lot_tong": totals.get('total_cat_lot', report.cat_lot or 0),
-            "cat_mex_ngay": report.cat_mex,
-            "cat_mex_tong": totals.get('total_cat_mex', report.cat_mex or 0),
-            "cat_bong_ngay": report.cat_bong,
-            "cat_bong_tong": totals.get('total_cat_bong', report.cat_bong or 0),
-        }
 
     cut_rows = [_dashboard_cut_report_to_row(r, color_map, cut_cumulative_map) for r in cut_qs]
 
@@ -1305,17 +1391,23 @@ def dashboard_prod_view(request):
     if prod_filter_mau:
         prod_qs = prod_qs.filter(mau__in=prod_filter_mau)
 
-    prod_rows = [_dashboard_prod_report_to_row(r) for r in prod_qs]
+    color_map = {}
+    for color in ProductColor.objects.all().select_related('product'):
+        color_map[(color.product.name, color.name)] = color.quantity
+
+    prod_cumulative_map = _calculate_cumulative_totals_prod()
+
+    prod_rows = [_dashboard_prod_report_to_row(r, color_map, prod_cumulative_map) for r in prod_qs]
 
     excel_filter_config = {
         "prod": {
             "page_param": "p1",
             "columns": {
                 "0": { "param": "prod_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(prod_opt_nguoi_nhap), "selected": prod_filter_nguoi_nhap },
-                "2": { "param": "prod_filter_xuong", "title": "Xưởng", "options": _clean_options(prod_opt_xuong), "selected": prod_filter_xuong },
-                "3": { "param": "prod_filter_to", "title": "Tổ", "options": _clean_options(prod_opt_to), "selected": prod_filter_to },
-                "5": { "param": "prod_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(prod_opt_ma_hang), "selected": prod_filter_ma_hang },
-                "6": { "param": "prod_filter_mau", "title": "Màu", "options": _clean_options(prod_opt_mau), "selected": prod_filter_mau }
+                "3": { "param": "prod_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(prod_opt_ma_hang), "selected": prod_filter_ma_hang },
+                "4": { "param": "prod_filter_mau", "title": "Màu", "options": _clean_options(prod_opt_mau), "selected": prod_filter_mau },
+                "5": { "param": "prod_filter_xuong", "title": "Xưởng", "options": _clean_options(prod_opt_xuong), "selected": prod_filter_xuong },
+                "6": { "param": "prod_filter_to", "title": "Tổ", "options": _clean_options(prod_opt_to), "selected": prod_filter_to }
             }
         }
     }
@@ -1395,31 +1487,8 @@ def dashboard_kcs_view(request):
 
     kcs_cumulative_map = _calculate_cumulative_totals_kcs()
 
-    def _dashboard_kcs_report_to_row(report, color_map, kcs_cumulative_map):
-        key = (report.ma_hang, report.mau)
-        tong_don_hang = color_map.get(key, 0)
-        totals = kcs_cumulative_map.get(report.id, {})
-        return {
-            "row_id": report.id,
-            "nguoi_nhap": report.nguoi_nhap.name if report.nguoi_nhap else "Unknown",
-            "ngay_lam_viec": format_date(report.ngay_lam_viec),
-            "ngay_nhap": format_datetime(report.created_at),
-            "ma_hang": report.ma_hang,
-            "mau": report.mau,
-            "xuong": report.xuong,
-            "to": report.to,
-            "tong_don_hang": tong_don_hang,
-            "qua_tay_ngay": report.qua_tay,
-            "qua_tay_tong": totals.get('total_qua_tay', report.qua_tay or 0),
-            "dat_ngay": report.dat,
-            "dat_tong": totals.get('total_dat', report.dat or 0),
-            "loi_ngay": report.loi,
-            "loi_tong": totals.get('total_loi', report.loi or 0),
-            "tong_dat_ngay": report.tong_dat,
-            "tong_dat_tong": totals.get('total_tong_dat', report.tong_dat or 0),
-        }
-
     kcs_rows = [_dashboard_kcs_report_to_row(r, color_map, kcs_cumulative_map) for r in kcs_qs]
+
 
     excel_filter_config = {
         "kcs": {
@@ -1624,12 +1693,17 @@ def kcs_list_view(request):
         if to_date:
             qs = qs.filter(ngay_lam_viec__lte=to_date)
 
-    data_rows = [_kcs_report_to_row(r) for r in qs[:50]]
+    color_map = {}
+    for color in ProductColor.objects.all().select_related('product'):
+        color_map[(color.product.name, color.name)] = color.quantity
+
+    kcs_cumulative_map = _calculate_cumulative_totals_kcs()
+
+    data_rows = [_dashboard_kcs_report_to_row(r, color_map, kcs_cumulative_map) for r in qs[:50]]
 
     all_users = AppUser.objects.filter(role="KCS") if current_user.role in ["PREMIUM", "QUAN_LY"] else []
 
     return render(request, "kcs_list.html", {
-        "headers": KCS_HEADERS,
         "table_rows": data_rows,
         "page_obj": data_rows,
         "display_name": current_user.name if current_user else "",
@@ -1640,6 +1714,7 @@ def kcs_list_view(request):
         "from_date": request.GET.get('from_date', ''),
         "to_date": request.GET.get('to_date', ''),
     })
+
 
 @login_required
 def kcs_edit_view(request, row_id):
@@ -1668,8 +1743,9 @@ def kcs_edit_view(request, row_id):
             if next_url:
                 return redirect(next_url)
             if current_user.role in ["PREMIUM", "QUAN_LY"]:
-                return redirect("premium_dashboard")
+                return redirect("dashboard_kcs")
             return redirect("kcs_list")
+
     else:
         initial = {
             "ngay_lam_viec": report.ngay_lam_viec,
@@ -1821,15 +1897,21 @@ def cut_list_view(request):
     else:
         reports = CutReport.objects.select_related('nguoi_nhap').filter(nguoi_nhap=current_user).order_by("-created_at")[:50]
         
-    table_rows = [_cut_report_to_row(r) for r in reports]
+    color_map = {}
+    for color in ProductColor.objects.all().select_related('product'):
+        color_map[(color.product.name, color.name)] = color.quantity
+
+    cut_cumulative_map = _calculate_cumulative_totals_cut()
+
+    table_rows = [_dashboard_cut_report_to_row(r, color_map, cut_cumulative_map) for r in reports]
 
     return render(request, "cut_list.html", {
         "table_rows": table_rows,
-        "headers": CUT_HEADERS,
         "display_name": current_user.name if current_user else "",
         "user": current_user,
         "is_premium": (current_user.role == "PREMIUM") if current_user else False,
     })
+
 
 
 @login_required

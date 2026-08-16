@@ -47,34 +47,58 @@
             <table>
                 <thead>
                     <tr>
-                        {% for h in headers %}
-                        <th>{{ h }}</th>
-                        {% endfor %}
-                        {% if is_manager %}
-                        <th>Thao tác</th>
-                        {% endif %}
+                        <th rowspan="2">Người nhập</th>
+                        <th rowspan="2">Ngày làm việc</th>
+                        <th rowspan="2">Ngày nhập</th>
+                        <th rowspan="2">Mã hàng</th>
+                        <th rowspan="2">Màu</th>
+                        <th rowspan="2">Xưởng</th>
+                        <th rowspan="2">Tổ</th>
+                        <th rowspan="2">Tổng ĐH</th>
+                        <th colspan="2">Qua tay</th>
+                        <th colspan="2">Đạt</th>
+                        <th colspan="2">Lỗi</th>
+                        <th colspan="2">Tổng đạt</th>
+                    </tr>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Tổng</th>
+                        <th>Ngày</th>
+                        <th>Tổng</th>
+                        <th>Ngày</th>
+                        <th>Tổng</th>
+                        <th>Ngày</th>
+                        <th>Tổng</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in page_obj %}
                     <tr>
-                        {% for value in row.values %}
-                        <td>{{ value }}</td>
-                        {% endfor %}
-                        {% if is_manager %}
-                        <td>
-                            <div style="display: flex; gap: 5px;">
-                                <a class="btn btn-warning" href="{% url 'kcs_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
-                                <form action="{% url 'kcs_delete_report' row.row_id %}" method="post"
-                                    onsubmit="return confirm('Bạn có chắc muốn xóa báo cáo này không?');"
-                                    style="margin: 0;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-warning"
-                                        style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
-                                </form>
-                            </div>
+                        <td>{{ row.nguoi_nhap }}</td>
+                        <td>{{ row.ngay_lam_viec }}</td>
+                        <td>{{ row.ngay_nhap }}</td>
+                        <td><strong>{{ row.ma_hang }}</strong></td>
+                        <td>{{ row.mau }}</td>
+                        <td>{{ row.xuong }}</td>
+                        <td>{{ row.to }}</td>
+                        <td>{{ row.tong_don_hang }}</td>
+
+                        <td colspan="2" class="diagonal-cell">
+                            <span class="top-val">{{ row.qua_tay_ngay }}</span>
+                            <span class="bot-val">{{ row.qua_tay_tong }}</span>
                         </td>
-                        {% endif %}
+                        <td colspan="2" class="diagonal-cell">
+                            <span class="top-val">{{ row.dat_ngay }}</span>
+                            <span class="bot-val">{{ row.dat_tong }}</span>
+                        </td>
+                        <td colspan="2" class="diagonal-cell">
+                            <span class="top-val">{{ row.loi_ngay }}</span>
+                            <span class="bot-val">{{ row.loi_tong }}</span>
+                        </td>
+                        <td colspan="2" class="diagonal-cell">
+                            <span class="top-val">{{ row.tong_dat_ngay }}</span>
+                            <span class="bot-val">{{ row.tong_dat_tong }}</span>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -85,26 +109,18 @@
         <div class="card-list">
             {% for row in page_obj %}
             <div class="data-card">
-                <div class="card-header">
-                    <span class="card-title">{{ row.values.3 }} — {{ row.values.4 }} ({{ row.values.1 }})</span>
-                    {% if is_premium %}
-                    <div style="display: flex; gap: 5px;">
-                        <a class="btn btn-warning" href="{% url 'kcs_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
-                        <form action="{% url 'kcs_delete_report' row.row_id %}" method="post"
-                            onsubmit="return confirm('Bạn có chắc muốn xóa báo cáo này không?');" style="margin: 0;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-warning"
-                                style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
-                        </form>
-                    </div>
-                    {% endif %}
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong class="card-title">{{ row.ma_hang }} — {{ row.mau }} (X{{ row.xuong }}-T{{ row.to }})</strong>
                 </div>
-                {% for label, value in row.pairs %}
-                <div class="card-row">
-                    <span class="label">{{ label }}</span>
-                    <span class="value">{{ value }}</span>
+                <div class="card-body">
+                    <div class="card-row"><span class="label">Người nhập:</span><span class="value">{{ row.nguoi_nhap }}</span></div>
+                    <div class="card-row"><span class="label">Ngày làm việc:</span><span class="value">{{ row.ngay_lam_viec }}</span></div>
+                    <div class="card-row"><span class="label">Tổng ĐH:</span><span class="value">{{ row.tong_don_hang }}</span></div>
+                    <div class="card-row"><span class="label">Qua tay (Ngày/Tổng):</span><span class="value">{{ row.qua_tay_ngay }} / {{ row.qua_tay_tong }}</span></div>
+                    <div class="card-row"><span class="label">Đạt (Ngày/Tổng):</span><span class="value">{{ row.dat_ngay }} / {{ row.dat_tong }}</span></div>
+                    <div class="card-row"><span class="label">Lỗi (Ngày/Tổng):</span><span class="value">{{ row.loi_ngay }} / {{ row.loi_tong }}</span></div>
+                    <div class="card-row"><span class="label">Tổng đạt (Ngày/Tổng):</span><span class="value">{{ row.tong_dat_ngay }} / {{ row.tong_dat_tong }}</span></div>
                 </div>
-                {% endfor %}
             </div>
             {% endfor %}
         </div>

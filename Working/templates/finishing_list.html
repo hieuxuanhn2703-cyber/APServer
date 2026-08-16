@@ -47,34 +47,49 @@
             <table>
                 <thead>
                     <tr>
-                        {% for h in headers %}
-                        <th>{{ h }}</th>
-                        {% endfor %}
-                        {% if is_manager %}
-                        <th>Thao tác</th>
-                        {% endif %}
+                        <th rowspan="2">Người nhập</th>
+                        <th rowspan="2">Ngày làm việc</th>
+                        <th rowspan="2">Ngày nhập</th>
+                        <th rowspan="2">Mã hàng</th>
+                        <th rowspan="2">Màu</th>
+                        <th rowspan="2">Tổng ĐH</th>
+                        <th rowspan="2">Nhập HT</th>
+                        <th colspan="2">Thẻ bài</th>
+                        <th colspan="2">Gấp hàng</th>
+                        <th colspan="2">Treo/Đóng thùng</th>
+                    </tr>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Tổng</th>
+                        <th>Ngày</th>
+                        <th>Tổng</th>
+                        <th>Ngày</th>
+                        <th>Tổng</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in table_rows %}
                     <tr>
-                        {% for value in row.values %}
-                        <td>{{ value }}</td>
-                        {% endfor %}
-                        {% if is_manager %}
-                        <td>
-                            <div style="display: flex; gap: 5px;">
-                                <a class="btn btn-warning" href="{% url 'finishing_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
-                                <form action="{% url 'finishing_delete_report' row.row_id %}" method="post"
-                                    onsubmit="return confirm('Bạn có chắc muốn xóa báo cáo này không?');"
-                                    style="margin: 0;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-warning"
-                                        style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
-                                </form>
-                            </div>
+                        <td>{{ row.nguoi_nhap }}</td>
+                        <td>{{ row.ngay_lam_viec }}</td>
+                        <td>{{ row.ngay_nhap }}</td>
+                        <td><strong>{{ row.ma_hang }}</strong></td>
+                        <td>{{ row.mau }}</td>
+                        <td>{{ row.tong_don_hang }}</td>
+                        <td>{{ row.tong_nhap_hoan_thien }}</td>
+
+                        <td colspan="2" class="diagonal-cell">
+                            <span class="top-val">{{ row.the_bai_ngay }}</span>
+                            <span class="bot-val">{{ row.the_bai_tong }}</span>
                         </td>
-                        {% endif %}
+                        <td colspan="2" class="diagonal-cell">
+                            <span class="top-val">{{ row.gap_hang_ngay }}</span>
+                            <span class="bot-val">{{ row.gap_hang_tong }}</span>
+                        </td>
+                        <td colspan="2" class="diagonal-cell">
+                            <span class="top-val">{{ row.treo_dong_thung_ngay }}</span>
+                            <span class="bot-val">{{ row.treo_dong_thung_tong }}</span>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -85,26 +100,17 @@
         <div class="card-list">
             {% for row in table_rows %}
             <div class="data-card">
-                <div class="card-header">
-                    <span class="card-title">{{ row.values.3 }} — {{ row.values.4 }} ({{ row.values.1 }})</span>
-                    {% if is_premium %}
-                    <div style="display: flex; gap: 5px;">
-                        <a class="btn btn-warning" href="{% url 'finishing_edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
-                        <form action="{% url 'finishing_delete_report' row.row_id %}" method="post"
-                            onsubmit="return confirm('Bạn có chắc muốn xóa báo cáo này không?');" style="margin: 0;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-warning"
-                                style="background: #e74c3c; border: none; cursor: pointer; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px;">Xóa</button>
-                        </form>
-                    </div>
-                    {% endif %}
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong class="card-title">{{ row.ma_hang }} — {{ row.mau }} ({{ row.ngay_lam_viec }})</strong>
                 </div>
-                {% for label, value in row.pairs %}
-                <div class="card-row">
-                    <span class="label">{{ label }}</span>
-                    <span class="value">{{ value }}</span>
+                <div class="card-body">
+                    <div class="card-row"><span class="label">Người nhập:</span><span class="value">{{ row.nguoi_nhap }}</span></div>
+                    <div class="card-row"><span class="label">Tổng đơn hàng:</span><span class="value">{{ row.tong_don_hang }}</span></div>
+                    <div class="card-row"><span class="label">Nhập HT (tổng):</span><span class="value">{{ row.tong_nhap_hoan_thien }}</span></div>
+                    <div class="card-row"><span class="label">Thẻ bài (Ngày/Tổng):</span><span class="value">{{ row.the_bai_ngay }} / {{ row.the_bai_tong }}</span></div>
+                    <div class="card-row"><span class="label">Gấp hàng (Ngày/Tổng):</span><span class="value">{{ row.gap_hang_ngay }} / {{ row.gap_hang_tong }}</span></div>
+                    <div class="card-row"><span class="label">Treo/Đóng thùng (Ngày/Tổng):</span><span class="value">{{ row.treo_dong_thung_ngay }} / {{ row.treo_dong_thung_tong }}</span></div>
                 </div>
-                {% endfor %}
             </div>
             {% endfor %}
         </div>

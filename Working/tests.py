@@ -510,17 +510,18 @@ class ComprehensiveSystemTests(TestCase):
         self.assertEqual(new_report.xuong, 2)
         self.assertEqual(new_report.so_luong_ld, 15)
         
-        # Kiểm tra BASIC không thấy nút Xóa/Sửa ở trang list
+        # Kiểm tra trang list hiển thị nút Sửa/Xóa cho bản ghi của chính người dùng
         res_list = self.client.get(reverse('list'))
         self.assertEqual(res_list.status_code, 200)
-        self.assertNotIn("<th>Thao tác</th>", res_list.content.decode('utf-8'))
+        self.assertIn("Thao tác", res_list.content.decode('utf-8'))
+        self.assertIn(f"href=\"/edit/{new_report.id}/?next=/list/\"", res_list.content.decode('utf-8'))
         
-        # Nhưng PREMIUM thì thấy
+        # PREMIUM cũng thấy
         self._login_as(self.premium_user)
         res_list_prem = self.client.get(reverse('list'))
         self.assertEqual(res_list_prem.status_code, 200)
-        self.assertIn("<th>Thao tác</th>", res_list_prem.content.decode('utf-8'))
-        
+        self.assertIn("Thao tác", res_list_prem.content.decode('utf-8'))
+
         # Đăng nhập lại BASIC để chạy tiếp luồng
         self._login_as(self.basic_user)
 
@@ -608,21 +609,25 @@ class ComprehensiveSystemTests(TestCase):
         new_fin = FinishingReport.objects.filter(the_bai=15).first()
         self.assertIsNotNone(new_fin)
         
-        # Kiểm tra HOAN_THIEN không thấy nút Xóa/Sửa ở trang finishing_list
+        # Kiểm tra trang finishing_list hiển thị nút Sửa/Xóa cho bản ghi của chính người dùng
         res_fin_list = self.client.get(reverse('finishing_list'))
         self.assertEqual(res_fin_list.status_code, 200)
-        self.assertNotIn("<th>Thao tác</th>", res_fin_list.content.decode('utf-8'))
+        self.assertIn("Thao tác", res_fin_list.content.decode('utf-8'))
+        self.assertIn(f"href=\"/finishing/edit/{new_fin.id}/?next=/finishing/list/\"", res_fin_list.content.decode('utf-8'))
         
-        # Nhưng PREMIUM và QUAN_LY thì thấy
+        # PREMIUM và QUAN_LY cũng thấy
         self._login_as(self.premium_user)
         res_fin_list_prem = self.client.get(reverse('finishing_list'))
         self.assertEqual(res_fin_list_prem.status_code, 200)
-        self.assertIn("<th>Thao tác</th>", res_fin_list_prem.content.decode('utf-8'))
+        self.assertIn("Thao tác", res_fin_list_prem.content.decode('utf-8'))
 
         self._login_as(self.quanly_user)
         res_fin_list_quanly = self.client.get(reverse('finishing_list'))
         self.assertEqual(res_fin_list_quanly.status_code, 200)
-        self.assertIn("<th>Thao tác</th>", res_fin_list_quanly.content.decode('utf-8'))
+        self.assertIn("Thao tác", res_fin_list_quanly.content.decode('utf-8'))
+
+
+
         
         # Đăng nhập lại HOAN_THIEN để chạy tiếp luồng
         self._login_as(self.finishing_user)

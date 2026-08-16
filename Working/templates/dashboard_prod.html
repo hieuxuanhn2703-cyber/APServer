@@ -80,29 +80,118 @@
                         <table data-table-type="prod">
                             <thead>
                                 <tr>
-                                    {% for header in prod_headers %}
-                                    <th>
-                                        {% if header == 'Người nhập' or header == 'Mã hàng' or header == 'Màu' or header == 'Xưởng' or header == 'Tổ' %}
+                                    <th rowspan="2">
                                         <div class="th-filter-wrap">
-                                            <span>{{ header }}</span>
-                                            <button type="button" class="excel-filter-btn" data-col="{{ forloop.counter0 }}" data-title="{{ header }}" title="Lọc {{ header }}">
+                                            <span>Người nhập</span>
+                                            <button type="button" class="excel-filter-btn" data-col="0" data-title="Người nhập" title="Lọc Người nhập">
                                                 <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
                                             </button>
                                         </div>
-                                        {% else %}
-                                        {{ header }}
-                                        {% endif %}
                                     </th>
-                                    {% endfor %}
-                                    <th>Thao tác</th>
+                                    <th rowspan="2">Ngày làm việc</th>
+                                    <th rowspan="2">Ngày nhập</th>
+                                    <th rowspan="2">
+                                        <div class="th-filter-wrap">
+                                            <span>Mã hàng</span>
+                                            <button type="button" class="excel-filter-btn" data-col="3" data-title="Mã hàng" title="Lọc Mã hàng">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th rowspan="2">
+                                        <div class="th-filter-wrap">
+                                            <span>Màu</span>
+                                            <button type="button" class="excel-filter-btn" data-col="4" data-title="Màu" title="Lọc Màu">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th rowspan="2">
+                                        <div class="th-filter-wrap">
+                                            <span>Xưởng</span>
+                                            <button type="button" class="excel-filter-btn" data-col="5" data-title="Xưởng" title="Lọc Xưởng">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th rowspan="2">
+                                        <div class="th-filter-wrap">
+                                            <span>Tổ</span>
+                                            <button type="button" class="excel-filter-btn" data-col="6" data-title="Tổ" title="Lọc Tổ">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th rowspan="2">Số LĐ</th>
+                                    <th rowspan="2">Tổng ĐH</th>
+                                    <th colspan="2">Nhận BTP</th>
+                                    <th colspan="2">Vào chuyền</th>
+                                    <th colspan="2">Giữa chuyền</th>
+                                    <th colspan="2">Ra chuyền</th>
+                                    <th colspan="2">Thu hóa</th>
+                                    <th colspan="2">Là TP</th>
+                                    <th colspan="2">Nhập HT</th>
+                                    <th rowspan="2">Thao tác</th>
+                                </tr>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
+                                    <th>Ngày</th>
+                                    <th>Tổng</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for row in page_prod %}
                                 <tr>
-                                    {% for cell in row.values %}
-                                    <td>{% if forloop.counter == 6 %}<strong>{{ cell }}</strong>{% else %}{{ cell }}{% endif %}</td>
-                                    {% endfor %}
+                                    <td>{{ row.nguoi_nhap }}</td>
+                                    <td>{{ row.ngay_lam_viec }}</td>
+                                    <td>{{ row.ngay_nhap }}</td>
+                                    <td><strong>{{ row.ma_hang }}</strong></td>
+                                    <td>{{ row.mau }}</td>
+                                    <td>{{ row.xuong }}</td>
+                                    <td>{{ row.to }}</td>
+                                    <td>{{ row.so_luong_ld }}</td>
+                                    <td>{{ row.tong_don_hang }}</td>
+
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.nhan_btp_ngay }}</span>
+                                        <span class="bot-val">{{ row.nhan_btp_tong }}</span>
+                                    </td>
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.vao_chuyen_ngay }}</span>
+                                        <span class="bot-val">{{ row.vao_chuyen_tong }}</span>
+                                    </td>
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.giua_chuyen_ngay }}</span>
+                                        <span class="bot-val">{{ row.giua_chuyen_tong }}</span>
+                                    </td>
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.ra_chuyen_ngay }}</span>
+                                        <span class="bot-val">{{ row.ra_chuyen_tong }}</span>
+                                    </td>
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.thu_hoa_ngay }}</span>
+                                        <span class="bot-val">{{ row.thu_hoa_tong }}</span>
+                                    </td>
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.la_thanh_pham_ngay }}</span>
+                                        <span class="bot-val">{{ row.la_thanh_pham_tong }}</span>
+                                    </td>
+                                    <td colspan="2" class="diagonal-cell">
+                                        <span class="top-val">{{ row.nhap_hoan_thien_ngay }}</span>
+                                        <span class="bot-val">{{ row.nhap_hoan_thien_tong }}</span>
+                                    </td>
+
                                     <td>
                                         <div class="action-btn-group">
                                             <a class="btn btn-warning" href="{% url 'edit' row.row_id %}?next={{ request.path|urlencode }}">Sửa</a>
@@ -115,7 +204,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="16" class="empty">Chưa có dữ liệu nào được nhập.</td>
+                                    <td colspan="24" class="empty">Chưa có dữ liệu nào được nhập.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -140,9 +229,14 @@
                                 <div class="card-row"><span class="label">Người nhập:</span><span class="value">{{ row.nguoi_nhap }}</span></div>
                                 <div class="card-row"><span class="label">Ngày làm việc:</span><span class="value">{{ row.ngay_lam_viec }}</span></div>
                                 <div class="card-row"><span class="label">Số LĐ:</span><span class="value">{{ row.so_luong_ld }}</span></div>
-                                <div class="card-row"><span class="label">Nhận BTP:</span><span class="value">{{ row.nhan_btp }}</span></div>
-                                <div class="card-row"><span class="label">Ra chuyền:</span><span class="value">{{ row.ra_chuyen }}</span></div>
-                                <div class="card-row"><span class="label">Nhập HT:</span><span class="value">{{ row.nhap_hoan_thien }}</span></div>
+                                <div class="card-row"><span class="label">Tổng ĐH:</span><span class="value">{{ row.tong_don_hang }}</span></div>
+                                <div class="card-row"><span class="label">Nhận BTP (Ngày/Tổng):</span><span class="value">{{ row.nhan_btp_ngay }} / {{ row.nhan_btp_tong }}</span></div>
+                                <div class="card-row"><span class="label">Vào chuyền (Ngày/Tổng):</span><span class="value">{{ row.vao_chuyen_ngay }} / {{ row.vao_chuyen_tong }}</span></div>
+                                <div class="card-row"><span class="label">Giữa chuyền (Ngày/Tổng):</span><span class="value">{{ row.giua_chuyen_ngay }} / {{ row.giua_chuyen_tong }}</span></div>
+                                <div class="card-row"><span class="label">Ra chuyền (Ngày/Tổng):</span><span class="value">{{ row.ra_chuyen_ngay }} / {{ row.ra_chuyen_tong }}</span></div>
+                                <div class="card-row"><span class="label">Thu hóa (Ngày/Tổng):</span><span class="value">{{ row.thu_hoa_ngay }} / {{ row.thu_hoa_tong }}</span></div>
+                                <div class="card-row"><span class="label">Là TP (Ngày/Tổng):</span><span class="value">{{ row.la_thanh_pham_ngay }} / {{ row.la_thanh_pham_tong }}</span></div>
+                                <div class="card-row"><span class="label">Nhập HT (Ngày/Tổng):</span><span class="value">{{ row.nhap_hoan_thien_ngay }} / {{ row.nhap_hoan_thien_tong }}</span></div>
                             </div>
                         </div>
                         {% endfor %}
