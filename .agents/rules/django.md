@@ -28,3 +28,11 @@
 
 After Python/Django changes, use the project's validation commands:
 - `python manage.py check`
+
+## Django Backend Guidelines (Learned from Session)
+
+- **Database Performance:** MUST use `.select_related()` (e.g., `.select_related('nguoi_nhap')`) for report lists (List and Dashboard views) to prevent N+1 Query problems when displaying related models.
+- **Data Integrity:** MUST wrap critical cross-model operations in `transaction.atomic()`. If an operation can fail halfway through (e.g., adding products and colors simultaneously), use transactions to ensure all-or-nothing saves.
+- **Deletion Rules:** The project uses `on_delete=models.PROTECT` extensively (e.g., deleting a User with associated reports throws `ProtectedError`). Do NOT ignore this error implicitly; handle it gracefully or leave it to be resolved architecturally.
+- **Toggle Features:** Be mindful of feature toggles like `ENABLE_SIZES`. Logic that handles sizes should respect this toggle to keep the system operational if it is disabled.
+- **Dynamic Contexts:** Any view that renders an edit template for an entry form MUST include `config = load_config()` in its context so the frontend Javascript can function properly.

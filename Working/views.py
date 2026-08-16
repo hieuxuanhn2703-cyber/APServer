@@ -45,6 +45,68 @@ def format_date(d):
         return ""
     return d.strftime("%d/%m/%Y")
 
+from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+def _style_dashboard_excel_sheet(ws):
+    """
+    Áp dụng style chuyên nghiệp cho sheet Excel xuất từ Dashboard:
+    - Header hàng 1 (xanh đậm #1E40AF) & hàng 2 (xanh vừa #2563EB), chữ trắng đậm, căn giữa.
+    - Viền mỏng toàn bộ ô.
+    - Xen kẽ màu dòng dữ liệu (zebra striping).
+    - Tự động căn chỉnh độ rộng cột theo nội dung.
+    """
+    header_fill = PatternFill(start_color="1E40AF", end_color="1E40AF", fill_type="solid")
+    subheader_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
+    header_font = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+    data_font = Font(name="Arial", size=9)
+    zebra_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+    thin_border = Border(
+        left=Side(style="thin", color="CBD5E1"),
+        right=Side(style="thin", color="CBD5E1"),
+        top=Side(style="thin", color="CBD5E1"),
+        bottom=Side(style="thin", color="CBD5E1")
+    )
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    # Style Row 1
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center_align
+        cell.border = thin_border
+    ws.row_dimensions[1].height = 26
+
+    # Style Row 2
+    for cell in ws[2]:
+        cell.fill = subheader_fill
+        cell.font = header_font
+        cell.alignment = center_align
+        cell.border = thin_border
+    ws.row_dimensions[2].height = 22
+
+    # Style Data rows
+    for r_idx, row in enumerate(ws.iter_rows(min_row=3, max_row=ws.max_row), start=3):
+        ws.row_dimensions[r_idx].height = 20
+        is_even = (r_idx % 2 == 0)
+        for cell in row:
+            cell.font = data_font
+            cell.alignment = center_align
+            cell.border = thin_border
+            if is_even:
+                cell.fill = zebra_fill
+
+    # Auto adjust column widths
+    for col in ws.columns:
+        max_len = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            val_str = str(cell.value or '')
+            val_len = len(val_str)
+            if val_len > max_len:
+                max_len = val_len
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
 from .auth_utils import verify_credentials, get_current_user, login_required, SESSION_KEY
 
 HEADERS = [
@@ -484,16 +546,50 @@ def export_excel_view(request):
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền xuất dữ liệu.")
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="DuLieuBaoCao.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="DuLieuSanXuat.xlsx"'
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Dữ liệu"
+    ws.title = "Tổng hợp Sản xuất"
 
-    # Ghi headers
-    ws.append(HEADERS)
+    # Row 1: Headers
+    ws.append([
+        "Người nhập", "Ngày làm việc", "Ngày nhập", "Mã hàng", "Màu", "Xưởng", "Tổ", "Số LĐ", "Tổng ĐH",
+        "Nhận BTP", "",
+        "Vào chuyền", "",
+        "Giữa chuyền", "",
+        "Ra chuyền", "",
+        "Thu hóa", "",
+        "Là thành phẩm", "",
+        "Nhập hoàn thiện", ""
+    ])
 
-    # Lấy dữ liệu và ghi vào sheet
+    # Row 2: Sub-headers
+    ws.append([
+        "", "", "", "", "", "", "", "", "",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng"
+    ])
+
+    # Merge headers
+    for col_letter in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+        ws.merge_cells(f"{col_letter}1:{col_letter}2")
+
+    for col_start in range(10, 24, 2):
+        ws.merge_cells(start_row=1, start_column=col_start, end_row=1, end_column=col_start+1)
+
+    # Get data
+    color_map = {
+        (c.product.name, c.name): c.quantity
+        for c in ProductColor.objects.select_related('product').all()
+    }
+    prod_cumulative_map = _calculate_cumulative_totals_prod()
+
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     start_dt, end_dt = parse_date_range(start_date, end_date)
@@ -502,11 +598,36 @@ def export_excel_view(request):
         reports = reports.filter(created_at__gte=start_dt)
     if end_dt:
         reports = reports.filter(created_at__lte=end_dt)
-        
-    for report in reports:
-        row = _report_to_row(report)
-        ws.append(row["values"])
 
+    for report in reports:
+        row = _dashboard_prod_report_to_row(report, color_map, prod_cumulative_map)
+        ws.append([
+            row["nguoi_nhap"],
+            row["ngay_lam_viec"],
+            row["ngay_nhap"],
+            row["ma_hang"],
+            row["mau"],
+            row["xuong"],
+            row["to"],
+            row["so_luong_ld"],
+            row["tong_don_hang"],
+            row["nhan_btp_ngay"],
+            row["nhan_btp_tong"],
+            row["vao_chuyen_ngay"],
+            row["vao_chuyen_tong"],
+            row["giua_chuyen_ngay"],
+            row["giua_chuyen_tong"],
+            row["ra_chuyen_ngay"],
+            row["ra_chuyen_tong"],
+            row["thu_hoa_ngay"],
+            row["thu_hoa_tong"],
+            row["la_thanh_pham_ngay"],
+            row["la_thanh_pham_tong"],
+            row["nhap_hoan_thien_ngay"],
+            row["nhap_hoan_thien_tong"],
+        ])
+
+    _style_dashboard_excel_sheet(ws)
     wb.save(response)
     return response
 
@@ -1016,30 +1137,77 @@ def finishing_export_excel_view(request):
     if current_user.role not in ['HOAN_THIEN', 'PREMIUM', 'QUAN_LY']:
         raise PermissionDenied("Bạn không có quyền truy cập.")
 
-    import openpyxl
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="DuLieuHoanThien.xlsx"'
+
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Du lieu hoan thien"
-    
-    ws.append(FINISHING_HEADERS)
-    
+    ws.title = "Tổng hợp Hoàn thiện"
+
+    # Row 1: Headers
+    ws.append([
+        "Người nhập", "Ngày làm việc", "Ngày nhập", "Mã hàng", "Màu", "Tổng ĐH", "Tổng Nhập HT",
+        "Thẻ bài", "",
+        "Gấp hàng", "",
+        "Treo/Đóng thùng", ""
+    ])
+
+    # Row 2: Sub-headers
+    ws.append([
+        "", "", "", "", "", "", "",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng"
+    ])
+
+    # Merge headers
+    for col_letter in ["A", "B", "C", "D", "E", "F", "G"]:
+        ws.merge_cells(f"{col_letter}1:{col_letter}2")
+
+    for col_start in range(8, 14, 2):
+        ws.merge_cells(start_row=1, start_column=col_start, end_row=1, end_column=col_start+1)
+
+    # Get data
+    color_map = {
+        (c.product.name, c.name): c.quantity
+        for c in ProductColor.objects.select_related('product').all()
+    }
+    fin_cumulative_map = _calculate_cumulative_totals_finishing()
+    prod_nhap_totals_map = {
+        (item['ma_hang'], item['mau']): item['total_nhap_ht'] or 0
+        for item in ProcessReport.objects.values('ma_hang', 'mau').annotate(total_nhap_ht=Sum('nhap_hoan_thien'))
+    }
+
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     start_dt, end_dt = parse_date_range(start_date, end_date)
-    qs = FinishingReport.objects.select_related('nguoi_nhap').all()
+    qs = FinishingReport.objects.select_related('nguoi_nhap').all().order_by("-created_at")
     if start_dt:
         qs = qs.filter(created_at__gte=start_dt)
     if end_dt:
         qs = qs.filter(created_at__lte=end_dt)
-        
+
     for report in qs:
-        row_data = _finishing_report_to_row(report)
-        ws.append(row_data["values"])
-        
-    response = HttpResponse(
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    response["Content-Disposition"] = 'attachment; filename="du_lieu_hoan_thien.xlsx"'
+        row = _dashboard_finishing_report_to_row(report, color_map, fin_cumulative_map, prod_nhap_totals_map)
+        ws.append([
+            row["nguoi_nhap"],
+            row["ngay_lam_viec"],
+            row["ngay_nhap"],
+            row["ma_hang"],
+            row["mau"],
+            row["tong_don_hang"],
+            row["tong_nhap_hoan_thien"],
+            row["the_bai_ngay"],
+            row["the_bai_tong"],
+            row["gap_hang_ngay"],
+            row["gap_hang_tong"],
+            row["treo_dong_thung_ngay"],
+            row["treo_dong_thung_tong"],
+        ])
+
+    _style_dashboard_excel_sheet(ws)
     wb.save(response)
     return response
 
@@ -1788,30 +1956,78 @@ def kcs_export_excel_view(request):
     if current_user.role not in ['KCS', 'PREMIUM', 'QUAN_LY']:
         raise PermissionDenied("Bạn không có quyền truy cập.")
 
-    import openpyxl
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="DuLieuKCS.xlsx"'
+
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Du lieu KCS"
-    
-    ws.append(KCS_HEADERS)
-    
+    ws.title = "Tổng hợp KCS"
+
+    # Row 1: Headers
+    ws.append([
+        "Người nhập", "Ngày làm việc", "Ngày nhập", "Mã hàng", "Màu", "Xưởng", "Tổ", "Tổng ĐH",
+        "Qua tay", "",
+        "Đạt", "",
+        "Lỗi", "",
+        "Tổng đạt", ""
+    ])
+
+    # Row 2: Sub-headers
+    ws.append([
+        "", "", "", "", "", "", "", "",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng"
+    ])
+
+    # Merge headers
+    for col_letter in ["A", "B", "C", "D", "E", "F", "G", "H"]:
+        ws.merge_cells(f"{col_letter}1:{col_letter}2")
+
+    for col_start in range(9, 17, 2):
+        ws.merge_cells(start_row=1, start_column=col_start, end_row=1, end_column=col_start+1)
+
+    # Get data
+    color_map = {
+        (c.product.name, c.name): c.quantity
+        for c in ProductColor.objects.select_related('product').all()
+    }
+    kcs_cumulative_map = _calculate_cumulative_totals_kcs()
+
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     start_dt, end_dt = parse_date_range(start_date, end_date)
-    qs = KcsReport.objects.select_related('nguoi_nhap').all()
+    qs = KcsReport.objects.select_related('nguoi_nhap').all().order_by("-created_at")
     if start_dt:
         qs = qs.filter(created_at__gte=start_dt)
     if end_dt:
         qs = qs.filter(created_at__lte=end_dt)
-        
+
     for report in qs:
-        row_data = _kcs_report_to_row(report)
-        ws.append(row_data["values"])
-        
-    response = HttpResponse(
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    response["Content-Disposition"] = 'attachment; filename="du_lieu_kcs.xlsx"'
+        row = _dashboard_kcs_report_to_row(report, color_map, kcs_cumulative_map)
+        ws.append([
+            row["nguoi_nhap"],
+            row["ngay_lam_viec"],
+            row["ngay_nhap"],
+            row["ma_hang"],
+            row["mau"],
+            row["xuong"],
+            row["to"],
+            row["tong_don_hang"],
+            row["qua_tay_ngay"],
+            row["qua_tay_tong"],
+            row["dat_ngay"],
+            row["dat_tong"],
+            row["loi_ngay"],
+            row["loi_tong"],
+            row["tong_dat_ngay"],
+            row["tong_dat_tong"],
+        ])
+
+    _style_dashboard_excel_sheet(ws)
     wb.save(response)
     return response
 
@@ -1984,26 +2200,72 @@ def cut_export_excel_view(request):
         raise PermissionDenied("Bạn không có quyền xuất Excel.")
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="bao_cao_cat.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="DuLieuCat.xlsx"'
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Báo cáo Cắt"
-    
-    ws.append(CUT_HEADERS)
-    
+    ws.title = "Tổng hợp Cắt"
+
+    # Row 1: Headers
+    ws.append([
+        "Người nhập", "Ngày làm việc", "Ngày nhập", "Mã hàng", "Màu", "Tổng ĐH",
+        "Cắt chính", "",
+        "Cắt lót", "",
+        "Cắt Mex", "",
+        "Cắt bông", ""
+    ])
+
+    # Row 2: Sub-headers
+    ws.append([
+        "", "", "", "", "", "",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng",
+        "Ngày", "Tổng"
+    ])
+
+    # Merge headers
+    for col_letter in ["A", "B", "C", "D", "E", "F"]:
+        ws.merge_cells(f"{col_letter}1:{col_letter}2")
+
+    for col_start in range(7, 15, 2):
+        ws.merge_cells(start_row=1, start_column=col_start, end_row=1, end_column=col_start+1)
+
+    # Get data
+    color_map = {
+        (c.product.name, c.name): c.quantity
+        for c in ProductColor.objects.select_related('product').all()
+    }
+    cut_cumulative_map = _calculate_cumulative_totals_cut()
+
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     start_dt, end_dt = parse_date_range(start_date, end_date)
-    qs = CutReport.objects.select_related('nguoi_nhap').all()
+    qs = CutReport.objects.select_related('nguoi_nhap').all().order_by("-created_at")
     if start_dt:
         qs = qs.filter(created_at__gte=start_dt)
     if end_dt:
         qs = qs.filter(created_at__lte=end_dt)
-        
-    for report in qs:
-        row_data = _cut_report_to_row(report)
-        ws.append(row_data["values"])
 
+    for report in qs:
+        row = _dashboard_cut_report_to_row(report, color_map, cut_cumulative_map)
+        ws.append([
+            row["nguoi_nhap"],
+            row["ngay_lam_viec"],
+            row["ngay_nhap"],
+            row["ma_hang"],
+            row["mau"],
+            row["tong_don_hang"],
+            row["cat_chinh_ngay"],
+            row["cat_chinh_tong"],
+            row["cat_lot_ngay"],
+            row["cat_lot_tong"],
+            row["cat_mex_ngay"],
+            row["cat_mex_tong"],
+            row["cat_bong_ngay"],
+            row["cat_bong_tong"],
+        ])
+
+    _style_dashboard_excel_sheet(ws)
     wb.save(response)
     return response

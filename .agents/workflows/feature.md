@@ -37,10 +37,12 @@ Rules:
 
 After implementation:
 1. Run appropriate project checks (`python manage.py check`).
-2. Run relevant tests if any.
+2. Run relevant tests if any. Ensure 23+ tests pass successfully.
 3. Check for syntax errors.
-4. Check affected frontend behavior.
-5. Review git diff.
+4. Check affected frontend behavior, including mobile responsiveness (`max-width: 640px`).
+5. **Verify Database Queries:** Use `select_related()` to ensure no N+1 query overhead in list/dashboard views.
+6. **Verify Roles:** Check that UI restrictions (buttons, sidebar links) hide correctly for `PREMIUM`, `QUAN_LY`, and other roles.
+7. Review git diff.
 
 ## Phase 5 — Report
 

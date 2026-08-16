@@ -7,6 +7,7 @@ from django.conf import settings
 CONFIG_PATH = os.path.join(settings.BASE_DIR, "Working", "config.json")
 
 NUMERIC_FIELD_ATTRS = {"class": "numeric-input", "inputmode": "numeric"}
+DATE_FIELD_ATTRS = {"type": "date", "class": "entry-input-date"}
 
 
 def load_config():
@@ -29,7 +30,7 @@ class ProcessForm(forms.Form):
         initial=datetime.date.today,
         required=True,
         error_messages={'required': 'Vui lòng chọn ngày làm việc.'},
-        widget=forms.DateInput(attrs={'type': 'date'})
+        widget=forms.DateInput(attrs=DATE_FIELD_ATTRS)
     )
     xuong = forms.IntegerField(
         label="Xưởng", required=True, min_value=1, initial=0,
@@ -102,7 +103,7 @@ class FinishingForm(forms.Form):
         initial=datetime.date.today,
         required=True,
         error_messages={'required': 'Vui lòng chọn ngày làm việc.'},
-        widget=forms.DateInput(attrs={'type': 'date'})
+        widget=forms.DateInput(attrs=DATE_FIELD_ATTRS)
     )
     ma_hang = forms.ChoiceField(label="Mã hàng")
     mau = forms.ChoiceField(label="Màu")
@@ -147,7 +148,7 @@ class FinishingForm(forms.Form):
 class KcsForm(forms.Form):
     ngay_lam_viec = forms.DateField(
         label="Ngày làm việc",
-        widget=forms.DateInput(attrs={'type': 'date'}),
+        widget=forms.DateInput(attrs=DATE_FIELD_ATTRS),
         initial=datetime.date.today,
     )
     xuong = forms.IntegerField(
@@ -210,7 +211,7 @@ class CutForm(forms.Form):
     ngay_lam_viec = forms.DateField(
         label="Ngày làm việc",
         initial=datetime.date.today,
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(attrs=DATE_FIELD_ATTRS),
     )
 
     ma_hang = forms.ChoiceField(label="Mã hàng", choices=[])

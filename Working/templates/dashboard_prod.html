@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tổng Hợp Quy Trình Sản Xuất</title>
     <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
-    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css?v=9.0' %}">
 </head>
 <body>
     <div class="app-layout">
@@ -88,7 +88,6 @@
                                             </button>
                                         </div>
                                     </th>
-                                    <th rowspan="2">Ngày làm việc</th>
                                     <th rowspan="2">Ngày nhập</th>
                                     <th rowspan="2">
                                         <div class="th-filter-wrap">
@@ -154,7 +153,6 @@
                                 {% for row in page_prod %}
                                 <tr>
                                     <td>{{ row.nguoi_nhap }}</td>
-                                    <td>{{ row.ngay_lam_viec }}</td>
                                     <td>{{ row.ngay_nhap }}</td>
                                     <td><strong>{{ row.ma_hang }}</strong></td>
                                     <td>{{ row.mau }}</td>
@@ -227,7 +225,6 @@
                             </div>
                             <div class="card-body">
                                 <div class="card-row"><span class="label">Người nhập:</span><span class="value">{{ row.nguoi_nhap }}</span></div>
-                                <div class="card-row"><span class="label">Ngày làm việc:</span><span class="value">{{ row.ngay_lam_viec }}</span></div>
                                 <div class="card-row"><span class="label">Số LĐ:</span><span class="value">{{ row.so_luong_ld }}</span></div>
                                 <div class="card-row"><span class="label">Tổng ĐH:</span><span class="value">{{ row.tong_don_hang }}</span></div>
                                 <div class="card-row"><span class="label">Nhận BTP (Ngày/Tổng):</span><span class="value">{{ row.nhan_btp_ngay }} / {{ row.nhan_btp_tong }}</span></div>

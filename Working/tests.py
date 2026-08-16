@@ -510,17 +510,12 @@ class ComprehensiveSystemTests(TestCase):
         self.assertEqual(new_report.xuong, 2)
         self.assertEqual(new_report.so_luong_ld, 15)
         
-        # Kiểm tra trang list hiển thị nút Sửa/Xóa cho bản ghi của chính người dùng
-        res_list = self.client.get(reverse('list'))
-        self.assertEqual(res_list.status_code, 200)
-        self.assertIn("Thao tác", res_list.content.decode('utf-8'))
-        self.assertIn(f"href=\"/edit/{new_report.id}/?next=/list/\"", res_list.content.decode('utf-8'))
-        
-        # PREMIUM cũng thấy
+        # Kiểm tra trang dashboard hiển thị nút Sửa/Xóa cho người dùng quản lý / premium
         self._login_as(self.premium_user)
-        res_list_prem = self.client.get(reverse('list'))
+        res_list_prem = self.client.get(reverse('dashboard_prod'))
         self.assertEqual(res_list_prem.status_code, 200)
         self.assertIn("Thao tác", res_list_prem.content.decode('utf-8'))
+        self.assertIn(f"href=\"/edit/{new_report.id}/?next=/dashboard/prod/\"", res_list_prem.content.decode('utf-8'))
 
         # Đăng nhập lại BASIC để chạy tiếp luồng
         self._login_as(self.basic_user)
@@ -609,20 +604,15 @@ class ComprehensiveSystemTests(TestCase):
         new_fin = FinishingReport.objects.filter(the_bai=15).first()
         self.assertIsNotNone(new_fin)
         
-        # Kiểm tra trang finishing_list hiển thị nút Sửa/Xóa cho bản ghi của chính người dùng
-        res_fin_list = self.client.get(reverse('finishing_list'))
-        self.assertEqual(res_fin_list.status_code, 200)
-        self.assertIn("Thao tác", res_fin_list.content.decode('utf-8'))
-        self.assertIn(f"href=\"/finishing/edit/{new_fin.id}/?next=/finishing/list/\"", res_fin_list.content.decode('utf-8'))
-        
-        # PREMIUM và QUAN_LY cũng thấy
+        # Kiểm tra trang dashboard finishing hiển thị nút Sửa/Xóa cho PREMIUM và QUAN_LY
         self._login_as(self.premium_user)
-        res_fin_list_prem = self.client.get(reverse('finishing_list'))
+        res_fin_list_prem = self.client.get(reverse('dashboard_finishing'))
         self.assertEqual(res_fin_list_prem.status_code, 200)
         self.assertIn("Thao tác", res_fin_list_prem.content.decode('utf-8'))
+        self.assertIn(f"href=\"/finishing/edit/{new_fin.id}/?next=/dashboard/finishing/\"", res_fin_list_prem.content.decode('utf-8'))
 
         self._login_as(self.quanly_user)
-        res_fin_list_quanly = self.client.get(reverse('finishing_list'))
+        res_fin_list_quanly = self.client.get(reverse('dashboard_finishing'))
         self.assertEqual(res_fin_list_quanly.status_code, 200)
         self.assertIn("Thao tác", res_fin_list_quanly.content.decode('utf-8'))
 

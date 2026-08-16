@@ -29,3 +29,13 @@
 - Keep responsive behavior intact.
 - Prefer reusable components over duplicated markup.
 - Maintain accessibility where practical.
+
+## UI/UX Guidelines (Learned from Session)
+
+- **Mobile Responsiveness:** Data entry forms on mobile devices (`max-width: 640px`) MUST be single-column to avoid overlapping inputs (especially date inputs and selects). `.entry-grid` classes like `grid-cols-2` and `grid-cols-3` should collapse to `1fr` on mobile. Small numeric inputs can remain 2 columns (`grid-cols-4` -> `repeat(2, 1fr)`).
+- **Table Styling:** Data tables must be clear. Use zebra striping (`tbody tr:nth-child(even)`), hover highlights (`tbody tr:hover`), uppercase headers with slightly darker backgrounds, and sticky headers.
+- **Form Edits:** When users edit a form (e.g., from the dashboard or a list page), use the `?next={{ request.path }}` parameter to redirect them back to their original context after saving.
+- **Role-based UI Restrictions:**
+  - `PREMIUM` role must not see the "Quy trình sản xuất" (Production Process) data entry links in the sidebar.
+  - `PREMIUM` and `QUAN_LY` roles must not have "Đổi mật khẩu" (Change Password) and "Đăng xuất" (Logout) buttons exposed on edit pages, as they can access any user's edits.
+- **Dynamic Javascript Rendering:** The `cascade_select.js` script depends on a JSON configuration object. Ensure the view always injects `config` into the template context and the template renders `{{ config|json_script:"config-data" }}`.
