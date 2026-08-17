@@ -1,0 +1,414 @@
+{% load static %}
+{% load dashboard_tags %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kế toán - Nhập Phiếu Xuất Hàng</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+    <style>
+        :root {
+            --primary-emerald: #10b981;
+            --primary-cyan: #06b6d4;
+            --primary-blue: #2563eb;
+        }
+
+        /* Generous Page Padding and Max Width */
+        .accounting-page-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 32px;
+            box-sizing: border-box;
+        }
+
+        .export-entry-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 28px 32px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            margin-bottom: 24px;
+        }
+
+        .calc-preview-box {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+            border: 1.5px dashed #86efac;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .calc-preview-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .calc-lbl { font-size: 0.82rem; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .calc-val-price { font-size: 1.2rem; font-weight: 700; color: #0f172a; }
+        .calc-val-total { font-size: 1.55rem; font-weight: 800; color: #15803d; }
+
+        .btn-submit-export {
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+            transition: transform 0.1s, opacity 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-submit-export:active { transform: scale(0.98); }
+
+        .alert-success-custom {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #15803d;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.96rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-history-wrap {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow-x: auto;
+            background: #ffffff;
+            margin-top: 14px;
+        }
+        .table-history-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-history-wrap th {
+            background: #f8fafc;
+            padding: 14px 16px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        .table-history-wrap td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.94rem;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .table-history-wrap tr:last-child td {
+            border-bottom: none;
+        }
+        .table-history-wrap tr:hover td {
+            background: #f8fafc;
+        }
+
+        .desktop-table-container { display: block; }
+        .mobile-cards-container { display: none; }
+
+        @media (max-width: 900px) {
+            .accounting-page-container { padding: 14px 12px; }
+            .export-entry-card { padding: 16px 14px; border-radius: 10px; }
+            .desktop-table-container { display: none !important; }
+            .mobile-cards-container { display: block !important; }
+            .entry-grid.grid-cols-3 { grid-template-columns: 1fr; gap: 0; }
+        }
+
+        .history-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-left: 5px solid var(--primary-emerald);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- App Topbar Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Kế Toán — Nhập Phiếu Xuất Hàng</h1>
+                        <span class="header-subtitle">Lập phiếu xuất hàng & Tự động tính tổng tiền theo đơn giá</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                </div>
+            </header>
+
+            <main class="app-content" style="padding: 0;">
+                <div class="accounting-page-container">
+                    <div class="export-entry-card fade-in">
+                        
+                        {% if success_msg %}
+                        <div class="alert-success-custom">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            <span>{{ success_msg }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if form.errors %}
+                        <div style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:14px 18px; border-radius:10px; margin-bottom:18px;">
+                            <b>⚠️ Vui lòng kiểm tra lại thông tin:</b>
+                            <ul style="margin:4px 0 0 18px;">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        {{ config|json_script:"config-data" }}
+                        {{ price_map|json_script:"price-map-data" }}
+
+                        <form method="post" action="{% url 'accounting:export_entry' %}">
+                            {% csrf_token %}
+                            <div class="entry-section-header" style="margin-bottom: 16px; font-size: 1.05rem;">
+                                📦 Thông tin đợt xuất hàng
+                            </div>
+
+                            <div class="entry-grid grid-cols-3">
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Ngày xuất hàng (*)</label>
+                                    {{ form.ngay_xuat }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Mã hàng (*)</label>
+                                    <select id="id_ma_hang" name="ma_hang" class="entry-select" data-initial="{{ form.ma_hang.value|default:'' }}" required></select>
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Màu sắc (*)</label>
+                                    <select id="id_mau" name="mau" class="entry-select" data-initial="{{ form.mau.value|default:'' }}" required></select>
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Số lượng xuất (*)</label>
+                                    {{ form.so_luong_xuat }}
+                                </div>
+                                <div class="entry-form-group" style="grid-column: span 2;">
+                                    <label class="entry-label">Ghi chú (Khách hàng / Số chứng từ / Xe)</label>
+                                    {{ form.ghi_chu }}
+                                </div>
+                            </div>
+
+                            <!-- Real-time calculation preview -->
+                            <div class="calc-preview-box">
+                                <div class="calc-preview-item">
+                                    <span class="calc-lbl">Đơn giá hiện hành</span>
+                                    <span class="calc-val-price" id="previewUnitPrice">0 VNĐ</span>
+                                </div>
+                                <div class="calc-preview-item">
+                                    <span class="calc-lbl">Số lượng xuất</span>
+                                    <span class="calc-val-price" id="previewQuantity" style="color: #2563eb;">0 cái</span>
+                                </div>
+                                <div class="calc-preview-item" style="text-align: right;">
+                                    <span class="calc-lbl">Tổng Thành Tiền</span>
+                                    <span class="calc-val-total" id="previewTotalMoney">0 VNĐ</span>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-submit-export">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Lưu Phiếu Xuất Hàng
+                            </button>
+                        </form>
+
+                        <!-- RECENT EXPORTS TABLE -->
+                        <div class="entry-section-header" style="margin-top: 40px; margin-bottom: 14px; font-size: 1.05rem;">
+                            📋 Lịch sử các đợt xuất hàng gần nhất
+                        </div>
+
+                        <!-- DESKTOP TABLE -->
+                        <div class="desktop-table-container">
+                            <div class="table-history-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Ngày xuất</th>
+                                            <th>Mã - Màu</th>
+                                            <th style="text-align: right;">Số Lượng</th>
+                                            <th style="text-align: right;">Đơn Giá (VNĐ)</th>
+                                            <th style="text-align: right;">Thành Tiền (VNĐ)</th>
+                                            <th>Người nhập</th>
+                                            <th>Ghi chú</th>
+                                            <th style="text-align: center; width: 110px;">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for r in recent_exports %}
+                                        <tr>
+                                            <td>{{ r.ngay_xuat|date:"d/m/Y" }}</td>
+                                            <td><strong style="color: #0f172a;">{{ r.ma_hang }}</strong> — {{ r.mau }}</td>
+                                            <td style="text-align: right; font-weight: 700;">{{ r.so_luong_xuat|comma_num }}</td>
+                                            <td style="text-align: right; color: #475569;">{{ r.don_gia|comma_num }} đ</td>
+                                            <td style="text-align: right; font-weight: 800; color: #15803d;">{{ r.thanh_tien|comma_num }} đ</td>
+                                            <td>{{ r.nguoi_nhap.name|default:r.nguoi_nhap.account }}</td>
+                                            <td style="color: #64748b; font-size: 0.85rem;">{{ r.ghi_chu|default:"-" }}</td>
+                                            <td style="text-align: center; white-space: nowrap;">
+                                                <a href="{% url 'accounting:export_edit' r.id %}" style="color: #2563eb; font-weight: 600; text-decoration: none; margin-right: 10px;">Sửa</a>
+                                                <form action="{% url 'accounting:export_delete' r.id %}" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phiếu xuất này không?');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" style="background: none; border: none; color: #dc2626; font-weight: 600; cursor: pointer; padding: 0;">Xóa</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td colspan="8" style="text-align: center; padding: 32px; color: #64748b;">Chưa có phiếu xuất hàng nào.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- MOBILE CARDS -->
+                        <div class="mobile-cards-container">
+                            {% for r in recent_exports %}
+                            <div class="history-card">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div>
+                                        <div style="font-size: 1.1rem; font-weight: 800; color: #0f172a;">{{ r.ma_hang }} — {{ r.mau }}</div>
+                                        <div style="font-size: 0.84rem; color: #64748b;">Ngày xuất: {{ r.ngay_xuat|date:"d/m/Y" }}</div>
+                                    </div>
+                                    <div style="font-size: 1.2rem; font-weight: 800; color: #15803d;">
+                                        {{ r.thanh_tien|comma_num }} đ
+                                    </div>
+                                </div>
+
+                                <div style="background: #f8fafc; padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; border: 1px solid #e2e8f0;">
+                                    <span>Số lượng: <b style="color: #2563eb;">{{ r.so_luong_xuat|comma_num }}</b> cái</span>
+                                    <span>Đơn giá: <b>{{ r.don_gia|comma_num }} đ</b></span>
+                                </div>
+
+                                {% if r.ghi_chu %}
+                                <div style="font-size: 0.84rem; color: #64748b;">Ghi chú: {{ r.ghi_chu }}</div>
+                                {% endif %}
+
+                                <div style="display: flex; justify-content: flex-end; gap: 14px; margin-top: 4px;">
+                                    <a href="{% url 'accounting:export_edit' r.id %}" style="font-size: 0.88rem; color: #2563eb; font-weight: 600; text-decoration: none;">✏️ Sửa</a>
+                                    <form action="{% url 'accounting:export_delete' r.id %}" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phiếu xuất này không?');">
+                                        {% csrf_token %}
+                                        <button type="submit" style="background: none; border: none; color: #dc2626; font-size: 0.88rem; font-weight: 600; cursor: pointer; padding: 0;">🗑️ Xóa</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div style="text-align: center; padding: 24px; background: #ffffff; border-radius: 10px; color: #64748b;">Chưa có phiếu xuất hàng nào.</div>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- SCRIPT TÍNH TOÁN & CASCADE DROPDOWN -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const configDataEl = document.getElementById('config-data');
+            const priceMapEl = document.getElementById('price-map-data');
+            if (!configDataEl || !priceMapEl) return;
+
+            const config = JSON.parse(configDataEl.textContent);
+            const priceMap = JSON.parse(priceMapEl.textContent);
+
+            const maSelect = document.getElementById('id_ma_hang');
+            const mauSelect = document.getElementById('id_mau');
+            const qtyInput = document.getElementById('id_so_luong_xuat');
+
+            const previewUnitPrice = document.getElementById('previewUnitPrice');
+            const previewQuantity = document.getElementById('previewQuantity');
+            const previewTotalMoney = document.getElementById('previewTotalMoney');
+
+            // Populate Mã hàng
+            const initialMa = maSelect.getAttribute('data-initial');
+            const initialMau = mauSelect.getAttribute('data-initial');
+
+            maSelect.innerHTML = '<option value="">-- Chọn mã hàng --</option>';
+            Object.keys(config).forEach(ma => {
+                const opt = new Option(ma, ma);
+                if (ma === initialMa) opt.selected = true;
+                maSelect.add(opt);
+            });
+
+            function updateMau() {
+                const selectedMa = maSelect.value;
+                mauSelect.innerHTML = '<option value="">-- Chọn màu --</option>';
+                if (selectedMa && config[selectedMa]) {
+                    const colors = Object.keys(config[selectedMa].colors).sort();
+                    colors.forEach(mau => {
+                        const opt = new Option(mau, mau);
+                        if (mau === initialMau) opt.selected = true;
+                        mauSelect.add(opt);
+                    });
+                }
+                calculateThanhTien();
+            }
+
+            window.calculateThanhTien = function() {
+                const ma = maSelect.value;
+                const mau = mauSelect.value;
+                const qty = parseInt(qtyInput.value) || 0;
+
+                const key = ma + '__' + mau;
+                const unitPrice = priceMap[key] || 0;
+                const total = qty * unitPrice;
+
+                previewUnitPrice.textContent = unitPrice.toLocaleString('en-US') + ' VNĐ';
+                previewQuantity.textContent = qty.toLocaleString('en-US') + ' cái';
+                previewTotalMoney.textContent = total.toLocaleString('en-US') + ' VNĐ';
+            };
+
+            maSelect.addEventListener('change', updateMau);
+            mauSelect.addEventListener('change', calculateThanhTien);
+            qtyInput.addEventListener('input', calculateThanhTien);
+
+            updateMau();
+        });
+    </script>
+</body>
+</html>

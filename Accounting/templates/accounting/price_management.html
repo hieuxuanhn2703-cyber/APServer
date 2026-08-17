@@ -1,0 +1,383 @@
+{% load static %}
+{% load dashboard_tags %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kế toán - Quản lý Đơn Giá Sản Phẩm</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+    <style>
+        :root {
+            --primary-amber: #f59e0b;
+            --primary-emerald: #10b981;
+            --primary-blue: #2563eb;
+        }
+
+        /* Generous Page Padding and Width */
+        .accounting-page-container {
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px 32px;
+            box-sizing: border-box;
+        }
+
+        .price-management-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 28px 32px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            margin-bottom: 24px;
+        }
+
+        .price-input-table {
+            width: 160px;
+            height: 42px;
+            padding: 6px 12px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: right;
+            color: #0f172a;
+            box-sizing: border-box;
+            background: #ffffff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .price-input-table:focus {
+            border-color: var(--primary-blue);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            background: #f8fafc;
+        }
+
+        .alert-success-custom {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #15803d;
+            padding: 14px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.98rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(22, 101, 52, 0.08);
+        }
+
+        .btn-save-bulk {
+            height: 44px;
+            padding: 0 24px;
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-save-bulk:active { transform: scale(0.98); }
+
+        .btn-save-single {
+            height: 38px;
+            padding: 0 16px;
+            background: #f8fafc;
+            color: #1e293b;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-save-single:hover {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+        .btn-save-single:active { transform: scale(0.96); }
+
+        /* Table custom styling */
+        .table-price-wrap {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #ffffff;
+            margin-top: 16px;
+        }
+        .table-price-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-price-wrap th {
+            background: #f8fafc;
+            padding: 14px 16px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .table-price-wrap td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+        .table-price-wrap tr:last-child td {
+            border-bottom: none;
+        }
+        .table-price-wrap tr:hover td {
+            background: #f8fafc;
+        }
+
+        .desktop-table-container { display: block; }
+        .mobile-cards-container { display: none; }
+
+        @media (max-width: 900px) {
+            .accounting-page-container { padding: 14px 12px; }
+            .price-management-card { padding: 16px 14px; border-radius: 10px; }
+            .desktop-table-container { display: none !important; }
+            .mobile-cards-container { display: block !important; }
+            .btn-save-bulk { width: 100%; justify-content: center; height: 46px; }
+        }
+
+        .price-card-item {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- App Topbar Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Kế Toán — Quản Lý Đơn Giá</h1>
+                        <span class="header-subtitle">Thiết lập đơn giá xuất hàng (VNĐ/cái) cho từng mã hàng và màu sắc</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                </div>
+            </header>
+
+            <main class="app-content" style="padding: 0;">
+                <div class="accounting-page-container">
+                    <div class="price-management-card fade-in">
+                        
+                        {% if success_msg %}
+                        <div class="alert-success-custom">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            <span>{{ success_msg }}</span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Main Bulk Update Form -->
+                        <form id="bulkPriceForm" method="post" action="{% url 'accounting:price_management' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_bulk">
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
+                                <div>
+                                    <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">Bảng Thiết Lập Đơn Giá Từng Mặt Hàng</h2>
+                                    <span style="font-size: 0.86rem; color: #64748b;">Nhập số tiền VNĐ vào từng ô rồi bấm <b>Lưu dòng</b> hoặc <b>Lưu Toàn Bộ Đơn Giá</b></span>
+                                </div>
+                                <button type="submit" class="btn-save-bulk">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                        <polyline points="7 3 7 8 15 8"></polyline>
+                                    </svg>
+                                    Lưu Toàn Bộ Đơn Giá
+                                </button>
+                            </div>
+
+                            <!-- DESKTOP TABLE -->
+                            <div class="desktop-table-container">
+                                <div class="table-price-wrap">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Mã hàng</th>
+                                                <th>Màu sắc</th>
+                                                <th style="text-align: right;">Tổng Số Lượng (Cái)</th>
+                                                <th style="text-align: right; width: 190px;">Đơn Giá (VNĐ/cái)</th>
+                                                <th style="text-align: right;">Tổng Giá Trị ĐH (VNĐ)</th>
+                                                <th>Cập nhật gần nhất</th>
+                                                <th style="text-align: center; width: 120px;">Thao tác</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in price_items %}
+                                            <tr>
+                                                <td><strong style="color: #0f172a; font-size: 1rem;">{{ item.ma_hang }}</strong></td>
+                                                <td><span style="color: #334155; font-weight: 600;">{{ item.mau }}</span></td>
+                                                <td style="text-align: right; font-weight: 700;">{{ item.quantity|comma_num }}</td>
+                                                <td style="text-align: right;">
+                                                    <input type="text" 
+                                                           name="price_{{ item.id }}" 
+                                                           id="price_{{ item.id }}" 
+                                                           value="{{ item.don_gia|comma_num }}" 
+                                                           class="price-input-table" 
+                                                           oninput="formatAndSync(this, {{ item.id }}, false)" 
+                                                           placeholder="0" 
+                                                           required>
+                                                </td>
+                                                <td style="text-align: right; font-weight: 800; color: #1e40af;">
+                                                    {{ item.tong_tien|comma_num }} đ
+                                                </td>
+                                                <td style="font-size: 0.82rem; color: #64748b;">
+                                                    {% if item.updated_at %}
+                                                        {{ item.updated_at|date:"d/m/Y H:i" }}
+                                                        {% if item.updated_by %}<br><span style="color: #475569;">({{ item.updated_by }})</span>{% endif %}
+                                                    {% else %}
+                                                        <span style="color: #94a3b8; font-style: italic;">Chưa thiết lập</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td style="text-align: center;">
+                                                    <button type="button" class="btn-save-single" onclick="saveSinglePrice({{ item.id }})">
+                                                        💾 Lưu
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="7" style="text-align: center; padding: 32px; color: #64748b;">Chưa có mã hàng nào trong hệ thống.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- MOBILE CARDS -->
+                            <div class="mobile-cards-container">
+                                {% for item in price_items %}
+                                <div class="price-card-item">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                        <div>
+                                            <strong style="font-size: 1.1rem; color: #0f172a;">{{ item.ma_hang }}</strong>
+                                            <div style="font-size: 0.9rem; color: #475569; font-weight: 600;">Màu: {{ item.mau }}</div>
+                                        </div>
+                                        <span style="font-size: 0.85rem; color: #64748b; background: #f1f5f9; padding: 4px 8px; border-radius: 6px;">
+                                            Tổng: <b>{{ item.quantity|comma_num }}</b> cái
+                                        </span>
+                                    </div>
+
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                                        <span style="font-size: 0.9rem; font-weight: 700; color: #334155;">Đơn giá (VNĐ):</span>
+                                        <input type="text" 
+                                               name="m_price_{{ item.id }}" 
+                                               id="m_price_{{ item.id }}" 
+                                               value="{{ item.don_gia|comma_num }}" 
+                                               class="price-input-table" 
+                                               style="width: 140px;" 
+                                               oninput="formatAndSync(this, {{ item.id }}, true)" 
+                                               placeholder="0" 
+                                               required>
+                                    </div>
+
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div style="font-size: 0.88rem; color: #1e40af; font-weight: 800;">
+                                            Tổng tiền: {{ item.tong_tien|comma_num }} đ
+                                        </div>
+                                        <button type="button" class="btn-save-single" onclick="saveSinglePrice({{ item.id }})">
+                                            💾 Lưu giá này
+                                        </button>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div style="text-align: center; padding: 24px; background: #ffffff; border-radius: 10px; color: #64748b;">Chưa có mã hàng nào.</div>
+                                {% endfor %}
+                            </div>
+
+                        </form>
+
+                        <!-- Hidden Single Submit Form -->
+                        <form id="singlePriceForm" method="post" action="{% url 'accounting:price_management' %}" style="display: none;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_single">
+                            <input type="hidden" name="product_color_id" id="single_color_id">
+                            <input type="hidden" name="don_gia" id="single_don_gia">
+                        </form>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Tự động định dạng dấu phẩy mỗi 3 chữ số khi người dùng gõ
+        function formatAndSync(input, colorId, fromMobile) {
+            let raw = input.value.replace(/[^0-9]/g, '');
+            if (raw === '') {
+                input.value = '';
+                syncPriceInput(colorId, '', fromMobile);
+                return;
+            }
+            let num = parseInt(raw, 10);
+            let formatted = num.toLocaleString('en-US'); // thêm dấu phẩy mỗi 3 số: 150,000
+            input.value = formatted;
+            syncPriceInput(colorId, formatted, fromMobile);
+        }
+
+        // Đồng bộ 2 chiều giữa ô nhập Desktop và Mobile
+        function syncPriceInput(colorId, val, fromMobile) {
+            if (fromMobile) {
+                const dInput = document.getElementById('price_' + colorId);
+                if (dInput) dInput.value = val;
+            } else {
+                const mInput = document.getElementById('m_price_' + colorId);
+                if (mInput) mInput.value = val;
+            }
+        }
+
+        // Lưu đơn lẻ cho 1 dòng
+        function saveSinglePrice(colorId) {
+            let input = document.getElementById('price_' + colorId);
+            if (!input || !input.value) {
+                input = document.getElementById('m_price_' + colorId);
+            }
+            if (!input) return;
+
+            const val = input.value.trim();
+            document.getElementById('single_color_id').value = colorId;
+            document.getElementById('single_don_gia').value = val;
+            document.getElementById('singlePriceForm').submit();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,527 @@
+{% load static %}
+{% load dashboard_tags %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kế toán - Theo dõi Doanh thu & Xuất hàng</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+    <style>
+        :root {
+            --primary-emerald: #10b981;
+            --primary-cyan: #06b6d4;
+            --primary-amber: #f59e0b;
+            --primary-blue: #2563eb;
+            --dark-slate: #0f172a;
+        }
+
+        /* Page Layout & Container */
+        .accounting-page-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            padding: 20px 24px;
+            box-sizing: border-box;
+        }
+
+        /* KPI Statistics Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 18px 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+        }
+
+        .kpi-card.blue::before { background: var(--primary-blue); }
+        .kpi-card.emerald::before { background: var(--primary-emerald); }
+        .kpi-card.amber::before { background: var(--primary-amber); }
+        .kpi-card.cyan::before { background: var(--primary-cyan); }
+
+        .kpi-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .kpi-sub {
+            font-size: 0.84rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Progress Bar */
+        .progress-bar-wrap {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary-emerald);
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+
+        /* Filter Topbar */
+        .filter-bar {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 14px 18px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .select-filter {
+            height: 38px;
+            padding: 4px 14px;
+            border-radius: 8px;
+            border: 1.5px solid #cbd5e1;
+            background: #ffffff;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1e293b;
+            outline: none;
+        }
+
+        .select-filter:focus {
+            border-color: var(--primary-blue);
+        }
+
+        .btn-action-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-act {
+            height: 38px;
+            padding: 0 16px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            line-height: 1;
+            transition: all 0.15s ease;
+        }
+
+        .btn-act:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+        }
+
+        .btn-act:active { transform: scale(0.98); }
+        .btn-act-emerald { background: var(--primary-emerald); color: white; }
+        .btn-act-blue { background: var(--primary-blue); color: white; }
+        .btn-act-gray {
+            background: #f8fafc;
+            color: #475569;
+            border: 1.5px solid #cbd5e1;
+        }
+        .btn-act-gray:hover {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fca5a5;
+        }
+
+        /* Dashboard Table Box - Full Screen Width No Horizontal Scroll */
+        .dashboard-table-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px 22px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .table-dash-wrap {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #ffffff;
+            margin-top: 12px;
+            width: 100%;
+        }
+
+        .table-dash-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* Fit precisely without scrolling */
+        }
+
+        .table-dash-wrap th {
+            padding: 8px 6px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #334155;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid #cbd5e1;
+            vertical-align: middle;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .th-main { background: #f8fafc; color: #1e293b; }
+        .th-group-dh { background: #f1f5f9; color: #1e3a8a; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; }
+        .th-group-xuat { background: #f0fdf4; color: #065f46; border-right: 1px solid #cbd5e1; }
+        .th-group-ton { background: #fffbeb; color: #92400e; border-right: 1px solid #cbd5e1; }
+
+        .table-dash-wrap td {
+            padding: 9px 6px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.86rem;
+            vertical-align: middle;
+            box-sizing: border-box;
+            word-break: break-word;
+        }
+
+        .table-dash-wrap tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-dash-wrap tr:hover td {
+            background: #f8fafc;
+        }
+
+        .number-col { 
+            text-align: right; 
+            font-variant-numeric: tabular-nums; 
+            font-size: 0.86rem;
+        }
+        .money-val { font-weight: 700; color: #1e40af; }
+        .money-shipped { font-weight: 700; color: #16a34a; }
+        .money-pending { font-weight: 700; color: #ea580c; }
+        
+        .badge-pct {
+            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .badge-pct.green { background: #dcfce7; color: #15803d; }
+        .badge-pct.yellow { background: #fef9c3; color: #854d0e; }
+        .badge-pct.red { background: #fee2e2; color: #b91c1c; }
+
+        /* Responsive */
+        .desktop-table-container { display: block; width: 100%; }
+        .mobile-cards-container { display: none; }
+
+        @media (max-width: 900px) {
+            .accounting-page-container { padding: 12px 10px; }
+            .dashboard-table-card { padding: 14px 12px; border-radius: 10px; }
+            .desktop-table-container { display: none !important; }
+            .mobile-cards-container { display: block !important; }
+            .kpi-grid { grid-template-columns: 1fr; gap: 10px; }
+            .filter-bar { flex-direction: column; align-items: stretch; padding: 12px; }
+            .filter-group { flex-direction: column; align-items: stretch; }
+            .btn-action-group { width: 100%; justify-content: space-between; }
+            .btn-act { flex: 1; justify-content: center; }
+        }
+
+        .acc-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .acc-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+        .acc-card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.88rem;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .acc-card-lbl { font-size: 0.78rem; color: #64748b; margin-bottom: 2px; }
+        .acc-card-val { font-weight: 700; color: #1e293b; }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- App Topbar Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Kế Toán — Theo Dõi Doanh Thu & Xuất Hàng</h1>
+                        <span class="header-subtitle">Tổng hợp số lượng, giá trị xuất và tồn đọng theo từng mã hàng & màu</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                </div>
+            </header>
+
+            <main class="app-content" style="padding: 0;">
+                <div class="accounting-page-container">
+                    
+                    <!-- KPI TOP STATS -->
+                    <div class="kpi-grid">
+                        <!-- KPI 1: Tổng Doanh Thu Đơn Hàng -->
+                        <div class="kpi-card blue">
+                            <div class="kpi-title">Tổng Giá Trị Đơn Hàng</div>
+                            <div class="kpi-value" style="color: #1e40af;">{{ kpi_tong_tien_dh|comma_num }} <small style="font-size:0.85rem;">VNĐ</small></div>
+                            <div class="kpi-sub">
+                                <span>Tổng số lượng:</span>
+                                <strong style="color: #0f172a;">{{ kpi_tong_so_luong_dh|comma_num }} cái</strong>
+                            </div>
+                        </div>
+
+                        <!-- KPI 2: Đã Xuất Hàng -->
+                        <div class="kpi-card emerald">
+                            <div class="kpi-title">Tổng Tiền Đã Xuất</div>
+                            <div class="kpi-value" style="color: #15803d;">{{ kpi_tong_da_xuat_tien|comma_num }} <small style="font-size:0.85rem;">VNĐ</small></div>
+                            <div class="kpi-sub">
+                                <span>Đã giao: <b>{{ kpi_tong_da_xuat_sl|comma_num }} cái</b> ({{ kpi_tien_do_tong }}%)</span>
+                            </div>
+                            <div class="progress-bar-wrap">
+                                <div class="progress-bar-fill" style="width: {{ kpi_tien_do_tong }}%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- KPI 3: Còn Lại Chưa Xuất -->
+                        <div class="kpi-card amber">
+                            <div class="kpi-title">Giá Trị Hàng Chưa Xuất</div>
+                            <div class="kpi-value" style="color: #b45309;">{{ kpi_tong_con_lai_tien|comma_num }} <small style="font-size:0.85rem;">VNĐ</small></div>
+                            <div class="kpi-sub">
+                                <span>Còn lại:</span>
+                                <strong style="color: #dc2626;">{{ kpi_tong_con_lai_sl|comma_num }} cái</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FILTER BAR -->
+                    <div class="filter-bar">
+                        <form method="get" class="filter-group" style="margin: 0;">
+                            <label for="id_ma_hang_filter" style="font-weight:700; font-size:0.88rem; color:#475569;">Lọc Mã Hàng:</label>
+                            <select name="ma_hang" id="id_ma_hang_filter" class="select-filter" onchange="this.form.submit()">
+                                <option value="">-- Tất cả mã hàng --</option>
+                                {% for p in all_products %}
+                                <option value="{{ p.name }}" {% if selected_ma_hang == p.name %}selected{% endif %}>{{ p.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if selected_ma_hang %}
+                            <a href="{% url 'accounting:dashboard' %}" class="btn-act btn-act-gray" title="Xóa bộ lọc">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                                Xóa lọc
+                            </a>
+                            {% endif %}
+                        </form>
+
+                        <div class="btn-action-group">
+                            <a href="{% url 'accounting:export_excel' %}" class="btn-act btn-act-emerald">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Xuất Excel
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- DASHBOARD DATA TABLE CARD -->
+                    <div class="dashboard-table-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <h2 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0;">Chi Tiết Tiến Độ Xuất Hàng & Tồn Đọng</h2>
+                            <span style="font-size: 0.82rem; color: #64748b;">Tổng cộng: <b>{{ rows|length }}</b> mặt hàng (Đơn vị tiền: VNĐ)</span>
+                        </div>
+
+                        <!-- DESKTOP TABLE (Structured Headers, Full Width, No Horizontal Scroll) -->
+                        <div class="desktop-table-container">
+                            <div class="table-dash-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2" class="th-main" style="width: 8%; text-align: left; padding-left: 10px;">Mã hàng</th>
+                                            <th rowspan="2" class="th-main" style="width: 8%; text-align: left;">Màu</th>
+                                            <th colspan="3" class="th-group-dh">THÔNG TIN ĐƠN HÀNG</th>
+                                            <th colspan="2" class="th-group-xuat">ĐÃ XUẤT HÀNG</th>
+                                            <th colspan="2" class="th-group-ton">CÒN LẠI</th>
+                                            <th rowspan="2" class="th-main" style="width: 7%; text-align: center;">Tiến độ</th>
+                                        </tr>
+                                        <tr>
+                                            <th class="th-group-dh number-col" style="width: 8%;">Số lượng</th>
+                                            <th class="th-group-dh number-col" style="width: 9%;">Đơn giá</th>
+                                            <th class="th-group-dh number-col" style="width: 14%;">Thành tiền</th>
+                                            <th class="th-group-xuat number-col" style="width: 8%;">SL xuất</th>
+                                            <th class="th-group-xuat number-col" style="width: 14%;">Tiền đã xuất</th>
+                                            <th class="th-group-ton number-col" style="width: 8%;">SL còn</th>
+                                            <th class="th-group-ton number-col" style="width: 14%;">Tiền còn lại</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for r in rows %}
+                                        <tr>
+                                            <td style="padding-left: 10px;"><strong style="color: #0f172a; font-weight: 700;">{{ r.ma_hang }}</strong></td>
+                                            <td><span style="color: #334155; font-weight: 600;">{{ r.mau }}</span></td>
+                                            <td class="number-col" style="font-weight: 600; color: #1e293b;">{{ r.tong_so_luong|comma_num }}</td>
+                                            <td class="number-col" style="color: #475569;">
+                                                {% if r.don_gia > 0 %}
+                                                    {{ r.don_gia|comma_num }}
+                                                {% else %}
+                                                    <a href="{% url 'accounting:price_management' %}" style="color: #ef4444; font-size: 0.8rem; text-decoration: underline; font-weight: 600;">Chưa giá</a>
+                                                {% endif %}
+                                            </td>
+                                            <td class="number-col money-val">{{ r.tong_tien|comma_num }}</td>
+                                            <td class="number-col" style="font-weight: 700; color: #16a34a;">{{ r.da_xuat|comma_num }}</td>
+                                            <td class="number-col money-shipped">{{ r.tien_da_xuat|comma_num }}</td>
+                                            <td class="number-col" style="font-weight: 700; color: {% if r.con_lai > 0 %}#dc2626{% else %}#16a34a{% endif %};">
+                                                {{ r.con_lai|comma_num }}
+                                            </td>
+                                            <td class="number-col money-pending">{{ r.tien_con_lai|comma_num }}</td>
+                                            <td style="text-align: center;">
+                                                <span class="badge-pct {% if r.ty_le_xuat >= 100 %}green{% elif r.ty_le_xuat > 0 %}yellow{% else %}red{% endif %}">
+                                                    {{ r.ty_le_xuat }}%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td colspan="10" style="text-align: center; padding: 24px; color: #64748b;">Chưa có dữ liệu mã hàng.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- MOBILE CARDS -->
+                        <div class="mobile-cards-container">
+                            {% for r in rows %}
+                            <div class="acc-card">
+                                <div class="acc-card-head">
+                                    <div>
+                                        <div style="font-size: 1.05rem; font-weight: 800; color: #0f172a;">{{ r.ma_hang }} — {{ r.mau }}</div>
+                                        <div style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
+                                            Đơn giá: <b style="color: #2563eb;">{{ r.don_gia|comma_num }} VNĐ</b>
+                                        </div>
+                                    </div>
+                                    <span class="badge-pct {% if r.ty_le_xuat >= 100 %}green{% elif r.ty_le_xuat > 0 %}yellow{% else %}red{% endif %}">
+                                        {{ r.ty_le_xuat }}%
+                                    </span>
+                                </div>
+
+                                <div class="acc-card-grid">
+                                    <div>
+                                        <div class="acc-card-lbl">Tổng ĐH</div>
+                                        <div class="acc-card-val">{{ r.tong_so_luong|comma_num }} cái</div>
+                                    </div>
+                                    <div>
+                                        <div class="acc-card-lbl">Tổng Tiền ĐH</div>
+                                        <div class="acc-card-val" style="color: #1e40af;">{{ r.tong_tien|comma_num }} đ</div>
+                                    </div>
+                                    <div>
+                                        <div class="acc-card-lbl">Đã xuất</div>
+                                        <div class="acc-card-val" style="color: #16a34a;">{{ r.da_xuat|comma_num }} cái</div>
+                                    </div>
+                                    <div>
+                                        <div class="acc-card-lbl">Tiền đã xuất</div>
+                                        <div class="acc-card-val" style="color: #16a34a;">{{ r.tien_da_xuat|comma_num }} đ</div>
+                                    </div>
+                                    <div>
+                                        <div class="acc-card-lbl">Còn lại</div>
+                                        <div class="acc-card-val" style="color: #dc2626;">{{ r.con_lai|comma_num }} cái</div>
+                                    </div>
+                                    <div>
+                                        <div class="acc-card-lbl">Tiền còn lại</div>
+                                        <div class="acc-card-val" style="color: #ea580c;">{{ r.tien_con_lai|comma_num }} đ</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div style="text-align: center; padding: 20px; background: #ffffff; border-radius: 10px; color: #64748b;">Chưa có dữ liệu mã hàng.</div>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

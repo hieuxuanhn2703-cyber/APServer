@@ -1,0 +1,189 @@
+{% load static %}
+{% load dashboard_tags %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kế toán - Chỉnh Sửa Phiếu Xuất Hàng</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+    <style>
+        .accounting-page-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px 32px;
+            box-sizing: border-box;
+        }
+
+        .edit-card-box {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 28px 32px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        }
+
+        @media (max-width: 900px) {
+            .accounting-page-container { padding: 14px 12px; }
+            .edit-card-box { padding: 18px 14px; border-radius: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Chỉnh Sửa Phiếu Xuất Hàng #{{ report.id }}</h1>
+                        <span class="header-subtitle">Thời gian tạo: {{ report.created_at|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                </div>
+            </header>
+
+            <main class="app-content" style="padding: 0;">
+                <div class="accounting-page-container">
+                    <div class="edit-card-box fade-in">
+                        
+                        {% if form.errors %}
+                        <div style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:14px 18px; border-radius:10px; margin-bottom:18px;">
+                            <b>⚠️ Vui lòng kiểm tra lại thông tin:</b>
+                            <ul style="margin:4px 0 0 18px;">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        {{ config|json_script:"config-data" }}
+                        {{ price_map|json_script:"price-map-data" }}
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="entry-form-group" style="margin-bottom: 14px;">
+                                <label class="entry-label">Ngày xuất hàng (*)</label>
+                                {{ form.ngay_xuat }}
+                            </div>
+                            <div class="entry-form-group" style="margin-bottom: 14px;">
+                                <label class="entry-label">Mã hàng (*)</label>
+                                <select id="id_ma_hang" name="ma_hang" class="entry-select" data-initial="{{ form.ma_hang.value|default:report.ma_hang }}" required></select>
+                            </div>
+                            <div class="entry-form-group" style="margin-bottom: 14px;">
+                                <label class="entry-label">Màu sắc (*)</label>
+                                <select id="id_mau" name="mau" class="entry-select" data-initial="{{ form.mau.value|default:report.mau }}" required></select>
+                            </div>
+                            <div class="entry-form-group" style="margin-bottom: 14px;">
+                                <label class="entry-label">Số lượng xuất (*)</label>
+                                {{ form.so_luong_xuat }}
+                            </div>
+                            <div class="entry-form-group" style="margin-bottom: 14px;">
+                                <label class="entry-label">Ghi chú</label>
+                                {{ form.ghi_chu }}
+                            </div>
+
+                            <!-- Real-time calculation preview -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin: 20px 0; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span style="font-size:0.82rem; color:#64748b; font-weight:700;">Đơn giá hiện hành:</span>
+                                    <div id="previewUnitPrice" style="font-weight:700; font-size:1.05rem; color:#0f172a;">{{ report.don_gia|comma_num }} VNĐ</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-size:0.82rem; color:#64748b; font-weight:700;">Tổng thành tiền:</span>
+                                    <div id="previewTotalMoney" style="font-weight:800; color:#15803d; font-size:1.35rem;">{{ report.thanh_tien|comma_num }} VNĐ</div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 12px; margin-top: 18px;">
+                                <button type="submit" class="btn-entry-submit" style="flex: 1; height: 48px; background-color: var(--primary-color); font-weight: 700; font-size: 1rem;">
+                                    💾 Lưu Cập Nhật
+                                </button>
+                                <a href="{% url 'accounting:export_entry' %}" class="btn btn-secondary" style="height: 48px; display: inline-flex; align-items: center; justify-content: center; padding: 0 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                                    Hủy Bỏ
+                                </a>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const configDataEl = document.getElementById('config-data');
+            const priceMapEl = document.getElementById('price-map-data');
+            if (!configDataEl || !priceMapEl) return;
+
+            const config = JSON.parse(configDataEl.textContent);
+            const priceMap = JSON.parse(priceMapEl.textContent);
+
+            const maSelect = document.getElementById('id_ma_hang');
+            const mauSelect = document.getElementById('id_mau');
+            const qtyInput = document.getElementById('id_so_luong_xuat');
+
+            const previewUnitPrice = document.getElementById('previewUnitPrice');
+            const previewTotalMoney = document.getElementById('previewTotalMoney');
+
+            const initialMa = maSelect.getAttribute('data-initial');
+            const initialMau = mauSelect.getAttribute('data-initial');
+
+            maSelect.innerHTML = '<option value="">-- Chọn mã hàng --</option>';
+            Object.keys(config).forEach(ma => {
+                const opt = new Option(ma, ma);
+                if (ma === initialMa) opt.selected = true;
+                maSelect.add(opt);
+            });
+
+            function updateMau() {
+                const selectedMa = maSelect.value;
+                mauSelect.innerHTML = '<option value="">-- Chọn màu --</option>';
+                if (selectedMa && config[selectedMa]) {
+                    const colors = Object.keys(config[selectedMa].colors).sort();
+                    colors.forEach(mau => {
+                        const opt = new Option(mau, mau);
+                        if (mau === initialMau) opt.selected = true;
+                        mauSelect.add(opt);
+                    });
+                }
+                calculateThanhTien();
+            }
+
+            window.calculateThanhTien = function() {
+                const ma = maSelect.value;
+                const mau = mauSelect.value;
+                const qty = parseInt(qtyInput.value) || 0;
+
+                const key = ma + '__' + mau;
+                const unitPrice = priceMap[key] || 0;
+                const total = qty * unitPrice;
+
+                previewUnitPrice.textContent = unitPrice.toLocaleString('en-US') + ' VNĐ';
+                previewTotalMoney.textContent = total.toLocaleString('en-US') + ' VNĐ';
+            };
+
+            maSelect.addEventListener('change', updateMau);
+            mauSelect.addEventListener('change', calculateThanhTien);
+            qtyInput.addEventListener('input', calculateThanhTien);
+
+            updateMau();
+        });
+    </script>
+</body>
+</html>

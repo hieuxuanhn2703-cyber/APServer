@@ -1,133 +1,152 @@
-# HƯỚNG DẪN SỬ DỤNG HỆ THỐNG QUẢN LÝ TIẾN ĐỘ SẢN XUẤT
+# HƯỚNG DẪN SỬ DỤNG HỆ THỐNG QUẢN LÝ TIẾN ĐỘ SẢN XUẤT & KẾ TOÁN
 
-Chào mừng bạn đến với Hệ thống Quản lý và Theo dõi Tiến độ Cắt – Sản xuất – KCS – Hoàn thiện. Hệ thống được phân chia thành **6 vai trò (Role)** với các chức năng tương ứng nhằm đảm bảo tính bảo mật và thuận tiện trong quá trình làm việc. Giao diện hệ thống được thiết kế đặc biệt dễ dàng thao tác trên màn hình điện thoại.
+Chào mừng bạn đến với Hệ thống Quản lý và Giám sát Tiến độ **Cắt – May Sản Xuất – KCS – Hoàn Thiện & Kế Toán Xuất Hàng**. Hệ thống được thiết kế tối ưu trên cả máy tính lẫn điện thoại di động, phân chia thành **7 vai trò (Role)** với các quyền hạn độc lập nhằm bảo mật thông tin và tối ưu thao tác công việc.
 
-> **Lưu ý về thời gian:** Hệ thống tự động ghi nhận thời gian nhập liệu (`dd/mm/yyyy hh:mm:ss`) theo **giờ Việt Nam** ngay khi người dùng ấn **Lưu dữ liệu**. Thông tin này không thể chỉnh sửa thủ công, đảm bảo tính chính xác và trung thực của dữ liệu.
-
----
-
-## I. DÀNH CHO TẤT CẢ NGƯỜI DÙNG
-
-### 1. Đăng ký & Đăng nhập
-- **Đăng ký:** Truy cập trang Đăng nhập → chọn **"Chưa có tài khoản? Đăng ký ngay"** → Điền Họ tên, Tên tài khoản, Mật khẩu và chọn đúng **Vai trò** phù hợp với bộ phận của bạn.
-- **Lưu ý:** Tài khoản mới sẽ ở trạng thái *Chờ duyệt*. Bạn cần báo cho Admin phê duyệt thì mới có thể đăng nhập.
-- **Đăng nhập:** Nhập Tên tài khoản và Mật khẩu (có thể bấm biểu tượng con mắt để xem mật khẩu). Hệ thống tự chuyển hướng vào màn hình làm việc đúng với vai trò của bạn.
-- **Bảo mật truy cập:** Trường hợp người dùng **chưa đăng nhập** mà truy cập vào bất kỳ đường dẫn nào trên hệ thống, hệ thống sẽ **tự động chuyển hướng về trang Đăng nhập (`/login/`)**.
-
-### 2. Đổi mật khẩu
-- Khi đã đăng nhập, bạn có thể tự đổi mật khẩu.
-- Đối với nhân viên sản xuất, nhà cắt, KCS và hoàn thiện: Nút đổi mật khẩu nằm trực tiếp ở góc trên trang.
-- Đối với Quản lý và Admin (Premium): Chức năng Đổi mật khẩu nằm trong thanh menu Sidebar trượt từ bên trái.
-- Có nút quay lại dễ dàng ở màn hình đổi mật khẩu nếu muốn hủy bỏ.
+> 🕒 **Lưu ý về thời gian & Định dạng số:**
+> - Hệ thống tự động ghi nhận thời gian nhập liệu (`dd/mm/yyyy hh:mm:ss`) theo **giờ Việt Nam** ngay khi người dùng ấn **Lưu dữ liệu**.
+> - Mọi số tiền và số lượng lớn đều được định dạng dấu phẩy `,` phân cách hàng nghìn (ví dụ: `150,000`, `33,000,000 VNĐ`) để dễ quan sát và tránh nhầm lẫn.
 
 ---
 
-## II. HƯỚNG DẪN NHÂN VIÊN SẢN XUẤT (Quyền BASIC)
+## I. HƯỚNG DẪN CHUNG CHO TẤT CẢ NGƯỜI DÙNG
 
-Trang làm việc chính: Màn hình **Nhập Báo Cáo Sản Xuất**
+### 1. Đăng Ký & Đăng Nhập
+- **Đăng ký tài khoản:** Tại màn hình Đăng nhập → bấm **"Chưa có tài khoản? Đăng ký ngay"** → Nhập Họ tên, Tên tài khoản, Mật khẩu và chọn đúng **Vai trò** của bạn.
+- **Phê duyệt:** Tài khoản đăng ký mới sẽ ở trạng thái *Chờ duyệt*. Vui lòng liên hệ Quản trị viên (Admin) để được kích hoạt.
+- **Đăng nhập:** Nhập Tên tài khoản và Mật khẩu (có thể bấm biểu tượng con mắt để xem mật khẩu). Sau khi đăng nhập thành công, hệ thống sẽ **tự động chuyển hướng** đến trang làm việc tương ứng với quyền hạn của bạn.
+- **Bảo mật truy cập:** Mọi đường dẫn trong hệ thống đều yêu cầu đăng nhập. Nếu chưa đăng nhập hoặc phiên làm việc hết hạn, hệ thống sẽ tự động chuyển hướng về trang Đăng nhập (`/login/`).
 
+### 2. Đổi Mật Khẩu
+- Mọi người dùng đều có thể tự đổi mật khẩu tài khoản bất kỳ lúc nào.
+- Đối với nhân viên sản xuất (Cắt, May, KCS, Hoàn thiện): Nút đổi mật khẩu nằm ở góc trên thanh công cụ.
+- Đối với Quản lý, Kế toán và Admin: Chức năng Đổi mật khẩu nằm ở phần chân thanh menu **Sidebar** (bên trái màn hình).
+
+---
+
+## II. HƯỚNG DẪN BỘ PHẬN KẾ TOÁN (Quyền KE_TOAN)
+
+Kế toán có thanh điều hướng Sidebar riêng biệt để quản trị tài chính, đơn giá và theo dõi doanh thu xuất hàng.
+
+### 1. Quản Lý Đơn Giá Xuất Hàng (`/accounting/don-gia/`)
+- **Mục đích:** Thiết lập đơn giá bán/xuất hàng (VNĐ/cái) cho từng cặp Mã hàng và Màu sắc.
+- **Cách thao tác:**
+  1. Mở menu Sidebar → Chọn **Quản lý Đơn Giá**.
+  2. Tại bảng danh sách Mã – Màu:
+     - Gõ đơn giá trực tiếp vào ô tương ứng (hệ thống tự động định dạng dấu phẩy khi gõ, ví dụ nhập `150000` sẽ hiển thị `150,000`).
+     - Bấm nút **Lưu** ở cuối dòng để cập nhật đơn giá cho dòng đó.
+     - Hoặc có thể nhập đơn giá cho nhiều dòng rồi bấm nút **Lưu Tất Cả Đơn Giá** ở góc trên để cập nhật hàng loạt cùng lúc.
+  3. Cột *Thời gian cập nhật* và *Người cập nhật* sẽ tự động ghi nhận lại lần sửa mới nhất.
+
+### 2. Nhập Phiếu Xuất Hàng (`/accounting/xuat-hang/`)
+- **Mục đích:** Lập phiếu khi xuất hàng đi và theo dõi tổng tiền xuất.
+- **Cách thao tác:**
+  1. Mở menu Sidebar → Chọn **Nhập Xuất Hàng**.
+  2. Điền thông tin vào form:
+     - **Ngày xuất:** Chọn ngày thực tế xuất hàng.
+     - **Mã hàng & Màu sắc:** Chọn mã hàng và màu tương ứng.
+     - **Số lượng xuất:** Nhập số lượng hàng xuất đi.
+     - **Tính tiền tự động (Real-time):** Ngay khi chọn Mã - Màu và gõ số lượng, hệ thống sẽ tự động hiển thị **Đơn giá hiện tại** và tính ngay **Thành tiền dự tính (VNĐ)**.
+     - **Ghi chú:** Điền thêm thông tin giao hàng, khách hàng, xe chở (nếu có).
+  3. Bấm **Lưu Phiếu Xuất Hàng**.
+  4. Lịch sử phiếu xuất sẽ xuất hiện ngay ở bảng danh sách bên cạnh. Kế toán có thể bấm **Sửa** hoặc **Xóa** phiếu xuất nếu có sai sót.
+
+### 3. Dashboard Doanh Thu & Tồn Đọng (`/accounting/`)
+- **Mục đích:** Bức tranh toàn cảnh về tiến độ xuất hàng và giá trị tiền của từng mã hàng.
+- **3 Thẻ KPI trên cùng:**
+  - **Tổng Giá Trị Đơn Hàng:** Tổng số lượng & tổng tiền đơn hàng khách đặt.
+  - **Tổng Tiền Đã Xuất:** Doanh thu số hàng đã thực tế giao đi cùng % tiến độ hoàn thành.
+  - **Giá Trị Hàng Chưa Xuất:** Tổng số lượng & tổng tiền của số hàng còn tồn đọng cần giao tiếp.
+- **Bảng Chi Tiết Tiến Độ Xuất Hàng & Tồn Đọng:**
+  - Hiển thị đầy đủ thông tin: *Số lượng ĐH, Đơn giá, Thành tiền ĐH, SL đã xuất, Doanh thu đã xuất, SL còn lại, Tiền còn lại, % Tiến độ*.
+  - Bảng hiển thị full màn hình rộng, không cần cuộn ngang.
+- **Lọc Mã Hàng:** Chọn mã hàng để xem chi tiết từng mã, có nút **Xóa lọc** tiện dụng.
+- **Xuất Báo Cáo Excel:** Bấm nút **Xuất Excel** để tải về bảng kê theo dõi gồm 2 sheet (*Tổng hợp số liệu & Chi tiết từng phiếu xuất*).
+
+### 4. Báo Cáo Tổng Hợp & Quản Lý Mã Hàng
+- Kế toán có thể xem **Tổng hợp dữ liệu sản xuất** (`/dashboard/cut/`), **Theo dõi Đơn hàng** (`/tracking/`) và xem danh sách **Quản lý Mã hàng** (`/config/`) trên thanh Sidebar.
+
+---
+
+## III. HƯỚNG DẪN NHÂN VIÊN MAY SẢN XUẤT (Quyền BASIC)
+
+- **Trang làm việc:** Màn hình chính (`/`).
 - **Thêm Báo Cáo:**
-  1. Chọn **Mã Hàng** → danh sách **Màu** sẽ tự hiện ra, chọn Màu.
-  2. Nhập **Xưởng**, **Tổ** (bắt buộc, không được bằng 0) và **Số lượng LĐ**.
-  3. Nhập số lượng các công đoạn: Nhận BTP, Vào chuyền, Giữa chuyền, Ra chuyền, Thu hóa, Là TP, Nhập HT.
-  4. Ấn **Lưu dữ liệu**.
-- **Xem Danh sách:** Bấm **Xem danh sách đã nhập** để xem lại **50 báo cáo mới nhất** do chính bạn đã nhập. Để quay lại nhập liệu, hãy bấm nút **+ Nhập Mới** trên góc phải.
-- **Lưu ý:** Nhân viên Sản xuất **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý. Hệ thống không có thanh Sidebar để tối đa diện tích màn hình.
+  1. Chọn **Mã Hàng** → Chọn **Màu**.
+  2. Nhập **Xưởng**, **Tổ** và **Số lượng LĐ**.
+  3. Nhập số lượng các công đoạn: *Nhận BTP, Vào chuyền, Giữa chuyền, Ra chuyền, Thu hóa, Là thành phẩm, Nhập hoàn thiện*.
+  4. Bấm **Lưu dữ liệu**.
+- **Xem Lịch Sử:** Bấm nút **Xem danh sách đã nhập** để xem lại 50 báo cáo gần nhất do chính mình nhập.
+- *Lưu ý: Công nhân không có quyền sửa/xóa sau khi đã lưu. Nếu nhập nhầm hãy báo Quản lý.*
 
 ---
 
-## III. HƯỚNG DẪN TỔ CẮT (Quyền NHA_CAT)
+## IV. HƯỚNG DẪN BỘ PHẬN TỔ CẮT (Quyền NHA_CAT)
 
-Trang làm việc chính: Màn hình **Nhập Báo Cáo Cắt**
-
+- **Trang làm việc:** Màn hình Nhập Báo Cáo Cắt (`/cut/`).
 - **Thêm Báo Cáo:**
-  1. Chọn **Mã Hàng** → chọn **Màu**.
-  2. Nhập số lượng các công đoạn cắt: **Cắt chính, Cắt lót, Cắt Mex, Cắt bông**.
-  3. Ấn **Lưu dữ liệu**. *(Không cần nhập Xưởng hay Tổ.)*
-- **Xem Danh sách:** Bấm **Xem danh sách đã nhập** để xem lại 50 báo cáo mới nhất do chính bạn đã nhập.
-- **Lưu ý:** Nhà cắt **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý. Không có thanh Sidebar.
+  1. Chọn **Mã Hàng** → Chọn **Màu**.
+  2. Nhập số lượng các công đoạn: **Cắt chính, Cắt lót, Cắt Mex, Cắt bông**.
+  3. Bấm **Lưu dữ liệu**. *(Không cần nhập Xưởng/Tổ).*
+- **Xem Lịch Sử:** Bấm **Xem danh sách đã nhập** để xem 50 báo cáo mới nhất.
 
 ---
 
-## IV. HƯỚNG DẪN NHÂN VIÊN KCS (Quyền KCS)
+## V. HƯỚNG DẪN BỘ PHẬN KCS (Quyền KCS)
 
-Trang làm việc chính: Màn hình **Nhập Báo Cáo KCS**
-
+- **Trang làm việc:** Màn hình Nhập Báo Cáo KCS (`/kcs/`).
 - **Thêm Báo Cáo:**
-  1. Chọn **Mã Hàng** → chọn **Màu**.
+  1. Chọn **Mã Hàng** → Chọn **Màu**.
   2. Nhập **Xưởng**, **Tổ**.
-  3. Nhập số liệu kiểm tra: **Qua tay, Đạt, Lỗi, Tổng đạt**.
-  4. Ấn **Lưu dữ liệu**.
-- **Xem Danh sách:** Bấm **Xem danh sách đã nhập** để xem 50 báo cáo mới nhất do chính bạn đã nhập.
-- **Lưu ý:** Nhân viên KCS **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý. Không có thanh Sidebar.
+  3. Nhập số liệu kiểm tra chất lượng: **Qua tay, Đạt, Lỗi, Tổng đạt**.
+  4. Bấm **Lưu dữ liệu**.
+- **Xem Lịch Sử:** Bấm **Xem danh sách đã nhập** để xem 50 bản ghi gần nhất.
 
 ---
 
-## V. HƯỚNG DẪN NHÂN VIÊN HOÀN THIỆN (Quyền HOAN_THIEN)
+## VI. HƯỚNG DẪN BỘ PHẬN HOÀN THIỆN (Quyền HOAN_THIEN)
 
-Trang làm việc chính: Màn hình **Nhập Báo Cáo Hoàn Thiện**
-
-- **Thêm Báo Cáo:**
-  1. Chọn **Mã Hàng** → chọn **Màu**.
+- **Trang làm việc:** Màn hình Nhập Báo Cáo Hoàn Thiện (`/finishing/`).
+- **Thao tác sản lượng chuẩn:**
+  1. Chọn **Mã Hàng** → Chọn **Màu**.
   2. Nhập số lượng: **Thẻ bài, Gấp hàng, Treo/Đóng thùng**.
-  3. Ấn **Lưu dữ liệu**.
-- **Xem Danh sách:** Bấm **Xem danh sách đã nhập** để xem 50 báo cáo mới nhất.
-- **Lưu ý:** Nhân viên Hoàn thiện **không có quyền Sửa hay Xóa** sau khi đã lưu. Nếu nhập sai, vui lòng báo Quản lý. Không có thanh Sidebar.
+  3. Bấm **Lưu dữ liệu**.
+- **Nghiệp Vụ Ngoại Lệ (Trả hàng lỗi & Lấy mẫu) (`/finishing/ngoai-le/`):**
+  - Ghi nhận số lượng xuất trả về các tổ may để sửa lỗi hoặc đưa đi lấy mẫu kiểm định.
+  - **Theo dõi nhận lại từng lần:** Bấm vào phiếu để nhập số lượng nhận lại sau khi tổ may đã sửa xong.
+  - Hệ thống tự động tính lũy kế số lượng đã nhận lại và số lượng còn thiếu. Khi đã nhận đủ 100%, bản ghi sẽ tự động được ẩn khỏi danh sách chờ.
 
 ---
 
-## VI. HƯỚNG DẪN QUẢN LÝ (Quyền QUAN_LY)
+## VII. HƯỚNG DẪN CẤP QUẢN LÝ (Quyền QUAN_LY)
 
-Quản lý có thể nhìn thấy thanh menu mở rộng (Sidebar) bên trái màn hình với đầy đủ chức năng.
+Quản lý xưởng có toàn quyền theo dõi và giám sát tiến độ toàn bộ các khâu trên thanh Sidebar:
 
-### 1. Bảng Điều Khiển — Dashboard (`/dashboard/`)
-Ngay khi đăng nhập, Quản lý thấy **Dashboard Dữ Liệu** với **4 bảng tổng hợp độc lập** hiển thị đầy đủ thông tin trên màn hình rộng mà không cần kéo ngang:
+### 1. Dashboard Tổng Hợp Sản Xuất (`/dashboard/`)
+- Gồm 4 Tab: **Tổng hợp Cắt** (`/dashboard/cut/`) → **Tổng hợp May** (`/dashboard/prod/`) → **Tổng hợp KCS** (`/dashboard/kcs/`) → **Tổng hợp Hoàn thiện** (`/dashboard/finishing/`).
+- **Quy tắc ô Ngày / Tổng:** Hiển thị sản lượng ngày và tổng lũy kế tính đến thời điểm ghi nhận.
+- **Bộ lọc dạng Excel trên cột:** Bấm `[▼]` tại các cột *Người nhập, Mã hàng, Màu, Xưởng, Tổ* để tìm kiếm và lọc dữ liệu đa tầng.
+- **Bộ lọc ngày độc lập & Xuất Excel:** Lọc khoảng thời gian và tải file Excel tổng hợp trực tiếp.
 
-| Thứ tự | Bảng | Nội dung |
-|---|---|---|
-| 1 | **Tổng hợp Cắt** | Số liệu tổng hợp từng (Mã hàng, Màu) của tổ Cắt (Cắt chính, Cắt lót, Cắt Mex, Cắt bông), có cột Tổng SL đơn hàng |
-| 2 | **Tổng hợp Sản xuất** | Số liệu tổng hợp từng (Mã hàng, Màu) của bộ phận Sản xuất (không hiển thị cột Thời gian, có cột Số lượng LĐ) |
-| 3 | **Tổng hợp KCS** | Số liệu tổng hợp từng (Mã hàng, Màu) của bộ phận KCS (Xưởng, Tổ, Qua tay, Đạt, Lỗi, Tổng đạt) |
-| 4 | **Tổng hợp Hoàn thiện** | Số liệu tổng hợp từng (Mã hàng, Màu) của bộ phận Hoàn thiện (Thẻ bài, Gấp hàng, Treo/Đóng thùng) |
+### 2. Quản Lý & Điều Chỉnh Dữ Liệu
+- Quản lý có quyền **Sửa** hoặc **Xóa** bất kỳ báo cáo nào của nhân viên từ cả 4 quy trình sản xuất khi có sai sót.
 
-- **Lọc thời gian độc lập**: Mỗi bảng có bộ lọc riêng (Từ ngày – Đến ngày). Lọc bảng này không ảnh hưởng bảng kia.
-- **Quy tắc tính ô Ngày / Tổng (Lũy kế theo thời gian)**: Số Tổng ở góc dưới ô chéo là **tổng lũy kế** của lần nhập đó cộng với tất cả các lần nhập trước đó. Khi có các lần nhập mới sau đó, giá trị Tổng của lần nhập cũ vẫn giữ nguyên không đổi.
-- **Bộ lọc dạng Excel trên từng cột (Lọc liên tầng, Toàn bộ dữ liệu & Giữ lọc khi đổi trang)**: Các cột **Người nhập, Mã hàng, Màu, Xưởng, Tổ** đều có nút lọc `[▼]` giống Excel.
-- **Xuất Excel**: Ấn nút **Xuất Excel** của từng bảng để tải file dữ liệu đã lọc trên Dashboard.
-- **Phân trang**: Mỗi bảng hiển thị tối đa **10 hàng dữ liệu** trên một trang.
+### 3. Cấu Hình Mã Hàng (`/config/`)
+- Thêm Mã hàng mới, thêm danh sách Màu sắc và Số lượng đơn hàng khách đặt.
+- Chỉnh sửa số lượng hoặc xóa màu/mã hàng khi cần thiết.
 
-### 2. Các chức năng trên Sidebar
-Quản lý có thể truy cập nhanh trên Sidebar:
-- **BÁO CÁO TỔNG HỢP**: Tổng hợp dữ liệu (Dashboard) & Theo dõi Đơn hàng (Tracking).
-- **QUY TRÌNH SẢN XUẤT**: Cho phép Quản lý tự thao tác **Nhập DL Cắt, Sản xuất, KCS, Hoàn thiện**.
-- **HỆ THỐNG & QUẢN TRỊ**: Quản lý Mã hàng & Màu sắc.
-
-### 3. Quản Lý & Sửa/Xóa Dữ Liệu
-- Quản lý có thể **Sửa** hoặc **Xóa** bất kỳ dòng dữ liệu nào của bất kỳ ai từ cả 4 bộ phận.
-- Khi ấn Sửa, hệ thống hiển thị thời gian ghi nhận gốc để đối chiếu.
-
-### 4. Quản Lý Cấu Hình Mã Hàng (`/config/`)
-- Thêm Mã hàng mới + các Màu sắc và Số lượng đơn hàng.
-- Sửa/Xóa màu và số lượng bất kỳ lúc nào.
-- Xóa Mã hàng sẽ xóa toàn bộ Màu liên quan (không ảnh hưởng lịch sử báo cáo).
-
-### 5. Tracking Đơn Hàng (`/tracking/`)
-Bảng tổng hợp theo dõi tiến độ toàn bộ đơn hàng theo (Mã hàng, Màu):
-- Số lượng đơn, tiến độ từng công đoạn, số lượng còn lại.
-- Hỗ trợ xuất Excel.
-
-*(Lưu ý: Quản lý không có quyền can thiệp vào Tài khoản người dùng trên hệ thống.)*
+### 4. Tracking Đơn Hàng (`/tracking/`)
+- Xem tiến độ xuyên suốt của từng mã hàng từ Cắt ➔ May ➔ KCS ➔ Hoàn thiện ➔ Xuất hàng và xuất Excel theo dõi.
 
 ---
 
-## VII. HƯỚNG DẪN ADMIN (Quyền PREMIUM)
+## VIII. HƯỚNG DẪN QUẢN TRỊ VIÊN ADMIN (Quyền PREMIUM)
 
-Tài khoản `PREMIUM` là quản trị viên hệ thống. Role này sẽ tập trung vào xem báo cáo tổng quan và quản trị người dùng, **không thực hiện nhập liệu quy trình sản xuất**. Trên Sidebar, mục "Quy trình sản xuất" sẽ không được hiển thị.
+Tài khoản `PREMIUM` là quản trị cấp cao nhất, nắm toàn quyền điều hành hệ thống:
 
-Admin có quyền hạn xem Dashboard như Quản lý, và có thêm đặc quyền:
-
-### Quản Lý Người Dùng (`/manage-accounts/`) (Trên Sidebar)
-- **Phê duyệt**: Duyệt tài khoản mới đăng ký để họ có thể đăng nhập.
-- **Phân quyền**: Thay đổi vai trò (Role) của từng tài khoản.
-- **Khóa/Mở**: Tạm thời khóa hoặc mở khóa quyền đăng nhập.
-- **Xóa vĩnh viễn**: Xóa tài khoản không còn sử dụng khỏi hệ thống.
+1. **Xem toàn bộ Dashboard & Báo Cáo:** Xem được cả Dashboard Sản Xuất (`/dashboard/`), Dashboard Kế Toán Doanh Thu (`/accounting/`) và Tracking Đơn Hàng (`/tracking/`).
+2. **Quản Lý Người Dùng (`/manage-accounts/`):**
+   - **Phê duyệt:** Kích hoạt tài khoản mới đăng ký.
+   - **Phân quyền:** Chuyển đổi vai trò của người dùng sang *Sản xuất, Nhà cắt, KCS, Hoàn thiện, Kế toán, Quản lý, hoặc Admin*.
+   - **Khóa / Mở khóa:** Vô hiệu hóa hoặc cấp lại quyền đăng nhập.
+   - **Xóa tài khoản:** Xóa vĩnh viễn tài khoản không còn làm việc.
+3. **Quản trị Cấu hình & Đơn giá:** Cùng với Kế toán quản trị danh mục sản phẩm, màu sắc và bảng đơn giá toàn công ty.

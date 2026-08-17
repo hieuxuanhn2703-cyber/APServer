@@ -1,5 +1,5 @@
 {% load static %}
-{% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}
+{% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' or user.role == 'KE_TOAN' %}
 <style>
     .app-sidebar .sidebar-brand {
         display: flex !important;
@@ -60,6 +60,7 @@
 
     <!-- Navigation Links -->
     <nav class="sidebar-nav">
+        {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' or user.role == 'KE_TOAN' %}
         <div class="nav-section">
             <span class="nav-section-title">BÁO CÁO TỔNG HỢP</span>
             <a href="{% url 'dashboard_cut' %}" class="nav-item">
@@ -82,8 +83,42 @@
                 <span class="nav-label">Theo dõi Đơn hàng</span>
             </a>
         </div>
+        {% endif %}
 
-        {% if user.role != 'PREMIUM' %}
+        {% if user.role == 'PREMIUM' or user.role == 'KE_TOAN' %}
+        <div class="nav-section">
+            <span class="nav-section-title">KẾ TOÁN & TÀI CHÍNH</span>
+            <a href="{% url 'accounting:dashboard' %}" class="nav-item">
+                <span class="nav-icon" style="color: #10b981;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </span>
+                <span class="nav-label">Theo dõi Doanh thu & Xuất hàng</span>
+            </a>
+            <a href="{% url 'accounting:export_entry' %}" class="nav-item">
+                <span class="nav-icon" style="color: #06b6d4;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </span>
+                <span class="nav-label">Nhập Xuất Hàng</span>
+            </a>
+            <a href="{% url 'accounting:price_management' %}" class="nav-item">
+                <span class="nav-icon" style="color: #f59e0b;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+                        <path d="M12 6v2m0 8v2"></path>
+                    </svg>
+                </span>
+                <span class="nav-label">Quản lý Đơn Giá</span>
+            </a>
+        </div>
+        {% endif %}
+
+        {% if user.role == 'QUAN_LY' %}
         <div class="nav-section">
             <span class="nav-section-title">QUY TRÌNH SẢN XUẤT</span>
             <a href="{% url 'cut_web' %}" class="nav-item">
@@ -131,6 +166,7 @@
         </div>
         {% endif %}
 
+        {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' or user.role == 'KE_TOAN' %}
         <div class="nav-section">
             <span class="nav-section-title">HỆ THỐNG & QUẢN TRỊ</span>
             <a href="{% url 'config_list' %}" class="nav-item">
@@ -156,6 +192,7 @@
             </a>
             {% endif %}
         </div>
+        {% endif %}
     </nav>
 
     <!-- Sidebar User Card & Actions -->
@@ -167,7 +204,7 @@
             <div class="user-details">
                 <span class="user-name" title="{{ user.name|default:user.account }}">{{ user.name|default:user.account }}</span>
                 <span class="user-role-badge">
-                    {% if user.role == 'PREMIUM' %}Quản trị viên{% else %}Quản lý{% endif %}
+                    {% if user.role == 'PREMIUM' %}Quản trị viên{% elif user.role == 'QUAN_LY' %}Quản lý{% elif user.role == 'KE_TOAN' %}Kế toán{% else %}Nhân viên{% endif %}
                 </span>
             </div>
         </div>

@@ -219,6 +219,8 @@ def login_view(request):
         if current_user and current_user.is_approved:
             if current_user.role in ["PREMIUM", "QUAN_LY"]:
                 return redirect("premium_dashboard")
+            elif current_user.role == "KE_TOAN":
+                return redirect("accounting:dashboard")
             elif current_user.role == "HOAN_THIEN":
                 return redirect("finishing_web")
             elif current_user.role == "KCS":
@@ -242,6 +244,8 @@ def login_view(request):
                 
                 if user.role in ["PREMIUM", "QUAN_LY"]:
                     return redirect("premium_dashboard")
+                elif user.role == "KE_TOAN":
+                    return redirect("accounting:dashboard")
                 elif user.role == "HOAN_THIEN":
                     return redirect("finishing_web")
                 elif user.role == "KCS":
@@ -305,7 +309,7 @@ def register_view(request):
             error = "Mật khẩu nhập lại không khớp."
         elif AppUser.objects.filter(account=account).exists():
             error = "Tài khoản này đã tồn tại, vui lòng chọn tên khác."
-        elif role not in ["BASIC", "HOAN_THIEN", "KCS", "NHA_CAT", "QUAN_LY"]:
+        elif role not in ["BASIC", "HOAN_THIEN", "KCS", "NHA_CAT", "KE_TOAN", "QUAN_LY"]:
             error = "Vai trò không hợp lệ."
         else:
             AppUser.objects.create(
@@ -344,7 +348,7 @@ def toggle_account_view(request, user_id):
         action = request.POST.get("action")
         if action == "change_role":
             new_role = request.POST.get("new_role")
-            if new_role in ["BASIC", "HOAN_THIEN", "QUAN_LY", "PREMIUM"]:
+            if new_role in ["BASIC", "HOAN_THIEN", "KCS", "NHA_CAT", "KE_TOAN", "QUAN_LY", "PREMIUM"]:
                 user_to_toggle.role = new_role
                 user_to_toggle.save()
         elif action == "toggle_status" or not action:
@@ -368,7 +372,7 @@ def delete_account_view(request, user_id):
 @login_required
 def config_list_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     products = Product.objects.prefetch_related('colors__sizes').all()
@@ -380,7 +384,7 @@ def config_list_view(request):
 @login_required
 def config_add_product_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
     
     if request.method == "POST":
@@ -436,7 +440,7 @@ def config_add_product_view(request):
 @login_required
 def config_add_color_view(request, product_id):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     product = get_object_or_404(Product, pk=product_id)
@@ -463,7 +467,7 @@ def config_add_color_view(request, product_id):
 @login_required
 def config_edit_color_view(request, color_id):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     color = get_object_or_404(ProductColor, pk=color_id)
@@ -490,7 +494,7 @@ def config_edit_color_view(request, color_id):
 @login_required
 def config_add_size_view(request, color_id):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     color = get_object_or_404(ProductColor, pk=color_id)
@@ -508,7 +512,7 @@ def config_add_size_view(request, color_id):
 @login_required
 def config_delete_product_view(request, product_id):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
     
     if request.method == "POST":
@@ -519,7 +523,7 @@ def config_delete_product_view(request, product_id):
 @login_required
 def config_delete_color_view(request, color_id):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
     
     if request.method == "POST":
@@ -530,7 +534,7 @@ def config_delete_color_view(request, color_id):
 @login_required
 def config_delete_size_view(request, size_id):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
     
     if request.method == "POST":
@@ -542,7 +546,7 @@ def config_delete_size_view(request, size_id):
 @login_required
 def export_excel_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền xuất dữ liệu.")
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -838,7 +842,7 @@ def get_tracking_data(filter_ma_hang=None, filter_mau=None):
 @login_required
 def tracking_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     tracking_filter_ma_hang = [v for v in request.GET.getlist('tracking_filter_ma_hang') if v]
@@ -892,7 +896,7 @@ def tracking_view(request):
 @login_required
 def tracking_export_excel_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ["PREMIUM", "QUAN_LY"]:
+    if current_user.role not in ["PREMIUM", "QUAN_LY", "KE_TOAN"]:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang này.")
         
     tracking_filter_ma_hang = [v for v in request.GET.getlist('tracking_filter_ma_hang') if v]
@@ -1436,7 +1440,7 @@ def _get_cascade_options(base_qs, active_filters, current_col_key, val_field):
 @login_required
 def dashboard_cut_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ['PREMIUM', 'QUAN_LY']:
+    if current_user.role not in ['PREMIUM', 'QUAN_LY', 'KE_TOAN']:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
 
     cut_start_date = request.GET.get('cut_start_date')
@@ -1511,7 +1515,7 @@ def dashboard_cut_view(request):
 @login_required
 def dashboard_prod_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ['PREMIUM', 'QUAN_LY']:
+    if current_user.role not in ['PREMIUM', 'QUAN_LY', 'KE_TOAN']:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
 
     prod_start_date = request.GET.get('prod_start_date')
@@ -1601,7 +1605,7 @@ def dashboard_prod_view(request):
 @login_required
 def dashboard_kcs_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ['PREMIUM', 'QUAN_LY']:
+    if current_user.role not in ['PREMIUM', 'QUAN_LY', 'KE_TOAN']:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
 
     kcs_start_date = request.GET.get('kcs_start_date')
@@ -1691,7 +1695,7 @@ def dashboard_kcs_view(request):
 @login_required
 def dashboard_finishing_view(request):
     current_user = get_current_user(request)
-    if current_user.role not in ['PREMIUM', 'QUAN_LY']:
+    if current_user.role not in ['PREMIUM', 'QUAN_LY', 'KE_TOAN']:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
 
     fin_start_date = request.GET.get('fin_start_date')

@@ -54,6 +54,7 @@ class AppUser(models.Model):
         ("HOAN_THIEN", "Hoàn thiện"),
         ("KCS", "KCS"),
         ("NHA_CAT", "Nhà cắt"),
+        ("KE_TOAN", "Kế toán"),
         ("QUAN_LY", "Quản lý"),
         ("PREMIUM", "Cao cấp (Admin)"),
     )
