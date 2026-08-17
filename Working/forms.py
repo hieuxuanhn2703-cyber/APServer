@@ -257,3 +257,139 @@ class CutForm(forms.Form):
                 return cleaned_data
 
         return cleaned_data
+
+
+class DefectReturnForm(forms.Form):
+    ngay_tra = forms.DateField(
+        label="Ngày trả",
+        initial=datetime.date.today,
+        widget=forms.DateInput(attrs=DATE_FIELD_ATTRS),
+    )
+    xuong = forms.IntegerField(
+        label="Xưởng", required=True, min_value=1, initial=0,
+        error_messages={'min_value': 'Vui lòng nhập số xưởng khác 0.', 'required': 'Vui lòng nhập số xưởng.'},
+        widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS)
+    )
+    to = forms.IntegerField(
+        label="Tổ", required=True, min_value=1, initial=0,
+        error_messages={'min_value': 'Vui lòng nhập số tổ khác 0.', 'required': 'Vui lòng nhập số tổ.'},
+        widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS)
+    )
+    
+    ma_hang = forms.ChoiceField(label="Mã hàng", choices=[])
+    mau = forms.ChoiceField(label="Màu sắc", choices=[])
+    
+    so_luong_tra = forms.IntegerField(
+        label="Số lượng trả", required=True, min_value=1, initial=0,
+        error_messages={'min_value': 'Vui lòng nhập số lượng khác 0.', 'required': 'Vui lòng nhập số lượng trả.'},
+        widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS)
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config = load_config()
+        self.fields["ma_hang"].choices = [("", "-- Chọn mã hàng --")] + [
+            (ma, ma) for ma in self.config.keys()
+        ]
+        all_colors = set()
+        for data in self.config.values():
+            for color in data["colors"].keys():
+                all_colors.add(color)
+        self.fields["mau"].choices = [("", "-- Chọn màu --")] + [(c, c) for c in sorted(all_colors)]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        ma_hang = cleaned_data.get("ma_hang")
+        mau = cleaned_data.get("mau")
+
+        if ma_hang and ma_hang not in self.config:
+            self.add_error("ma_hang", "Mã hàng không hợp lệ.")
+            return cleaned_data
+
+        if ma_hang and mau:
+            colors = self.config[ma_hang]["colors"]
+            if mau not in colors:
+                self.add_error("mau", f"Màu '{mau}' không thuộc mã hàng '{ma_hang}'.")
+                return cleaned_data
+        return cleaned_data
+
+
+NGUOI_LAY_CHOICES = [
+    ("", "-- Chọn người lấy --"),
+    ("Kỹ thuật", "Kỹ thuật"),
+    ("KCS", "KCS"),
+    ("Lãnh đạo", "Lãnh đạo"),
+    ("Khác", "Khác"),
+]
+
+
+class SampleTakeForm(forms.Form):
+    ngay_lay = forms.DateField(
+        label="Ngày lấy",
+        initial=datetime.date.today,
+        widget=forms.DateInput(attrs=DATE_FIELD_ATTRS),
+    )
+    
+    ma_hang = forms.ChoiceField(label="Mã hàng", choices=[])
+    mau = forms.ChoiceField(label="Màu sắc", choices=[])
+    
+    nguoi_lay_choice = forms.ChoiceField(
+        label="Người lấy mẫu",
+        choices=NGUOI_LAY_CHOICES,
+        required=True,
+        error_messages={'required': 'Vui lòng chọn người lấy mẫu.'},
+        widget=forms.Select(attrs={'class': 'entry-select', 'id': 'id_nguoi_lay_choice', 'onchange': 'toggleNguoiLayKhac(this.value)'})
+    )
+    nguoi_lay_khac = forms.CharField(
+        label="Tên người lấy (Khác)",
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'text-input', 'id': 'id_nguoi_lay_khac', 'placeholder': 'Nhập tên người lấy...'})
+    )
+    
+    so_luong_lay = forms.IntegerField(
+        label="Số lượng lấy", required=True, min_value=1, initial=0,
+        error_messages={'min_value': 'Vui lòng nhập số lượng khác 0.', 'required': 'Vui lòng nhập số lượng lấy.'},
+        widget=forms.NumberInput(attrs=NUMERIC_FIELD_ATTRS)
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config = load_config()
+        self.fields["ma_hang"].choices = [("", "-- Chọn mã hàng --")] + [
+            (ma, ma) for ma in self.config.keys()
+        ]
+        all_colors = set()
+        for data in self.config.values():
+            for color in data["colors"].keys():
+                all_colors.add(color)
+        self.fields["mau"].choices = [("", "-- Chọn màu --")] + [(c, c) for c in sorted(all_colors)]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        ma_hang = cleaned_data.get("ma_hang")
+        mau = cleaned_data.get("mau")
+
+        if ma_hang and ma_hang not in self.config:
+            self.add_error("ma_hang", "Mã hàng không hợp lệ.")
+            return cleaned_data
+
+        if ma_hang and mau:
+            colors = self.config[ma_hang]["colors"]
+            if mau not in colors:
+                self.add_error("mau", f"Màu '{mau}' không thuộc mã hàng '{ma_hang}'.")
+                return cleaned_data
+
+        choice = cleaned_data.get("nguoi_lay_choice")
+        khac = (cleaned_data.get("nguoi_lay_khac") or "").strip()
+
+        if choice == "Khác":
+            if not khac:
+                self.add_error("nguoi_lay_khac", "Vui lòng nhập tên người lấy.")
+            else:
+                cleaned_data["nguoi_lay"] = khac
+        elif choice:
+            cleaned_data["nguoi_lay"] = choice
+        else:
+            self.add_error("nguoi_lay_choice", "Vui lòng chọn người lấy.")
+
+        return cleaned_data

@@ -1,0 +1,967 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hoàn thiện - Ngoại lệ (Trả hàng / Lấy mẫu)</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --primary-purple: #7c3aed;
+        }
+
+        /* Segmented Tabs Control */
+        .tabs-wrapper {
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px 14px;
+            border: none;
+            background: transparent;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 9px;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-align: center;
+            min-height: 44px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-btn.active {
+            background: #ffffff;
+            color: var(--primary-blue);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        .tab-btn.tab-purple.active {
+            color: var(--primary-purple);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Form Controls Sizing for Touch */
+        .entry-form-group {
+            margin-bottom: 14px;
+        }
+        .entry-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        .entry-select, .text-input, .numeric-input, .entry-input-date {
+            width: 100%;
+            height: 46px;
+            padding: 10px 14px;
+            font-size: 1rem !important; /* Prevents auto-zoom on iOS */
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            background-color: #ffffff;
+            color: #1e293b;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .entry-select:focus, .text-input:focus, .numeric-input:focus, .entry-input-date:focus {
+            border-color: var(--primary-blue);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .btn-entry-submit-mobile {
+            width: 100%;
+            height: 48px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            border: none;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            transition: transform 0.1s, opacity 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-entry-submit-mobile:active {
+            transform: scale(0.98);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .status-treo { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+        .status-xong { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+
+        /* Card List for Mobile */
+        .mobile-card-item {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-left: 4px solid #ef4444;
+        }
+        .mobile-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .mobile-card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.3;
+        }
+        .mobile-card-subtitle {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .mobile-card-details {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.88rem;
+        }
+        .mobile-detail-label {
+            color: #64748b;
+            font-size: 0.8rem;
+            margin-bottom: 2px;
+        }
+        .mobile-detail-val {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        /* Receipt Logs (Lịch sử từng lần nhận) */
+        .receipt-history-box {
+            background: #fdfdfd;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-top: 4px;
+        }
+        .receipt-history-header {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .receipt-history-item {
+            font-size: 0.82rem;
+            color: #334155;
+            padding: 4px 0;
+            border-bottom: 1px dashed #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .receipt-history-item:last-child {
+            border-bottom: none;
+        }
+        .receipt-qty-badge {
+            background: #dcfce7;
+            color: #15803d;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .btn-card-receive {
+            width: 100%;
+            height: 44px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-card-receive.blue {
+            background-color: var(--primary-blue);
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+        }
+        .btn-card-receive.purple {
+            background-color: var(--primary-purple);
+            box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
+        }
+        .btn-card-receive:active {
+            transform: scale(0.98);
+        }
+
+        /* Desktop vs Mobile Toggle */
+        .desktop-table-container { display: block; }
+        .mobile-cards-container { display: none; }
+
+        @media (max-width: 900px) {
+            .desktop-table-container { display: none !important; }
+            .mobile-cards-container { display: block !important; }
+            
+            .entry-grid.grid-cols-3 {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+            .app-main {
+                padding: 0;
+            }
+            .entry-card {
+                padding: 14px;
+                border-radius: 0;
+                box-shadow: none;
+                border: none;
+            }
+            .header-title {
+                font-size: 1.1rem;
+            }
+            .header-subtitle {
+                font-size: 0.78rem;
+            }
+        }
+
+        /* Modal / Bottom Sheet */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(3px);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+        .modal.active { display: flex; animation: fadeIn 0.2s ease; }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 24px 20px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.25);
+            position: relative;
+            animation: slideUp 0.25s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 4px;
+        }
+        .modal-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #0f172a;
+        }
+        .modal-pending-info {
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: #991b1b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-input-large {
+            width: 100%;
+            height: 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+            color: #0f172a;
+        }
+        .modal-input-large:focus {
+            border-color: #10b981;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn-modal-confirm {
+            height: 48px;
+            background-color: #10b981;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-modal-cancel {
+            height: 42px;
+            background-color: #f1f5f9;
+            color: #475569;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- App Topbar Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Hoàn Thiện - Ngoại Lệ</h1>
+                        <span class="header-subtitle">Trả hàng lỗi & Lấy hàng mẫu</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <a href="{% url 'finishing_web' %}" class="btn-entry-list" style="padding: 6px 12px; font-size: 0.84rem; white-space: nowrap;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        Về form chính
+                    </a>
+                </div>
+            </header>
+
+            <main class="app-content" style="padding-top: 10px;">
+                <div class="entry-card fade-in">
+                    
+                    <!-- 2 TABS CHÍNH -->
+                    <div class="tabs-wrapper">
+                        <button type="button" class="tab-btn {% if active_tab == 'tab-tra-hang' or not active_tab %}active{% endif %}" onclick="openTab(event, 'tab-tra-hang')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 12h18M3 12l6-6M3 12l6 6"/>
+                            </svg>
+                            1. Trả Hàng Lỗi
+                        </button>
+                        <button type="button" class="tab-btn tab-purple {% if active_tab == 'tab-lay-mau' %}active{% endif %}" onclick="openTab(event, 'tab-lay-mau')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            </svg>
+                            2. Lấy Hàng Mẫu
+                        </button>
+                    </div>
+
+                    {{ config|json_script:"config-data" }}
+
+                    <!-- ========================================== -->
+                    <!-- TAB 1: TRẢ HÀNG LỖI -->
+                    <!-- ========================================== -->
+                    <div id="tab-tra-hang" class="tab-content {% if active_tab == 'tab-tra-hang' or not active_tab %}active{% endif %}">
+                        {% if defect_form.errors %}
+                        <div style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:0.88rem;">
+                            <b>⚠️ Vui lòng kiểm tra lại:</b>
+                            <ul style="margin:4px 0 0 16px; padding:0;">
+                                {% for field, errors in defect_form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        <form method="post" action="{% url 'finishing_ngoai_le' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="tra_loi">
+                            
+                            <div class="entry-section-header" style="margin-bottom: 12px; font-size: 0.95rem;">
+                                📝 Nhập phiếu trả hàng lỗi về tổ sản xuất
+                            </div>
+                            
+                            <div class="entry-grid grid-cols-3">
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Ngày trả (*)</label>
+                                    {{ defect_form.ngay_tra }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Mã hàng (*)</label>
+                                    <select id="id_ma_hang_defect" name="ma_hang" class="entry-select" data-initial="{{ defect_form.ma_hang.value|default:'' }}" required></select>
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Màu sắc (*)</label>
+                                    <select id="id_mau_defect" name="mau" class="entry-select" data-initial="{{ defect_form.mau.value|default:'' }}" required></select>
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Xưởng (*)</label>
+                                    {{ defect_form.xuong }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Tổ (*)</label>
+                                    {{ defect_form.to }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Số lượng trả (*)</label>
+                                    {{ defect_form.so_luong_tra }}
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn-entry-submit-mobile" style="background-color: var(--primary-blue); margin-top: 6px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Lưu Phiếu Trả Hàng Lỗi
+                            </button>
+                        </form>
+
+                        <div class="entry-section-header" style="margin-top: 32px; margin-bottom: 14px; font-size: 0.95rem;">
+                            📋 Hàng trả lỗi đang treo (Chờ nhận lại)
+                        </div>
+
+                        <!-- DESKTOP TABLE -->
+                        <div class="desktop-table-container">
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Ngày trả</th>
+                                            <th>Mã - Màu</th>
+                                            <th>Xưởng - Tổ</th>
+                                            <th>S.L Trả</th>
+                                            <th>Đã Nhận Lại</th>
+                                            <th>Còn Thiếu</th>
+                                            <th>Lịch Sử Nhận Từng Lần</th>
+                                            <th>Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in defect_list %}
+                                        <tr>
+                                            <td>{{ item.ngay_tra|date:"d/m/Y" }}</td>
+                                            <td><b>{{ item.ma_hang }}</b><br><small style="color:#64748b;">{{ item.mau }}</small></td>
+                                            <td>Xưởng {{ item.xuong }} - Tổ {{ item.to }}</td>
+                                            <td style="font-weight:700;">{{ item.so_luong_tra }}</td>
+                                            <td style="font-weight:700; color:#16a34a;">{{ item.so_luong_nhan_lai }}</td>
+                                            <td>
+                                                <span class="status-badge status-treo">Còn thiếu {{ item.so_luong_treo }}</span>
+                                            </td>
+                                            <td>
+                                                {% if item.receive_logs.all %}
+                                                    <div style="font-size:0.8rem; line-height:1.4;">
+                                                        {% for log in item.receive_logs.all %}
+                                                            <div>• {{ log.ngay_nhan|date:"d/m/Y" }}: <b>+{{ log.so_luong }}</b> ({{ log.nguoi_nhap.name|default:log.nguoi_nhap.account }}){% if log.ghi_chu %} - <i>{{ log.ghi_chu }}</i>{% endif %}</div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% else %}
+                                                    <span style="color:#94a3b8; font-size:0.8rem;">Chưa nhận lần nào</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn-receive" onclick="openModal('defect', {{ item.id }}, {{ item.so_luong_treo }}, '{{ item.ma_hang }} - {{ item.mau }}')">
+                                                    Nhận Lại
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td colspan="8" style="text-align:center; padding: 24px; color: #15803d; background: #f0fdf4; font-weight: 500;">🎉 Hiện không có hàng trả lỗi nào đang treo (Đã nhận đủ toàn bộ).</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- MOBILE CARDS -->
+                        <div class="mobile-cards-container">
+                            {% for item in defect_list %}
+                            <div class="mobile-card-item">
+                                <div class="mobile-card-header">
+                                    <div>
+                                        <div class="mobile-card-title">{{ item.ma_hang }} — {{ item.mau }}</div>
+                                        <div class="mobile-card-subtitle">Ngày trả: {{ item.ngay_tra|date:"d/m/Y" }}</div>
+                                    </div>
+                                    <span class="status-badge status-treo">Thiếu {{ item.so_luong_treo }}</span>
+                                </div>
+
+                                <div class="mobile-card-details">
+                                    <div>
+                                        <div class="mobile-detail-label">Nơi sửa</div>
+                                        <div class="mobile-detail-val">Xưởng {{ item.xuong }} - Tổ {{ item.to }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="mobile-detail-label">Người trả</div>
+                                        <div class="mobile-detail-val">{{ item.nguoi_nhap.name|default:item.nguoi_nhap.account }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="mobile-detail-label">Số lượng trả</div>
+                                        <div class="mobile-detail-val" style="color:#dc2626; font-size:1rem;">{{ item.so_luong_tra }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="mobile-detail-label">Đã nhận lại</div>
+                                        <div class="mobile-detail-val" style="color:#16a34a; font-size:1rem;">{{ item.so_luong_nhan_lai }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Lịch sử nhận lại từng lần -->
+                                {% if item.receive_logs.all %}
+                                <div class="receipt-history-box">
+                                    <div class="receipt-history-header">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        Lịch sử nhận lại ({{ item.receive_logs.all|length }} lần):
+                                    </div>
+                                    {% for log in item.receive_logs.all %}
+                                    <div class="receipt-history-item">
+                                        <span>{{ log.ngay_nhan|date:"d/m/Y" }} ({{ log.nguoi_nhap.name|default:log.nguoi_nhap.account }}):</span>
+                                        <span class="receipt-qty-badge">+{{ log.so_luong }}</span>
+                                    </div>
+                                    {% if log.ghi_chu %}
+                                    <div style="font-size:0.75rem; color:#64748b; margin-top:-2px; margin-bottom:4px; padding-left:4px;">Ghi chú: {{ log.ghi_chu }}</div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                <button type="button" class="btn-card-receive blue" onclick="openModal('defect', {{ item.id }}, {{ item.so_luong_treo }}, '{{ item.ma_hang }} - {{ item.mau }}')">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="9 11 12 14 22 4"></polyline>
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                                    </svg>
+                                    Nhận Lại Hàng (Còn thiếu {{ item.so_luong_treo }})
+                                </button>
+                            </div>
+                            {% empty %}
+                            <div style="text-align:center; padding: 24px 10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius: 12px; color:#15803d; font-size: 0.95rem; font-weight:500;">
+                                🎉 Tuyệt vời! Hiện không có hàng trả lỗi nào đang treo (Đã nhận đủ).
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+
+
+                    <!-- ========================================== -->
+                    <!-- TAB 2: LẤY HÀNG MẪU -->
+                    <!-- ========================================== -->
+                    <div id="tab-lay-mau" class="tab-content {% if active_tab == 'tab-lay-mau' %}active{% endif %}">
+                        {% if sample_form.errors %}
+                        <div style="background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:0.88rem;">
+                            <b>⚠️ Vui lòng kiểm tra lại:</b>
+                            <ul style="margin:4px 0 0 16px; padding:0;">
+                                {% for field, errors in sample_form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        <form method="post" action="{% url 'finishing_ngoai_le' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="lay_mau">
+                            
+                            <div class="entry-section-header" style="margin-bottom: 12px; font-size: 0.95rem;">
+                                📝 Nhập phiếu lấy hàng mẫu
+                            </div>
+                            
+                            <div class="entry-grid grid-cols-3">
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Ngày lấy (*)</label>
+                                    {{ sample_form.ngay_lay }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Mã hàng (*)</label>
+                                    <select id="id_ma_hang_sample" name="ma_hang" class="entry-select" data-initial="{{ sample_form.ma_hang.value|default:'' }}" required></select>
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Màu sắc (*)</label>
+                                    <select id="id_mau_sample" name="mau" class="entry-select" data-initial="{{ sample_form.mau.value|default:'' }}" required></select>
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Người lấy (*)</label>
+                                    {{ sample_form.nguoi_lay_choice }}
+                                </div>
+                                <div class="entry-form-group" id="group_nguoi_lay_khac" style="display: none;">
+                                    <label class="entry-label">Nhập tên người lấy (*)</label>
+                                    {{ sample_form.nguoi_lay_khac }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label class="entry-label">Số lượng lấy (*)</label>
+                                    {{ sample_form.so_luong_lay }}
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn-entry-submit-mobile" style="background-color: var(--primary-purple); margin-top: 6px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Lưu Phiếu Lấy Mẫu
+                            </button>
+                        </form>
+
+                        <div class="entry-section-header" style="margin-top: 32px; margin-bottom: 14px; font-size: 0.95rem;">
+                            📋 Hàng mẫu đang treo (Chờ nhận lại)
+                        </div>
+
+                        <!-- DESKTOP TABLE -->
+                        <div class="desktop-table-container">
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Ngày lấy</th>
+                                            <th>Mã - Màu</th>
+                                            <th>Người lấy</th>
+                                            <th>S.L Lấy</th>
+                                            <th>Đã Nhận Lại</th>
+                                            <th>Còn Thiếu</th>
+                                            <th>Lịch Sử Nhận Từng Lần</th>
+                                            <th>Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in sample_list %}
+                                        <tr>
+                                            <td>{{ item.ngay_lay|date:"d/m/Y" }}</td>
+                                            <td><b>{{ item.ma_hang }}</b><br><small style="color:#64748b;">{{ item.mau }}</small></td>
+                                            <td><span style="background:#f3e8ff; color:#7e22ce; padding: 3px 8px; border-radius: 6px; font-weight:600; font-size:0.82rem;">{{ item.nguoi_lay }}</span></td>
+                                            <td style="font-weight:700;">{{ item.so_luong_lay }}</td>
+                                            <td style="font-weight:700; color:#16a34a;">{{ item.so_luong_nhan_lai }}</td>
+                                            <td>
+                                                <span class="status-badge status-treo">Còn thiếu {{ item.so_luong_treo }}</span>
+                                            </td>
+                                            <td>
+                                                {% if item.receive_logs.all %}
+                                                    <div style="font-size:0.8rem; line-height:1.4;">
+                                                        {% for log in item.receive_logs.all %}
+                                                            <div>• {{ log.ngay_nhan|date:"d/m/Y" }}: <b>+{{ log.so_luong }}</b> ({{ log.nguoi_nhap.name|default:log.nguoi_nhap.account }}){% if log.ghi_chu %} - <i>{{ log.ghi_chu }}</i>{% endif %}</div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% else %}
+                                                    <span style="color:#94a3b8; font-size:0.8rem;">Chưa nhận lần nào</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn-receive" onclick="openModal('sample', {{ item.id }}, {{ item.so_luong_treo }}, '{{ item.ma_hang }} - {{ item.mau }}')" style="background-color: var(--primary-purple);">
+                                                    Nhận Lại
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td colspan="8" style="text-align:center; padding: 24px; color: #15803d; background: #f0fdf4; font-weight: 500;">🎉 Hiện không có hàng lấy mẫu nào đang treo (Đã nhận đủ toàn bộ).</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- MOBILE CARDS -->
+                        <div class="mobile-cards-container">
+                            {% for item in sample_list %}
+                            <div class="mobile-card-item">
+                                <div class="mobile-card-header">
+                                    <div>
+                                        <div class="mobile-card-title">{{ item.ma_hang }} — {{ item.mau }}</div>
+                                        <div class="mobile-card-subtitle">Ngày lấy: {{ item.ngay_lay|date:"d/m/Y" }}</div>
+                                    </div>
+                                    <span class="status-badge status-treo">Thiếu {{ item.so_luong_treo }}</span>
+                                </div>
+
+                                <div class="mobile-card-details">
+                                    <div>
+                                        <div class="mobile-detail-label">Người lấy mẫu</div>
+                                        <div class="mobile-detail-val" style="color: var(--primary-purple);">{{ item.nguoi_lay }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="mobile-detail-label">Người nhập</div>
+                                        <div class="mobile-detail-val">{{ item.nguoi_nhap.name|default:item.nguoi_nhap.account }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="mobile-detail-label">Số lượng lấy</div>
+                                        <div class="mobile-detail-val" style="color:#dc2626; font-size:1rem;">{{ item.so_luong_lay }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="mobile-detail-label">Đã nhận lại</div>
+                                        <div class="mobile-detail-val" style="color:#16a34a; font-size:1rem;">{{ item.so_luong_nhan_lai }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Lịch sử nhận lại từng lần -->
+                                {% if item.receive_logs.all %}
+                                <div class="receipt-history-box">
+                                    <div class="receipt-history-header">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        Lịch sử nhận lại ({{ item.receive_logs.all|length }} lần):
+                                    </div>
+                                    {% for log in item.receive_logs.all %}
+                                    <div class="receipt-history-item">
+                                        <span>{{ log.ngay_nhan|date:"d/m/Y" }} ({{ log.nguoi_nhap.name|default:log.nguoi_nhap.account }}):</span>
+                                        <span class="receipt-qty-badge">+{{ log.so_luong }}</span>
+                                    </div>
+                                    {% if log.ghi_chu %}
+                                    <div style="font-size:0.75rem; color:#64748b; margin-top:-2px; margin-bottom:4px; padding-left:4px;">Ghi chú: {{ log.ghi_chu }}</div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+
+                                <button type="button" class="btn-card-receive purple" onclick="openModal('sample', {{ item.id }}, {{ item.so_luong_treo }}, '{{ item.ma_hang }} - {{ item.mau }}')">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="9 11 12 14 22 4"></polyline>
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                                    </svg>
+                                    Nhận Lại Mẫu (Còn thiếu {{ item.so_luong_treo }})
+                                </button>
+                            </div>
+                            {% empty %}
+                            <div style="text-align:center; padding: 24px 10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius: 12px; color:#15803d; font-size: 0.95rem; font-weight:500;">
+                                🎉 Tuyệt vời! Hiện không có hàng lấy mẫu nào đang treo (Đã nhận đủ).
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL NHẬN LẠI -->
+    <div id="receiveModal" class="modal">
+        <div class="modal-content">
+            <svg class="close-btn" onclick="closeModal()" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <h3 class="modal-title">Ghi Nhận Lần Nhận Lại</h3>
+            <div id="modalItemInfo" style="font-size: 0.9rem; color: #475569; margin-bottom: 12px; font-weight: 500;"></div>
+            
+            <div class="modal-pending-info">
+                <span>Số lượng đang còn thiếu:</span>
+                <strong id="modalMaxAmount" style="font-size: 1.15rem; color:#dc2626;">0</strong>
+            </div>
+            
+            <form id="receiveForm" method="post" action="">
+                {% csrf_token %}
+                <div style="margin-bottom: 12px;">
+                    <label style="display:block; margin-bottom:4px; font-weight:600; font-size:0.88rem; color:#334155;">Ngày nhận lại (*):</label>
+                    <input type="date" name="ngay_nhan" id="modalInputDate" class="entry-input-date" style="height:44px;" required>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display:block; margin-bottom:4px; font-weight:600; font-size:0.88rem; color:#334155;">Số lượng thực tế nhận đợt này (*):</label>
+                    <input type="number" inputmode="numeric" name="so_luong_nhan_lai" id="modalInputAmount" class="modal-input-large" min="1" required>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display:block; margin-bottom:4px; font-weight:600; font-size:0.88rem; color:#334155;">Ghi chú (tùy chọn):</label>
+                    <input type="text" name="ghi_chu" id="modalInputNote" class="text-input" style="height:42px;" placeholder="Ví dụ: Nhận đợt 1, gửi lại 2 cái lỗi khác...">
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="btn-modal-confirm">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Lưu Lần Nhận Lại Này
+                    </button>
+                    <button type="button" class="btn-modal-cancel" onclick="closeModal()">Hủy Bỏ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script điều khiển tab & modal -->
+    <script>
+        function openTab(evt, tabId) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+                tabcontent[i].classList.remove("active");
+            }
+            tablinks = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            document.getElementById(tabId).style.display = "block";
+            document.getElementById(tabId).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        function openModal(type, rowId, maxAmount, itemInfo) {
+            const modal = document.getElementById('receiveModal');
+            const form = document.getElementById('receiveForm');
+            const maxLabel = document.getElementById('modalMaxAmount');
+            const input = document.getElementById('modalInputAmount');
+            const dateInput = document.getElementById('modalInputDate');
+            const noteInput = document.getElementById('modalInputNote');
+            const infoEl = document.getElementById('modalItemInfo');
+
+            if (itemInfo) {
+                infoEl.textContent = "Sản phẩm: " + itemInfo;
+            } else {
+                infoEl.textContent = "";
+            }
+
+            maxLabel.textContent = maxAmount;
+            input.max = maxAmount;
+            input.value = maxAmount;
+            
+            // Set today's date in YYYY-MM-DD
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+            noteInput.value = '';
+
+            if (type === 'defect') {
+                form.action = `/finishing/tra-hang/nhan-lai/${rowId}/`;
+            } else {
+                form.action = `/finishing/lay-mau/nhan-lai/${rowId}/`;
+            }
+
+            modal.classList.add('active');
+            setTimeout(() => { input.focus(); input.select(); }, 150);
+        }
+
+        function closeModal() {
+            document.getElementById('receiveModal').classList.remove('active');
+        }
+
+        function toggleNguoiLayKhac(val) {
+            const group = document.getElementById('group_nguoi_lay_khac');
+            const input = document.getElementById('id_nguoi_lay_khac');
+            if (!group || !input) return;
+            if (val === 'Khác') {
+                group.style.display = 'block';
+                input.required = true;
+            } else {
+                group.style.display = 'none';
+                input.required = false;
+            }
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('receiveModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+
+    <!-- Init cascade logic & custom fields -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const nguoiLayChoice = document.getElementById('id_nguoi_lay_choice');
+            if (nguoiLayChoice) {
+                toggleNguoiLayKhac(nguoiLayChoice.value);
+            }
+
+            const configDataEl = document.getElementById('config-data');
+            if (!configDataEl) return;
+            const config = JSON.parse(configDataEl.textContent);
+
+            function setupCascade(maId, mauId) {
+                const maSelect = document.getElementById(maId);
+                const mauSelect = document.getElementById(mauId);
+                if(!maSelect || !mauSelect) return;
+
+                const initialMa = maSelect.getAttribute('data-initial');
+                const initialMau = mauSelect.getAttribute('data-initial');
+
+                maSelect.innerHTML = '<option value="">-- Chọn mã hàng --</option>';
+                Object.keys(config).forEach(ma => {
+                    const option = new Option(ma, ma);
+                    if (ma === initialMa) option.selected = true;
+                    maSelect.add(option);
+                });
+
+                function updateMau() {
+                    const selectedMa = maSelect.value;
+                    mauSelect.innerHTML = '<option value="">-- Chọn màu --</option>';
+                    if (selectedMa && config[selectedMa]) {
+                        const colors = Object.keys(config[selectedMa].colors).sort();
+                        colors.forEach(mau => {
+                            const option = new Option(mau, mau);
+                            if (mau === initialMau) option.selected = true;
+                            mauSelect.add(option);
+                        });
+                    }
+                }
+
+                maSelect.addEventListener('change', updateMau);
+                updateMau();
+            }
+
+            setupCascade('id_ma_hang_defect', 'id_mau_defect');
+            setupCascade('id_ma_hang_sample', 'id_mau_sample');
+        });
+    </script>
+</body>
+</html>

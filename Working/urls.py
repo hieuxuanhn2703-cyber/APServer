@@ -40,6 +40,11 @@ urlpatterns = [
     path("finishing/delete/<int:row_id>/", views.finishing_delete_report_view, name="finishing_delete_report"),
     path("finishing/export-excel/", views.finishing_export_excel_view, name="finishing_export_excel"),
     
+    # Quy trình hoàn thiện - Các thao tác ngoại lệ
+    path("finishing/ngoai-le/", views.finishing_ngoai_le_view, name="finishing_ngoai_le"),
+    path("finishing/tra-hang/nhan-lai/<int:row_id>/", views.defect_receive_back_view, name="defect_receive_back"),
+    path("finishing/lay-mau/nhan-lai/<int:row_id>/", views.sample_receive_back_view, name="sample_receive_back"),
+    
     # Quy trình KCS
     path("kcs/", views.kcs_web_view, name="kcs_web"),
     path("kcs/list/", views.kcs_list_view, name="kcs_list"),

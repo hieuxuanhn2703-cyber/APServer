@@ -215,3 +215,131 @@ class CutReport(models.Model):
 
     def __str__(self):
         return f"{self.ma_hang} - {self.mau} ({self.nguoi_nhap})"
+
+
+class DefectReturnReport(models.Model):
+    # Trả hàng lỗi
+    ngay_tra = models.DateField("Ngày trả", default=datetime.date.today)
+    ma_hang = models.CharField("Mã hàng", max_length=255, null=False)
+    mau = models.CharField("Màu", max_length=255, null=False)
+    xuong = models.PositiveIntegerField("Xưởng", default=0)
+    to = models.PositiveIntegerField("Tổ", default=0)
+    
+    so_luong_tra = models.PositiveIntegerField("Số lượng trả", default=0)
+    so_luong_nhan_lai = models.PositiveIntegerField("Số lượng nhận lại", default=0)
+
+    # Người ghi nhận dữ liệu
+    nguoi_nhap = models.ForeignKey(
+        "AppUser",
+        on_delete=models.PROTECT,
+        related_name="defect_return_reports",
+        verbose_name="Người nhập",
+    )
+
+    created_at = models.DateTimeField("Thời gian nhập", auto_now_add=True)
+    updated_at = models.DateTimeField("Cập nhật lần cuối", auto_now=True)
+
+    class Meta:
+        verbose_name = "Báo cáo trả hàng lỗi"
+        verbose_name_plural = "Báo cáo trả hàng lỗi"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.ma_hang} - {self.mau} ({self.so_luong_tra} lỗi)"
+
+    @property
+    def so_luong_treo(self):
+        return max(0, self.so_luong_tra - self.so_luong_nhan_lai)
+
+
+class SampleTakeReport(models.Model):
+    # Lấy hàng mẫu
+    ngay_lay = models.DateField("Ngày lấy", default=datetime.date.today)
+    ma_hang = models.CharField("Mã hàng", max_length=255, null=False)
+    mau = models.CharField("Màu", max_length=255, null=False)
+    
+    # Nguoi lay co the go them, nen de la CharField (tu do nhap)
+    nguoi_lay = models.CharField("Người lấy", max_length=255, default="")
+    
+    so_luong_lay = models.PositiveIntegerField("Số lượng lấy", default=0)
+    so_luong_nhan_lai = models.PositiveIntegerField("Số lượng nhận lại", default=0)
+
+    # Người ghi nhận dữ liệu
+    nguoi_nhap = models.ForeignKey(
+        "AppUser",
+        on_delete=models.PROTECT,
+        related_name="sample_take_reports",
+        verbose_name="Người nhập",
+    )
+
+    created_at = models.DateTimeField("Thời gian nhập", auto_now_add=True)
+    updated_at = models.DateTimeField("Cập nhật lần cuối", auto_now=True)
+
+    class Meta:
+        verbose_name = "Báo cáo lấy mẫu"
+        verbose_name_plural = "Báo cáo lấy mẫu"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.ma_hang} - {self.mau} ({self.so_luong_lay} mẫu)"
+
+    @property
+    def so_luong_treo(self):
+        return max(0, self.so_luong_lay - self.so_luong_nhan_lai)
+
+
+class DefectReceiveLog(models.Model):
+    # Lịch sử từng lần nhận lại hàng lỗi
+    report = models.ForeignKey(
+        DefectReturnReport,
+        on_delete=models.CASCADE,
+        related_name="receive_logs",
+        verbose_name="Phiếu trả lỗi",
+    )
+    ngay_nhan = models.DateField("Ngày nhận lại", default=datetime.date.today)
+    so_luong = models.PositiveIntegerField("Số lượng nhận lại", default=0)
+    nguoi_nhap = models.ForeignKey(
+        "AppUser",
+        on_delete=models.PROTECT,
+        related_name="defect_receive_logs",
+        verbose_name="Người ghi nhận",
+    )
+    ghi_chu = models.CharField("Ghi chú", max_length=255, blank=True, default="")
+    created_at = models.DateTimeField("Thời gian ghi nhận", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Lịch sử nhận lại hàng lỗi"
+        verbose_name_plural = "Lịch sử nhận lại hàng lỗi"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Nhận {self.so_luong} chiếc ({self.report.ma_hang} - {self.report.mau}) ngày {self.ngay_nhan}"
+
+
+class SampleReceiveLog(models.Model):
+    # Lịch sử từng lần nhận lại hàng mẫu
+    report = models.ForeignKey(
+        SampleTakeReport,
+        on_delete=models.CASCADE,
+        related_name="receive_logs",
+        verbose_name="Phiếu lấy mẫu",
+    )
+    ngay_nhan = models.DateField("Ngày nhận lại", default=datetime.date.today)
+    so_luong = models.PositiveIntegerField("Số lượng nhận lại", default=0)
+    nguoi_nhap = models.ForeignKey(
+        "AppUser",
+        on_delete=models.PROTECT,
+        related_name="sample_receive_logs",
+        verbose_name="Người ghi nhận",
+    )
+    ghi_chu = models.CharField("Ghi chú", max_length=255, blank=True, default="")
+    created_at = models.DateTimeField("Thời gian ghi nhận", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Lịch sử nhận lại hàng mẫu"
+        verbose_name_plural = "Lịch sử nhận lại hàng mẫu"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Nhận {self.so_luong} mẫu ({self.report.ma_hang} - {self.report.mau}) ngày {self.ngay_nhan}"
+

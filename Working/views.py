@@ -2,10 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 import openpyxl
 from django.core.exceptions import PermissionDenied
-from django.db.models import Sum
+from django.db.models import Sum, F
 
-from .models import ProcessReport, AppUser, Product, ProductColor, ProductSize, CutReport, FinishingReport, KcsReport
-from .forms import ProcessForm, load_config, CutForm, FinishingForm, KcsForm
+from .models import ProcessReport, AppUser, Product, ProductColor, ProductSize, CutReport, FinishingReport, KcsReport, DefectReturnReport, SampleTakeReport, DefectReceiveLog, SampleReceiveLog
+from .forms import ProcessForm, load_config, CutForm, FinishingForm, KcsForm, DefectReturnForm, SampleTakeForm
 import datetime
 from collections import defaultdict
 from django.utils import timezone
@@ -2269,3 +2269,152 @@ def cut_export_excel_view(request):
     _style_dashboard_excel_sheet(ws)
     wb.save(response)
     return response
+
+# ==========================================
+# THAO TÁC NGOẠI LỆ CHO HOÀN THIỆN
+# ==========================================
+
+def finishing_ngoai_le_view(request):
+    if "user_id" not in request.session:
+        return redirect("login")
+    user = get_object_or_404(AppUser, id=request.session["user_id"])
+    if user.role not in ["HOAN_THIEN", "PREMIUM", "QUAN_LY"]:
+        raise PermissionDenied("Bạn không có quyền truy cập trang này.")
+
+    defect_form = DefectReturnForm()
+    sample_form = SampleTakeForm()
+    active_tab = "tab-tra-hang"
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        
+        if action == "tra_loi":
+            active_tab = "tab-tra-hang"
+            defect_form = DefectReturnForm(request.POST)
+            if defect_form.is_valid():
+                DefectReturnReport.objects.create(
+                    ngay_tra=defect_form.cleaned_data["ngay_tra"],
+                    ma_hang=defect_form.cleaned_data["ma_hang"],
+                    mau=defect_form.cleaned_data["mau"],
+                    xuong=defect_form.cleaned_data["xuong"],
+                    to=defect_form.cleaned_data["to"],
+                    so_luong_tra=defect_form.cleaned_data["so_luong_tra"],
+                    nguoi_nhap=user
+                )
+                return redirect("finishing_ngoai_le")
+                
+        elif action == "lay_mau":
+            active_tab = "tab-lay-mau"
+            sample_form = SampleTakeForm(request.POST)
+            if sample_form.is_valid():
+                SampleTakeReport.objects.create(
+                    ngay_lay=sample_form.cleaned_data["ngay_lay"],
+                    ma_hang=sample_form.cleaned_data["ma_hang"],
+                    mau=sample_form.cleaned_data["mau"],
+                    nguoi_lay=sample_form.cleaned_data["nguoi_lay"],
+                    so_luong_lay=sample_form.cleaned_data["so_luong_lay"],
+                    nguoi_nhap=user
+                )
+                return redirect("finishing_ngoai_le")
+
+    # Chỉ lấy các phiếu còn đang treo (chưa nhận đủ)
+    show_all = request.GET.get("show_all") == "1"
+    
+    defect_qs = DefectReturnReport.objects.prefetch_related("receive_logs__nguoi_nhap")
+    sample_qs = SampleTakeReport.objects.prefetch_related("receive_logs__nguoi_nhap")
+    
+    if not show_all:
+        defect_qs = defect_qs.filter(so_luong_tra__gt=F("so_luong_nhan_lai"))
+        sample_qs = sample_qs.filter(so_luong_lay__gt=F("so_luong_nhan_lai"))
+        
+    defect_list = defect_qs.order_by("-created_at")
+    sample_list = sample_qs.order_by("-created_at")
+
+    context = {
+        "user": user,
+        "active_tab": active_tab,
+        "defect_form": defect_form,
+        "sample_form": sample_form,
+        "defect_list": defect_list,
+        "sample_list": sample_list,
+        "config": load_config()
+    }
+    return render(request, "hoan_thien_ngoai_le.html", context)
+
+
+def defect_receive_back_view(request, row_id):
+    if "user_id" not in request.session:
+        return redirect("login")
+    user = get_object_or_404(AppUser, id=request.session["user_id"])
+    if user.role not in ["HOAN_THIEN", "PREMIUM", "QUAN_LY"]:
+        raise PermissionDenied("Bạn không có quyền thao tác.")
+
+    if request.method == "POST":
+        report = get_object_or_404(DefectReturnReport, id=row_id)
+        nhan_lai = int(request.POST.get("so_luong_nhan_lai", 0))
+        ngay_nhan_str = request.POST.get("ngay_nhan")
+        ghi_chu = request.POST.get("ghi_chu", "").strip()
+        
+        ngay_nhan = datetime.date.today()
+        if ngay_nhan_str:
+            try:
+                ngay_nhan = datetime.date.fromisoformat(ngay_nhan_str)
+            except Exception:
+                pass
+
+        if nhan_lai > 0:
+            so_treo = report.so_luong_tra - report.so_luong_nhan_lai
+            if nhan_lai > so_treo:
+                nhan_lai = so_treo
+            
+            DefectReceiveLog.objects.create(
+                report=report,
+                ngay_nhan=ngay_nhan,
+                so_luong=nhan_lai,
+                nguoi_nhap=user,
+                ghi_chu=ghi_chu
+            )
+            
+            report.so_luong_nhan_lai += nhan_lai
+            report.save()
+            
+    return redirect("finishing_ngoai_le")
+
+
+def sample_receive_back_view(request, row_id):
+    if "user_id" not in request.session:
+        return redirect("login")
+    user = get_object_or_404(AppUser, id=request.session["user_id"])
+    if user.role not in ["HOAN_THIEN", "PREMIUM", "QUAN_LY"]:
+        raise PermissionDenied("Bạn không có quyền thao tác.")
+
+    if request.method == "POST":
+        report = get_object_or_404(SampleTakeReport, id=row_id)
+        nhan_lai = int(request.POST.get("so_luong_nhan_lai", 0))
+        ngay_nhan_str = request.POST.get("ngay_nhan")
+        ghi_chu = request.POST.get("ghi_chu", "").strip()
+        
+        ngay_nhan = datetime.date.today()
+        if ngay_nhan_str:
+            try:
+                ngay_nhan = datetime.date.fromisoformat(ngay_nhan_str)
+            except Exception:
+                pass
+
+        if nhan_lai > 0:
+            so_treo = report.so_luong_lay - report.so_luong_nhan_lai
+            if nhan_lai > so_treo:
+                nhan_lai = so_treo
+            
+            SampleReceiveLog.objects.create(
+                report=report,
+                ngay_nhan=ngay_nhan,
+                so_luong=nhan_lai,
+                nguoi_nhap=user,
+                ghi_chu=ghi_chu
+            )
+            
+            report.so_luong_nhan_lai += nhan_lai
+            report.save()
+            
+    return redirect("finishing_ngoai_le")
