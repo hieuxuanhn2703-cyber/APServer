@@ -74,9 +74,11 @@ Hệ thống có **4 luồng dữ liệu độc lập** với giao diện nhập
 ### 3.4 Quy trình Hoàn Thiện & Nghiệp Vụ Ngoại Lệ (`/finishing/`)
 - Ghi nhận sản lượng: **Thẻ bài, Gấp hàng, Treo/Đóng thùng**.
 - **Quản lý ngoại lệ (`/finishing/ngoai-le/`)**:
-  - Ghi nhận Trả hàng lỗi / sửa và Lấy mẫu.
+  - Dành cho: **Hoàn thiện (`HOAN_THIEN`)**, **Quản lý (`QUAN_LY`)** và **Cao cấp / Admin (`PREMIUM`)**.
+  - Ghi nhận: Trả hàng lỗi / sửa về tổ sản xuất và Lấy mẫu (cho KCS, Kỹ thuật, Lãnh đạo, Khách hàng...).
   - **Theo dõi nhận lại từng lần**: Ghi nhận số lượng nhận trả từng đợt (`/finishing/tra-hang/nhan-lai/<id>/`, `/finishing/lay-mau/nhan-lai/<id>/`).
-  - Tự động ẩn các đơn đã nhận đủ số lượng, chỉ hiển thị các đơn đang còn thiếu.
+  - **Lọc thông minh**: Hỗ trợ chuyển đổi nhanh giữa chế độ "Đang treo (chờ nhận lại)" và "Xem tất cả lịch sử".
+  - **Truy cập nhanh**: Tích hợp trực tiếp trên **Sidebar menu** (mục Báo Cáo Tổng Hợp & Quy Trình Sản Xuất) và nút truy cập kèm badge đếm số lượng đang treo trên **Bảng Tổng Hợp Hoàn Thiện** (`/dashboard/finishing/`).
 
 ---
 

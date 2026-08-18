@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.http import HttpResponse
 import openpyxl
 from django.core.exceptions import PermissionDenied
@@ -1760,6 +1761,10 @@ def dashboard_finishing_view(request):
 
     has_filter = bool(fin_start_date or fin_end_date or fin_filter_nguoi_nhap or fin_filter_ma_hang or fin_filter_mau)
 
+    pending_defect_count = DefectReturnReport.objects.filter(so_luong_tra__gt=F("so_luong_nhan_lai")).count()
+    pending_sample_count = SampleTakeReport.objects.filter(so_luong_lay__gt=F("so_luong_nhan_lai")).count()
+    total_pending_ngoai_le = pending_defect_count + pending_sample_count
+
     return render(request, "dashboard_finishing.html", {
         "active_tab": "finishing",
         "fin_headers": FINISHING_HEADERS,
@@ -1769,6 +1774,9 @@ def dashboard_finishing_view(request):
         "fin_end_date": fin_end_date or '',
         "has_filter": has_filter,
         "user": current_user,
+        "pending_defect_count": pending_defect_count,
+        "pending_sample_count": pending_sample_count,
+        "total_pending_ngoai_le": total_pending_ngoai_le,
     })
 
 # Alias for backward compatibility
@@ -2278,18 +2286,22 @@ def cut_export_excel_view(request):
 # THAO TÁC NGOẠI LỆ CHO HOÀN THIỆN
 # ==========================================
 
+@login_required
 def finishing_ngoai_le_view(request):
-    if "user_id" not in request.session:
-        return redirect("login")
-    user = get_object_or_404(AppUser, id=request.session["user_id"])
-    if user.role not in ["HOAN_THIEN", "PREMIUM", "QUAN_LY"]:
+    user = get_current_user(request)
+    if not user or user.role not in ["HOAN_THIEN", "PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Bạn không có quyền truy cập trang này.")
 
     defect_form = DefectReturnForm()
     sample_form = SampleTakeForm()
-    active_tab = "tab-tra-hang"
+    
+    # Nhận active_tab từ POST hoặc GET (mặc định tab-tra-hang)
+    active_tab = request.POST.get("active_tab") or request.GET.get("tab") or "tab-tra-hang"
+    show_all = request.GET.get("show_all") == "1" or request.POST.get("show_all") == "1"
 
     if request.method == "POST":
+        if user.role != "HOAN_THIEN":
+            raise PermissionDenied("Chỉ vai trò Hoàn thiện mới có quyền tạo phiếu mới.")
         action = request.POST.get("action")
         
         if action == "tra_loi":
@@ -2305,7 +2317,8 @@ def finishing_ngoai_le_view(request):
                     so_luong_tra=defect_form.cleaned_data["so_luong_tra"],
                     nguoi_nhap=user
                 )
-                return redirect("finishing_ngoai_le")
+                redirect_url = reverse("finishing_ngoai_le") + f"?tab=tab-tra-hang{'&show_all=1' if show_all else ''}"
+                return redirect(redirect_url)
                 
         elif action == "lay_mau":
             active_tab = "tab-lay-mau"
@@ -2319,13 +2332,12 @@ def finishing_ngoai_le_view(request):
                     so_luong_lay=sample_form.cleaned_data["so_luong_lay"],
                     nguoi_nhap=user
                 )
-                return redirect("finishing_ngoai_le")
+                redirect_url = reverse("finishing_ngoai_le") + f"?tab=tab-lay-mau{'&show_all=1' if show_all else ''}"
+                return redirect(redirect_url)
 
-    # Chỉ lấy các phiếu còn đang treo (chưa nhận đủ)
-    show_all = request.GET.get("show_all") == "1"
-    
-    defect_qs = DefectReturnReport.objects.prefetch_related("receive_logs__nguoi_nhap")
-    sample_qs = SampleTakeReport.objects.prefetch_related("receive_logs__nguoi_nhap")
+    # Kiểm tra cờ xem tất cả hay chỉ xem đang treo (tối ưu select_related và prefetch_related)
+    defect_qs = DefectReturnReport.objects.select_related("nguoi_nhap").prefetch_related("receive_logs__nguoi_nhap")
+    sample_qs = SampleTakeReport.objects.select_related("nguoi_nhap").prefetch_related("receive_logs__nguoi_nhap")
     
     if not show_all:
         defect_qs = defect_qs.filter(so_luong_tra__gt=F("so_luong_nhan_lai"))
@@ -2334,6 +2346,9 @@ def finishing_ngoai_le_view(request):
     defect_list = defect_qs.order_by("-created_at")
     sample_list = sample_qs.order_by("-created_at")
 
+    pending_defect_count = DefectReturnReport.objects.filter(so_luong_tra__gt=F("so_luong_nhan_lai")).count()
+    pending_sample_count = SampleTakeReport.objects.filter(so_luong_lay__gt=F("so_luong_nhan_lai")).count()
+
     context = {
         "user": user,
         "active_tab": active_tab,
@@ -2341,21 +2356,28 @@ def finishing_ngoai_le_view(request):
         "sample_form": sample_form,
         "defect_list": defect_list,
         "sample_list": sample_list,
-        "config": load_config()
+        "config": load_config(),
+        "show_all": show_all,
+        "pending_defect_count": pending_defect_count,
+        "pending_sample_count": pending_sample_count,
     }
     return render(request, "hoan_thien_ngoai_le.html", context)
 
 
+@login_required
 def defect_receive_back_view(request, row_id):
-    if "user_id" not in request.session:
-        return redirect("login")
-    user = get_object_or_404(AppUser, id=request.session["user_id"])
-    if user.role not in ["HOAN_THIEN", "PREMIUM", "QUAN_LY"]:
+    user = get_current_user(request)
+    if not user or user.role not in ["HOAN_THIEN", "PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Bạn không có quyền thao tác.")
+
+    show_all = request.GET.get("show_all") == "1" or request.POST.get("show_all") == "1"
 
     if request.method == "POST":
         report = get_object_or_404(DefectReturnReport, id=row_id)
-        nhan_lai = int(request.POST.get("so_luong_nhan_lai", 0))
+        try:
+            nhan_lai = int(request.POST.get("so_luong_nhan_lai", 0))
+        except (ValueError, TypeError):
+            nhan_lai = 0
         ngay_nhan_str = request.POST.get("ngay_nhan")
         ghi_chu = request.POST.get("ghi_chu", "").strip()
         
@@ -2382,19 +2404,24 @@ def defect_receive_back_view(request, row_id):
             report.so_luong_nhan_lai += nhan_lai
             report.save()
             
-    return redirect("finishing_ngoai_le")
+    redirect_url = reverse("finishing_ngoai_le") + f"?tab=tab-tra-hang{'&show_all=1' if show_all else ''}"
+    return redirect(redirect_url)
 
 
+@login_required
 def sample_receive_back_view(request, row_id):
-    if "user_id" not in request.session:
-        return redirect("login")
-    user = get_object_or_404(AppUser, id=request.session["user_id"])
-    if user.role not in ["HOAN_THIEN", "PREMIUM", "QUAN_LY"]:
+    user = get_current_user(request)
+    if not user or user.role not in ["HOAN_THIEN", "PREMIUM", "QUAN_LY"]:
         raise PermissionDenied("Bạn không có quyền thao tác.")
+
+    show_all = request.GET.get("show_all") == "1" or request.POST.get("show_all") == "1"
 
     if request.method == "POST":
         report = get_object_or_404(SampleTakeReport, id=row_id)
-        nhan_lai = int(request.POST.get("so_luong_nhan_lai", 0))
+        try:
+            nhan_lai = int(request.POST.get("so_luong_nhan_lai", 0))
+        except (ValueError, TypeError):
+            nhan_lai = 0
         ngay_nhan_str = request.POST.get("ngay_nhan")
         ghi_chu = request.POST.get("ghi_chu", "").strip()
         
@@ -2421,4 +2448,5 @@ def sample_receive_back_view(request, row_id):
             report.so_luong_nhan_lai += nhan_lai
             report.save()
             
-    return redirect("finishing_ngoai_le")
+    redirect_url = reverse("finishing_ngoai_le") + f"?tab=tab-lay-mau{'&show_all=1' if show_all else ''}"
+    return redirect(redirect_url)
