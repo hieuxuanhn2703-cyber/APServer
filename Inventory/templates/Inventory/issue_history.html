@@ -1,0 +1,260 @@
+{% load static %}
+{% load dashboard_tags %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Lịch Sử Xuất Nguyên Vật Liệu</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Lịch Sử Xuất Nguyên Vật Liệu</h1>
+                        <span class="header-subtitle">Lưu lại tất cả những lần xuất nguyên vật liệu khỏi kho (20 dòng/trang)</span>
+                    </div>
+                </div>
+                <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="app-content">
+                <div class="dash-card fade-in">
+                    <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h3 class="dash-card-title" style="display: flex; align-items: center; gap: 8px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                Danh Sách Các Lần Xuất Nguyên Vật Liệu
+                            </h3>
+                        </div>
+
+                        <!-- Bộ lọc ngày và xóa lọc -->
+                        <form method="GET" class="dash-filter-form" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0;">
+                            {% for val in excel_filter_config.issue.columns.1.selected %}
+                                <input type="hidden" name="issue_filter_ma_hang" value="{{ val }}">
+                            {% endfor %}
+                            {% for val in excel_filter_config.issue.columns.2.selected %}
+                                <input type="hidden" name="issue_filter_mau" value="{{ val }}">
+                            {% endfor %}
+                            {% for val in excel_filter_config.issue.columns.3.selected %}
+                                <input type="hidden" name="issue_filter_ten_vat_tu" value="{{ val }}">
+                            {% endfor %}
+                            {% for val in excel_filter_config.issue.columns.6.selected %}
+                                <input type="hidden" name="issue_filter_nguoi_nhan" value="{{ val }}">
+                            {% endfor %}
+                            {% for val in excel_filter_config.issue.columns.7.selected %}
+                                <input type="hidden" name="issue_filter_nguoi_xuat" value="{{ val }}">
+                            {% endfor %}
+
+                            <div class="dash-date-group" style="display: flex; align-items: center; gap: 4px;">
+                                <label for="issue_start_date" style="font-size: 0.84rem; font-weight: 600; color: #475569;">Từ:</label>
+                                <input type="date" id="issue_start_date" name="issue_start_date" value="{{ issue_start_date }}" class="dash-date-input" style="padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.82rem;">
+                            </div>
+                            <div class="dash-date-group" style="display: flex; align-items: center; gap: 4px;">
+                                <label for="issue_end_date" style="font-size: 0.84rem; font-weight: 600; color: #475569;">Đến:</label>
+                                <input type="date" id="issue_end_date" name="issue_end_date" value="{{ issue_end_date }}" class="dash-date-input" style="padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.82rem;">
+                            </div>
+                            <div class="dash-filter-actions" style="display: flex; align-items: center; gap: 6px;">
+                                <button type="submit" class="btn-dash-filter" style="padding: 6px 14px; background: #8b5cf6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 600;">Lọc</button>
+                                {% if has_filter %}
+                                <a href="{% url 'inventory_issue_history' %}" class="btn-dash-clear" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; border-radius: 6px; text-decoration: none; font-size: 0.82rem; font-weight: 600;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    Xóa tất cả lọc
+                                </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Mobile scroll hint -->
+                    <div class="mobile-scroll-hint">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        <span>Vuốt ngang bảng để xem đầy đủ chi tiết các lần xuất</span>
+                    </div>
+
+                    <!-- Bảng dữ liệu xuất -->
+                    <div class="table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table data-table-type="issue" style="width: 100%; border-collapse: collapse; min-width: 900px;">
+                            <thead>
+                                <tr style="background: #f8fafc; color: #1e293b; font-size: 0.88rem;">
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Ngày xuất</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">
+                                        <div class="th-filter-wrap">
+                                            <span>Mã hàng</span>
+                                            <button type="button" class="excel-filter-btn" data-col="1" data-title="Mã hàng" title="Lọc Mã hàng">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">
+                                        <div class="th-filter-wrap">
+                                            <span>Màu</span>
+                                            <button type="button" class="excel-filter-btn" data-col="2" data-title="Màu" title="Lọc Màu">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">
+                                        <div class="th-filter-wrap">
+                                            <span>Tên vật tư</span>
+                                            <button type="button" class="excel-filter-btn" data-col="3" data-title="Tên vật tư" title="Lọc Tên vật tư">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background: #fef08a; color: #854d0e;">SL kiện/cây</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background: #fef08a; color: #854d0e;">SL mét</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; font-weight: 700; color: #1e293b;">
+                                        <div class="th-filter-wrap">
+                                            <span>Người nhận</span>
+                                            <button type="button" class="excel-filter-btn" data-col="6" data-title="Người nhận" title="Lọc Người nhận">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">
+                                        <div class="th-filter-wrap">
+                                            <span>Người xuất</span>
+                                            <button type="button" class="excel-filter-btn" data-col="7" data-title="Người xuất" title="Lọc Người xuất">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
+                                    {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; width: 120px;">Thao tác</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for issue in page_obj %}
+                                <tr style="transition: background 0.15s ease;">
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">{{ issue.ngay_xuat|date:"d/m/Y" }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600;">{{ issue.ma_hang }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">{{ issue.mau }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 500;">{{ issue.ten_vat_tu }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #b45309;">{{ issue.so_luong_kien }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #b45309;">{{ issue.so_luong_met|floatformat:2 }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #1e293b;">{{ issue.nguoi_nhan.name|default:issue.nguoi_nhan.account|default:"--" }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #64748b;">{{ issue.nguoi_xuat.name|default:"--" }}</td>
+                                    {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">
+                                        <div style="display: inline-flex; gap: 4px;">
+                                            <a href="{% url 'inventory_issue_edit' issue.id %}" style="color: #2563eb; padding: 5px 10px; background: #eff6ff; border-radius: 6px; text-decoration: none; font-size: 0.82rem; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center;">Sửa</a>
+                                            <form action="{% url 'inventory_issue_delete' issue.id %}" method="post" style="margin: 0; display: inline;" onsubmit="return confirm('Bạn có chắc muốn xóa lần xuất này?');">
+                                                {% csrf_token %}
+                                                <button type="submit" style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 600; min-height: 32px;">Xóa</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="{% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}9{% else %}8{% endif %}" style="border: 1px solid #cbd5e1; padding: 24px; text-align: center; color: #64748b;">Chưa có dữ liệu xuất nguyên vật liệu nào.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Card View (Hiển thị thẻ trên điện thoại) -->
+                    <div class="card-list">
+                        {% for issue in page_obj %}
+                        <div class="data-card" style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.04); margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap; gap: 6px;">
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span style="font-size: 0.84rem; color: #475569; font-weight: 600;">📅 {{ issue.ngay_xuat|date:"d/m/Y" }}</span>
+                                    <span style="background: #fef08a; color: #854d0e; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.84rem;">{{ issue.ma_hang }}</span>
+                                    <span style="background: #f8fafc; color: #475569; padding: 2px 8px; border-radius: 6px; font-size: 0.82rem; border: 1px solid #e2e8f0; font-weight: 600;">{{ issue.mau }}</span>
+                                </div>
+                                {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}
+                                <div style="display: flex; gap: 6px;">
+                                    <a href="{% url 'inventory_issue_edit' issue.id %}" style="color: #2563eb; padding: 4px 10px; background: #eff6ff; border-radius: 6px; text-decoration: none; font-size: 0.82rem; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center;">Sửa</a>
+                                    <form action="{% url 'inventory_issue_delete' issue.id %}" method="post" style="margin: 0; display: inline;" onsubmit="return confirm('Bạn có chắc muốn xóa lần xuất này?');">
+                                        {% csrf_token %}
+                                        <button type="submit" style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 600; min-height: 32px;">Xóa</button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div style="margin-bottom: 8px;">
+                                <strong style="color: #1e293b; font-size: 0.95rem;">{{ issue.ten_vat_tu }}</strong>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px;">
+                                <div>
+                                    <span style="font-size: 0.8rem; color: #92400e; font-weight: 600;">SL Xuất:</span>
+                                    <strong style="font-size: 0.96rem; color: #b45309; margin-left: 4px;">{{ issue.so_luong_kien }}</strong> <span style="font-size: 0.78rem; color: #92400e;">kiện</span>
+                                    <span style="color: #fcd34d; margin: 0 6px;">|</span>
+                                    <strong style="font-size: 0.96rem; color: #b45309;">{{ issue.so_luong_met|floatformat:2 }}</strong> <span style="font-size: 0.78rem; color: #92400e;">mét</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #475569; padding-top: 4px; flex-wrap: wrap; gap: 4px;">
+                                <div>📥 Người nhận: <strong style="color: #1e293b;">{{ issue.nguoi_nhan.name|default:issue.nguoi_nhan.account|default:"--" }}</strong></div>
+                                <div>📤 Người xuất: <span>{{ issue.nguoi_xuat.name|default:"--" }}</span></div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div style="text-align: center; padding: 24px; color: #64748b; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            Chưa có dữ liệu xuất nguyên vật liệu nào.
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Phân trang 20 dòng / trang -->
+                    {% if page_obj.paginator.num_pages > 1 %}
+                    <div class="pagination-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-top: 1px solid #e2e8f0; flex-wrap: wrap; gap: 10px;">
+                        <span style="font-size: 0.85rem; color: #64748b;">
+                            Trang <strong>{{ page_obj.number }}</strong> / <strong>{{ page_obj.paginator.num_pages }}</strong> (Tổng <strong>{{ page_obj.paginator.count }}</strong> lần xuất)
+                        </span>
+                        <div class="pagination-links" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                            {% if page_obj.has_previous %}
+                                <a href="{% url_replace page=1 %}" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #334155; font-size: 0.85rem; background: #ffffff;">&laquo; Đầu</a>
+                                <a href="{% url_replace page=page_obj.previous_page_number %}" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #334155; font-size: 0.85rem; background: #ffffff;">&lsaquo; Trước</a>
+                            {% endif %}
+                            
+                            <span style="padding: 6px 14px; background: #8b5cf6; color: white; border-radius: 6px; font-weight: 700; font-size: 0.85rem;">{{ page_obj.number }}</span>
+                            
+                            {% if page_obj.has_next %}
+                                <a href="{% url_replace page=page_obj.next_page_number %}" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #334155; font-size: 0.85rem; background: #ffffff;">Sau &rsaquo;</a>
+                                <a href="{% url_replace page=page_obj.paginator.num_pages %}" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #334155; font-size: 0.85rem; background: #ffffff;">Cuối &raquo;</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    {{ excel_filter_config|json_script:"excel-filter-config" }}
+    <script src="{% static 'working/js/excel_filter.js' %}"></script>
+</body>
+</html>

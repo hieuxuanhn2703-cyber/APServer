@@ -486,26 +486,31 @@ tbody tr:hover td {
 .card-list { display: none; }
 
 @media (max-width: 900px) {
-    .table-wrapper { display: none; }
-    .card-list { display: flex; flex-direction: column; gap: var(--space-md); }
+    .card-list { display: flex !important; flex-direction: column; gap: 12px; }
     
+    /* When card-list is present, hide the wide table on mobile */
+    .dash-card:has(.card-list) .table-wrapper,
+    .dash-card:has(.card-list) .mobile-scroll-hint {
+        display: none !important;
+    }
+
     .data-card {
         background: var(--bg-card);
         border-radius: var(--border-radius);
-        padding: var(--space-md);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--border-color);
+        padding: 14px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        border: 1.5px solid #cbd5e1;
     }
     
     .data-card .card-row {
         display: flex;
         justify-content: space-between;
-        padding: 4px 0;
-        border-bottom: 1px dashed var(--border-color);
+        padding: 6px 0;
+        border-bottom: 1px dashed #e2e8f0;
     }
     .data-card .card-row:last-child { border-bottom: none; }
-    .data-card .label { color: var(--secondary); font-size: 0.875rem; font-weight: 500; }
-    .data-card .value { color: var(--text-main); font-size: 0.875rem; font-weight: 600; text-align: right; }
+    .data-card .label { color: #64748b; font-size: 0.85rem; font-weight: 500; }
+    .data-card .value { color: #0f172a; font-size: 0.88rem; font-weight: 600; text-align: right; }
 }
 
 /* Utilities */
@@ -1688,6 +1693,177 @@ input[type="number"],
     box-shadow: 0 3px 8px rgba(16, 185, 129, 0.35);
     transform: translateY(-1px);
 }
+
+/* ==========================================================================
+   MOBILE RESPONSIVE ENHANCEMENTS FOR INVENTORY & DASHBOARDS
+   ========================================================================== */
+
+.mobile-scroll-hint {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: #0369a1;
+    background: #f0f9ff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #bae6fd;
+    margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+    .mobile-scroll-hint {
+        display: flex;
+    }
+
+    /* Container & Layout adjustments */
+    .app-main {
+        padding: 0;
+    }
+    
+    .app-header {
+        padding: 12px 14px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .header-title-box .header-title {
+        font-size: 1.15rem;
+    }
+
+    .header-title-box .header-subtitle {
+        font-size: 0.78rem;
+    }
+
+    .dash-card-header {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+
+    .dash-card-title {
+        font-size: 1rem;
+    }
+
+    /* Filter Form on Mobile */
+    .dash-filter-form {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 10px !important;
+    }
+
+    .dash-filter-form .dash-date-group {
+        display: flex !important;
+        width: 100% !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+
+    .dash-filter-form .dash-date-group label {
+        min-width: 45px;
+        font-size: 0.88rem;
+    }
+
+    .dash-filter-form .dash-date-input {
+        flex: 1;
+        width: 100%;
+        min-height: 42px;
+        font-size: 16px !important;
+        border-radius: 8px;
+    }
+
+    .dash-filter-actions {
+        display: flex !important;
+        width: 100% !important;
+        gap: 8px !important;
+    }
+
+    .dash-filter-actions .btn-dash-filter {
+        flex: 1;
+        min-height: 42px;
+        font-size: 0.92rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .dash-filter-actions .btn-dash-clear {
+        flex: 1;
+        min-height: 42px;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Table Wrappers with Smooth Touch Scrolling */
+    .table-wrapper {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 8px;
+    }
+
+    /* Form and Edit Container on Mobile */
+    .form-container, .entry-card-body {
+        padding: 16px 12px !important;
+    }
+
+    .form-container .row {
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    .form-group input,
+    .form-group select,
+    .entry-form-group input,
+    .entry-form-group select {
+        min-height: 46px !important;
+        font-size: 16px !important;
+    }
+
+    .btn-row {
+        flex-direction: column-reverse !important;
+        gap: 10px !important;
+    }
+
+    .btn-row .cancel-btn,
+    .btn-row button,
+    .btn-entry-submit {
+        width: 100% !important;
+        min-height: 46px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1rem !important;
+    }
+
+    .entry-actions-row {
+        margin-top: 16px !important;
+    }
+
+    /* Pagination controls on Mobile */
+    .pagination-bar {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 10px !important;
+    }
+
+    .pagination-links {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .pagination-links a,
+    .pagination-links span {
+        padding: 8px 14px !important;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+    }
+}
+
 
 
 

@@ -1,0 +1,146 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghi Phiếu Xuất Kho</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- App Topbar Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Phiếu Xuất Nguyên Liệu</h1>
+                        <span class="header-subtitle">Xuất kho nguyên liệu, vật tư</span>
+                    </div>
+                </div>
+                <div class="header-right" style="display:flex; align-items:center; gap:8px;">
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- App Content Body -->
+            <main class="app-content">
+                <div class="entry-card fade-in">
+                    <div class="entry-card-header">
+                        <div class="entry-card-title">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Biểu Mẫu Ghi Nhận Xuất Kho
+                        </div>
+                    </div>
+
+                    <div class="entry-card-body">
+                        {% if success %}
+                        <div class="entry-success-card">
+                            <div class="entry-success-header">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                <span>Đã lưu phiếu xuất thành công!</span>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {{ config|json_script:"config-data" }}
+
+                        <form method="post">
+                            {% csrf_token %}
+
+                            <div class="entry-section-header">1. Ngày xuất</div>
+                            <div class="entry-grid grid-cols-1" style="max-width: 300px;">
+                                <div class="entry-form-group">
+                                    <label for="id_ngay_xuat" class="entry-label">Ngày xuất (*)</label>
+                                    {{ form.ngay_xuat }}
+                                    {{ form.ngay_xuat.errors }}
+                                </div>
+                            </div>
+
+                            <div class="entry-section-header">2. Mã hàng, Màu sắc & Vật tư</div>
+                            <div class="entry-grid grid-cols-3">
+                                <div class="entry-form-group">
+                                    <label for="id_ma_hang" class="entry-label">Mã hàng (*)</label>
+                                    <select id="id_ma_hang" name="ma_hang" class="entry-select" data-initial="{{ form.ma_hang.value|default:'' }}"></select>
+                                    {{ form.ma_hang.errors }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_mau" class="entry-label">Màu sắc (*)</label>
+                                    <select id="id_mau" name="mau" class="entry-select" data-initial="{{ form.mau.value|default:'' }}"></select>
+                                    {{ form.mau.errors }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_ten_vat_tu" class="entry-label">Tên vật tư (*)</label>
+                                    {{ form.ten_vat_tu }}
+                                    {{ form.ten_vat_tu.errors }}
+                                </div>
+                                <div style="display: none;">
+                                    <select id="id_co" name="co" data-initial="N/A"></select>
+                                </div>
+                            </div>
+
+                            <div class="entry-section-header">3. Số lượng xuất & Người nhận</div>
+                            <div class="entry-grid grid-cols-3">
+                                <div class="entry-form-group">
+                                    <label for="id_so_luong_kien" class="entry-label">Số lượng kiện/cây</label>
+                                    {{ form.so_luong_kien }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_so_luong_met" class="entry-label">Số lượng mét</label>
+                                    {{ form.so_luong_met }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_nguoi_nhan" class="entry-label">Người nhận (*)</label>
+                                    {{ form.nguoi_nhan }}
+                                    {{ form.nguoi_nhan.errors }}
+                                </div>
+                            </div>
+
+                            <div class="entry-actions-row">
+                                <button type="submit" class="btn-entry-submit" style="background-color: #f59e0b;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    Lưu Phiếu Xuất
+                                </button>
+                                <a href="{% url 'inventory_summary' %}" class="btn-entry-list">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                    </svg>
+                                    Về Bảng Tổng Hợp
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="{% static 'working/js/cascade_select.js' %}"></script>
+    <script src="{% static 'working/js/numeric_input.js' %}"></script>
+</body>
+</html>

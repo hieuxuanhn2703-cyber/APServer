@@ -1,0 +1,277 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh Sách Nguyên Liệu Nhập Kho</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Danh Sách Nguyên Liệu Kho</h1>
+                        <span class="header-subtitle">Theo dõi các lô nguyên liệu đã nhập và thực hiện xuất kho</span>
+                    </div>
+                </div>
+                <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
+                    <a href="{% url 'inventory_summary' %}" class="btn-entry-list" style="min-height: 36px; padding: 4px 12px; font-size: 0.84rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-color: #3b82f6; color: #2563eb; background: #eff6ff;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Bảng Tổng Hợp Cân Đối
+                    </a>
+                    <a href="{% url 'inventory_receipt_web' %}" class="btn-entry-submit" style="padding: 7px 14px; font-size: 0.85rem; background: #10b981; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        + Nhập Nguyên Liệu
+                    </a>
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="app-content">
+                <div class="dash-card fade-in">
+                    <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h3 class="dash-card-title" style="display: flex; align-items: center; gap: 8px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                                </svg>
+                                Bảng Nguyên Liệu Đã Nhập Kho
+                            </h3>
+                            <span style="font-size: 0.85rem; color: #64748b;">(Bấm nút <strong>"Xuất"</strong> trên từng hàng để xuất nguyên liệu cho các bộ phận)</span>
+                        </div>
+
+                        <!-- Ô tìm kiếm -->
+                        <form method="get" style="display: flex; gap: 8px; margin: 0;">
+                            <input type="text" name="q" value="{{ search_q }}" placeholder="Tìm mã hàng, màu, vật tư..." style="padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; min-width: 220px;">
+                            <button type="submit" style="padding: 7px 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Tìm</button>
+                            {% if search_q %}
+                            <a href="{% url 'inventory_material_list' %}" style="padding: 7px 10px; background: #e2e8f0; color: #475569; border-radius: 8px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center;">Xóa lọc</a>
+                            {% endif %}
+                        </form>
+                    </div>
+
+                    <!-- Bảng dữ liệu chính -->
+                    <div class="table-wrapper" style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 950px;">
+                            <thead>
+                                <tr style="background: #f1f5f9; color: #1e293b; font-size: 0.88rem;">
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Ngày nhập</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Mã hàng</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Màu</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Tên vật tư</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background-color: #e0f2fe; color: #0369a1;">SL kiện/cây</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background-color: #e0f2fe; color: #0369a1;">SL mét</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Người nhập</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background-color: #dcfce3; color: #15803d;">Còn lại SL kiện/cây</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background-color: #dcfce3; color: #15803d;">Còn lại SL mét</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; width: 140px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in receipt_data %}
+                                <tr style="transition: background-color 0.15s ease;">
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">{{ r.ngay_nhap|date:"d/m/Y" }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700;">{{ r.ma_hang }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">{{ r.mau }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 500;">{{ r.ten_vat_tu }}</td>
+                                    
+                                    <!-- SL Nhập -->
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #0284c7;">{{ r.so_luong_kien }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: #0284c7;">{{ r.so_luong_met|floatformat:2 }}</td>
+                                    
+                                    <!-- Người nhập -->
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #475569;">{{ r.nguoi_nhap }}</td>
+                                    
+                                    <!-- Còn lại -->
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: {% if r.con_lai_kien <= 0 and r.con_lai_met <= 0 %}#94a3b8{% else %}#15803d{% endif %};">
+                                        {{ r.con_lai_kien }}
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: {% if r.con_lai_kien <= 0 and r.con_lai_met <= 0 %}#94a3b8{% else %}#15803d{% endif %};">
+                                        {{ r.con_lai_met|floatformat:2 }}
+                                    </td>
+                                    
+                                    <!-- Thao tác: Nút Xuất -->
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center;">
+                                        <div style="display: inline-flex; align-items: center; gap: 6px;">
+                                            {% if r.con_lai_kien > 0 or r.con_lai_met > 0 %}
+                                            <button type="button" 
+                                                    class="btn-trigger-quick-issue"
+                                                    data-receipt-id="{{ r.id }}"
+                                                    data-ma-hang="{{ r.ma_hang }}"
+                                                    data-mau="{{ r.mau }}"
+                                                    data-ten-vat-tu="{{ r.ten_vat_tu }}"
+                                                    data-con-lai-kien="{{ r.con_lai_kien }}"
+                                                    data-con-lai-met="{{ r.con_lai_met|floatformat:2 }}"
+                                                    data-ngay-nhap="{{ r.ngay_nhap|date:'d/m/Y' }}"
+                                                    onclick="handleOpenMaterialIssueModal(this)"
+                                                    style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(245,158,11,0.25);">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                                </svg>
+                                                Xuất
+                                            </button>
+                                            {% else %}
+                                            <span style="font-size: 0.78rem; font-weight: 600; color: #94a3b8; padding: 4px 6px; background: #f1f5f9; border-radius: 4px;">Đã hết</span>
+                                            {% endif %}
+
+                                            <!-- Sửa/Xóa phiếu nhập (cho người tạo hoặc admin) -->
+                                            {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' or user.id == r.nguoi_nhap_id %}
+                                            <a href="{% url 'inventory_receipt_edit' r.id %}" title="Sửa phiếu nhập" style="color: #64748b; padding: 2px 4px; text-decoration: none;">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M12 20h9"></path>
+                                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                                </svg>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" style="border: 1px solid #cbd5e1; padding: 24px; text-align: center; color: #64748b;">Chưa có dữ liệu nguyên liệu nào được nhập kho.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Nhập Thông Tin Xuất Nguyên Liệu Từ Lô -->
+    <div id="materialIssueModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.65); z-index: 999999; backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+        <div style="background: #ffffff; width: 92%; max-width: 480px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid #e2e8f0; animation: modalPop 0.2s ease-out;">
+            <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 14px 20px; color: white; display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                    Xuất Nguyên Liệu
+                </div>
+                <button type="button" onclick="handleCloseMaterialIssueModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; line-height: 1; opacity: 0.85;">&times;</button>
+            </div>
+
+            <form action="{% url 'inventory_quick_issue' %}" method="post" style="padding: 20px;">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <input type="hidden" id="mat_modal_receipt_id" name="receipt_id">
+                <input type="hidden" id="mat_modal_ma_hang" name="ma_hang">
+                <input type="hidden" id="mat_modal_mau" name="mau">
+                <input type="hidden" id="mat_modal_ten_vat_tu" name="ten_vat_tu">
+
+                <!-- Card Thông tin lô vật tư -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
+                    <div style="font-size: 0.95rem; font-weight: 700; color: #1e293b;" id="mat_modal_title">AT2 - Tím</div>
+                    <div style="font-size: 0.85rem; color: #475569; margin-top: 2px;" id="mat_modal_material">Vật tư: Vải chính (Nhập ngày: 19/08/2026)</div>
+                    <div style="font-size: 0.85rem; color: #15803d; font-weight: 600; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1;" id="mat_modal_stock">Còn lại trong lô: 0 kiện | 0.00 mét</div>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Ngày xuất (*)</label>
+                    <input type="date" name="ngay_xuat" id="mat_modal_ngay" required style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; box-sizing: border-box;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Số lượng kiện/cây xuất</label>
+                        <input type="number" name="so_luong_kien" id="mat_modal_kien" min="0" value="0" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-weight: 600; text-align: center; box-sizing: border-box;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Số lượng mét xuất</label>
+                        <input type="number" step="0.01" min="0" name="so_luong_met" id="mat_modal_met" value="0" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-weight: 600; text-align: center; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Người nhận (*)</label>
+                    <input type="text" name="nguoi_nhan" id="mat_modal_receiver" placeholder="Ví dụ: Tổ Cắt, Anh Nam, Chị Hoa..." required style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; box-sizing: border-box;">
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="handleCloseMaterialIssueModal()" style="padding: 9px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; font-weight: 600; cursor: pointer;">Hủy</button>
+                    <button type="submit" style="padding: 9px 20px; border-radius: 8px; border: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(245,158,11,0.35);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Xác nhận xuất kho
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function handleOpenMaterialIssueModal(btn) {
+        const receiptId = btn.dataset.receiptId;
+        const maHang = btn.dataset.maHang;
+        const mau = btn.dataset.mau;
+        const tenVatTu = btn.dataset.tenVatTu;
+        const conLaiKien = btn.dataset.conLaiKien;
+        const conLaiMet = btn.dataset.conLaiMet;
+        const ngayNhap = btn.dataset.ngayNhap;
+
+        document.getElementById('mat_modal_receipt_id').value = receiptId || '';
+        document.getElementById('mat_modal_ma_hang').value = maHang;
+        document.getElementById('mat_modal_mau').value = mau;
+        document.getElementById('mat_modal_ten_vat_tu').value = tenVatTu;
+        
+        document.getElementById('mat_modal_title').textContent = `${maHang} - Màu: ${mau}`;
+        document.getElementById('mat_modal_material').textContent = `Vật tư: ${tenVatTu} (Nhập ngày: ${ngayNhap})`;
+        document.getElementById('mat_modal_stock').textContent = `Còn lại trong lô: ${conLaiKien} kiện/cây | ${conLaiMet} mét`;
+        
+        // Set today's date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('mat_modal_ngay').value = today;
+        document.getElementById('mat_modal_kien').value = '0';
+        document.getElementById('mat_modal_met').value = '0';
+        document.getElementById('mat_modal_receiver').value = '';
+
+        const modal = document.getElementById('materialIssueModal');
+        modal.style.display = 'flex';
+    }
+
+    function handleCloseMaterialIssueModal() {
+        const modal = document.getElementById('materialIssueModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('materialIssueModal');
+        if (e.target === modal) {
+            handleCloseMaterialIssueModal();
+        }
+    });
+    </script>
+</body>
+</html>

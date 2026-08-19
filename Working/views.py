@@ -228,6 +228,8 @@ def login_view(request):
                 return redirect("kcs_web")
             elif current_user.role == "NHA_CAT":
                 return redirect("cut_web")
+            elif current_user.role == "KHO":
+                return redirect("inventory_summary")
             return redirect("web")
 
     error = None
@@ -253,6 +255,10 @@ def login_view(request):
                     return redirect("kcs_web")
                 elif user.role == "NHA_CAT":
                     return redirect("cut_web")
+                elif user.role == "NHA_CAT":
+                    return redirect("cut_web")
+                elif user.role == "KHO":
+                    return redirect("inventory_summary")
                 return redirect("web")
         else:
             error = "Tài khoản hoặc mật khẩu không đúng."
@@ -310,8 +316,8 @@ def register_view(request):
             error = "Mật khẩu nhập lại không khớp."
         elif AppUser.objects.filter(account=account).exists():
             error = "Tài khoản này đã tồn tại, vui lòng chọn tên khác."
-        elif role not in ["BASIC", "HOAN_THIEN", "KCS", "NHA_CAT", "KE_TOAN", "QUAN_LY"]:
-            error = "Vai trò không hợp lệ."
+        elif role not in ["BASIC", "HOAN_THIEN", "KCS", "NHA_CAT", "KHO", "QUAN_LY"]:
+            error = "Bộ phận không hợp lệ."
         else:
             AppUser.objects.create(
                 name=name,
@@ -349,7 +355,7 @@ def toggle_account_view(request, user_id):
         action = request.POST.get("action")
         if action == "change_role":
             new_role = request.POST.get("new_role")
-            if new_role in ["BASIC", "HOAN_THIEN", "KCS", "NHA_CAT", "KE_TOAN", "QUAN_LY", "PREMIUM"]:
+            if new_role in ["BASIC", "HOAN_THIEN", "KCS", "NHA_CAT", "KE_TOAN", "QUAN_LY", "PREMIUM", "KHO"]:
                 user_to_toggle.role = new_role
                 user_to_toggle.save()
         elif action == "toggle_status" or not action:
@@ -1695,8 +1701,8 @@ def dashboard_kcs_view(request):
 
 @login_required
 def dashboard_finishing_view(request):
-    current_user = get_current_user(request)
-    if current_user.role not in ['PREMIUM', 'QUAN_LY', 'KE_TOAN']:
+    user = get_current_user(request)
+    if user.role not in ['PREMIUM', 'QUAN_LY', 'KE_TOAN']:
         raise PermissionDenied("Chỉ quản trị viên cấp cao mới có quyền truy cập trang Dashboard.")
 
     fin_start_date = request.GET.get('fin_start_date')
@@ -1765,7 +1771,14 @@ def dashboard_finishing_view(request):
     pending_sample_count = SampleTakeReport.objects.filter(so_luong_lay__gt=F("so_luong_nhan_lai")).count()
     total_pending_ngoai_le = pending_defect_count + pending_sample_count
 
-    return render(request, "dashboard_finishing.html", {
+    from Inventory.views import get_inventory_summary_data
+    # Dữ liệu Bảng tổng hợp Kho
+    inventory_summary_data = get_inventory_summary_data()
+
+    context = {
+        "user": user,
+        "users": AppUser.objects.all(),
+        "inventory_summary_data": inventory_summary_data,
         "active_tab": "finishing",
         "fin_headers": FINISHING_HEADERS,
         "page_fin": page_fin,
@@ -1773,11 +1786,65 @@ def dashboard_finishing_view(request):
         "fin_start_date": fin_start_date or '',
         "fin_end_date": fin_end_date or '',
         "has_filter": has_filter,
-        "user": current_user,
         "pending_defect_count": pending_defect_count,
         "pending_sample_count": pending_sample_count,
         "total_pending_ngoai_le": total_pending_ngoai_le,
-    })
+    }
+    return render(request, "dashboard_finishing.html", context)
+
+@login_required
+def dashboard_kho_view(request):
+    user = get_current_user(request)
+    if user.role not in ['PREMIUM', 'QUAN_LY', 'KE_TOAN', 'KHO']:
+        raise PermissionDenied("Chỉ quản trị viên cấp cao hoặc kho mới có quyền truy cập trang Dashboard Kho.")
+
+    summary_filter_ma_hang = [v for v in request.GET.getlist('summary_filter_ma_hang') if v]
+    summary_filter_mau = [v for v in request.GET.getlist('summary_filter_mau') if v]
+    summary_filter_ten_vat_tu = [v for v in request.GET.getlist('summary_filter_ten_vat_tu') if v]
+
+    from Inventory.models import MaterialReceipt, MaterialIssue
+    r_ma = list(MaterialReceipt.objects.values_list('ma_hang', flat=True).distinct())
+    i_ma = list(MaterialIssue.objects.values_list('ma_hang', flat=True).distinct())
+    opt_ma_hang = sorted(list(set(r_ma + i_ma)))
+
+    r_mau = list(MaterialReceipt.objects.values_list('mau', flat=True).distinct())
+    i_mau = list(MaterialIssue.objects.values_list('mau', flat=True).distinct())
+    opt_mau = sorted(list(set(r_mau + i_mau)))
+
+    r_vt = list(MaterialReceipt.objects.values_list('ten_vat_tu', flat=True).distinct())
+    i_vt = list(MaterialIssue.objects.values_list('ten_vat_tu', flat=True).distinct())
+    opt_ten_vat_tu = sorted(list(set(r_vt + i_vt)))
+
+    from Inventory.views import get_inventory_summary_data
+    inventory_summary_data = get_inventory_summary_data(
+        filter_ma_hang=summary_filter_ma_hang,
+        filter_mau=summary_filter_mau,
+        filter_ten_vat_tu=summary_filter_ten_vat_tu
+    )
+
+    excel_filter_config = {
+        "summary": {
+            "page_param": "page",
+            "columns": {
+                "0": {"param": "summary_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(opt_ma_hang), "selected": summary_filter_ma_hang},
+                "1": {"param": "summary_filter_mau", "title": "Màu", "options": _clean_options(opt_mau), "selected": summary_filter_mau},
+                "2": {"param": "summary_filter_ten_vat_tu", "title": "Tên vật tư", "options": _clean_options(opt_ten_vat_tu), "selected": summary_filter_ten_vat_tu},
+            }
+        }
+    }
+
+    has_filter = bool(summary_filter_ma_hang or summary_filter_mau or summary_filter_ten_vat_tu)
+
+    context = {
+        "user": user,
+        "users": AppUser.objects.all(),
+        "active_users": AppUser.objects.filter(is_approved=True).order_by('name'),
+        "inventory_summary_data": inventory_summary_data,
+        "excel_filter_config": excel_filter_config,
+        "has_filter": has_filter,
+        "active_tab": "kho",
+    }
+    return render(request, "dashboard_kho.html", context)
 
 # Alias for backward compatibility
 premium_dashboard_view = dashboard_cut_view
@@ -2349,8 +2416,14 @@ def finishing_ngoai_le_view(request):
     pending_defect_count = DefectReturnReport.objects.filter(so_luong_tra__gt=F("so_luong_nhan_lai")).count()
     pending_sample_count = SampleTakeReport.objects.filter(so_luong_lay__gt=F("so_luong_nhan_lai")).count()
 
+    from Inventory.views import get_inventory_summary_data
+    # Dữ liệu Bảng tổng hợp Kho
+    inventory_summary_data = get_inventory_summary_data()
+
     context = {
         "user": user,
+        "users": AppUser.objects.all(),
+        "inventory_summary_data": inventory_summary_data,
         "active_tab": active_tab,
         "defect_form": defect_form,
         "sample_form": sample_form,

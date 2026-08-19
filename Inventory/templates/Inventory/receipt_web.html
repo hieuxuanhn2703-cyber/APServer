@@ -1,0 +1,131 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biểu Mẫu Ghi Nhận Nhập Kho</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- App Topbar Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Biểu Mẫu Ghi Nhận Nhập Kho</h1>
+                        <span class="header-subtitle">Nhập kho nguyên liệu, vật tư mới vào hệ thống</span>
+                    </div>
+                </div>
+                <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- App Content Body -->
+            <main class="app-content">
+                <div class="entry-card fade-in">
+                    <div class="entry-card-header">
+                        <div class="entry-card-title">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Biểu Mẫu Ghi Nhận Nhập Kho
+                        </div>
+                    </div>
+
+                    <div class="entry-card-body">
+                        {{ config|json_script:"config-data" }}
+
+                        <form method="post">
+                            {% csrf_token %}
+
+                            <div class="entry-section-header">1. Ngày nhập</div>
+                            <div class="entry-grid grid-cols-1" style="max-width: 300px;">
+                                <div class="entry-form-group">
+                                    <label for="id_ngay_nhap" class="entry-label">Ngày nhập (*)</label>
+                                    {{ form.ngay_nhap }}
+                                    {{ form.ngay_nhap.errors }}
+                                </div>
+                            </div>
+
+                            <div class="entry-section-header">2. Mã hàng, Màu sắc & Vật tư</div>
+                            <div class="entry-grid grid-cols-3">
+                                <div class="entry-form-group">
+                                    <label for="id_ma_hang" class="entry-label">Mã hàng (*)</label>
+                                    <select id="id_ma_hang" name="ma_hang" class="entry-select" data-initial="{{ form.ma_hang.value|default:'' }}"></select>
+                                    {{ form.ma_hang.errors }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_mau" class="entry-label">Màu sắc (*)</label>
+                                    <select id="id_mau" name="mau" class="entry-select" data-initial="{{ form.mau.value|default:'' }}"></select>
+                                    {{ form.mau.errors }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_ten_vat_tu" class="entry-label">Tên vật tư (*)</label>
+                                    {{ form.ten_vat_tu }}
+                                    {{ form.ten_vat_tu.errors }}
+                                </div>
+                                <div style="display: none;">
+                                    <select id="id_co" name="co" data-initial="N/A"></select>
+                                </div>
+                            </div>
+
+                            <div class="entry-section-header">3. Số lượng nhập</div>
+                            <div class="entry-grid grid-cols-2" style="max-width: 600px;">
+                                <div class="entry-form-group">
+                                    <label for="id_so_luong_kien" class="entry-label">Số lượng kiện/cây (*)</label>
+                                    {{ form.so_luong_kien }}
+                                    {{ form.so_luong_kien.errors }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_so_luong_met" class="entry-label">Số lượng mét (*)</label>
+                                    {{ form.so_luong_met }}
+                                    {{ form.so_luong_met.errors }}
+                                </div>
+                            </div>
+
+                            <div class="entry-actions-row">
+                                <button type="submit" class="btn-entry-submit" style="background-color: #10b981;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    Lưu Phiếu Nhập
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Cascade Select Script -->
+    <script src="{% static 'working/js/cascade_select.js' %}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            initCascadeSelect({
+                productSelectId: 'id_ma_hang',
+                colorSelectId: 'id_mau',
+                sizeSelectId: 'id_co',
+                configScriptId: 'config-data'
+            });
+        });
+    </script>
+</body>
+</html>

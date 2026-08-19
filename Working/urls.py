@@ -14,6 +14,7 @@ urlpatterns = [
     path("dashboard/prod/", views.dashboard_prod_view, name="dashboard_prod"),
     path("dashboard/kcs/", views.dashboard_kcs_view, name="dashboard_kcs"),
     path("dashboard/finishing/", views.dashboard_finishing_view, name="dashboard_finishing"),
+    path("dashboard/kho/", views.dashboard_kho_view, name="dashboard_kho"),
     
     path("config/", views.config_list_view, name="config_list"),
     path("config/product/add/", views.config_add_product_view, name="config_add_product"),

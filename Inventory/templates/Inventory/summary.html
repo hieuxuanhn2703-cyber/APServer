@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Tổng Hợp Tất Cả Nguyên Vật Liệu Trong Kho</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Tổng Hợp Tồn Kho Nguyên Vật Liệu</h1>
+                        <span class="header-subtitle">Theo dõi cân đối thực nhận - thực xuất - tồn kho và thao tác xuất kho</span>
+                    </div>
+                </div>
+                <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="app-content">
+                <!-- Bảng Cân Đối Tổng Hợp -->
+                <div class="dash-card fade-in">
+                    <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <h3 class="dash-card-title" style="display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                            </svg>
+                            Bảng Tổng Hợp Tất Cả Nguyên Vật Liệu Trong Kho
+                        </h3>
+
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            {% if has_filter %}
+                            <a href="{% url 'inventory_summary' %}" class="btn-dash-clear" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; border-radius: 6px; text-decoration: none; font-size: 0.82rem; font-weight: 600;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                                Xóa tất cả lọc
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% include 'Inventory/summary_table.html' %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    {{ excel_filter_config|json_script:"excel-filter-config" }}
+    <script src="{% static 'working/js/excel_filter.js' %}"></script>
+</body>
+</html>

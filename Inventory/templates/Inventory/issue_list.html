@@ -1,0 +1,133 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh Sách Xuất Nguyên Liệu</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+
+        <div class="app-main">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Danh Sách Xuất Nguyên Liệu</h1>
+                        <span class="header-subtitle">Theo dõi lịch sử và chi tiết các lần xuất kho nguyên liệu</span>
+                    </div>
+                </div>
+                <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
+                    <a href="{% url 'inventory_summary' %}" class="btn-entry-list" style="min-height: 36px; padding: 4px 12px; font-size: 0.84rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-color: #3b82f6; color: #2563eb; background: #eff6ff;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Bảng Cân Đối Kho
+                    </a>
+                    <a href="{% url 'inventory_material_list' %}" class="btn-entry-list" style="min-height: 36px; padding: 4px 12px; font-size: 0.84rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border-color: #f59e0b; color: #b45309; background: #fffbeb;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                        DS Nhập (Thực Hiện Xuất)
+                    </a>
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="app-content">
+                <div class="dash-card fade-in">
+                    <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h3 class="dash-card-title" style="display: flex; align-items: center; gap: 8px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                Lịch Sử Xuất Kho Nguyên Liệu
+                            </h3>
+                        </div>
+
+                        <!-- Ô tìm kiếm -->
+                        <form method="get" style="display: flex; gap: 8px; margin: 0;">
+                            <input type="text" name="q" value="{{ search_q }}" placeholder="Tìm mã hàng, người nhận, vật tư..." style="padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; min-width: 240px;">
+                            <button type="submit" style="padding: 7px 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Tìm</button>
+                            {% if search_q %}
+                            <a href="{% url 'inventory_issue_list' %}" style="padding: 7px 10px; background: #e2e8f0; color: #475569; border-radius: 8px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center;">Xóa lọc</a>
+                            {% endif %}
+                        </form>
+                    </div>
+
+                    <!-- Bảng dữ liệu xuất -->
+                    <div class="table-wrapper" style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
+                            <thead>
+                                <tr style="background: #f8fafc; color: #1e293b; font-size: 0.88rem;">
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Ngày xuất</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Mã hàng</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Màu</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Tên vật tư</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background-color: #fef08a; color: #854d0e;">SL kiện/cây</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background-color: #fef08a; color: #854d0e;">SL mét</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; font-weight: 700; color: #1e293b;">Người nhận</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">Người xuất</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; width: 120px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for issue in issues %}
+                                <tr style="transition: background-color 0.15s ease;">
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">{{ issue.ngay_xuat|date:"d/m/Y" }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700;">{{ issue.ma_hang }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">{{ issue.mau }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 500;">{{ issue.ten_vat_tu }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #b45309;">{{ issue.so_luong_kien }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: #b45309;">{{ issue.so_luong_met|floatformat:2 }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #1e293b;">{{ issue.nguoi_nhan }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #64748b;">{{ issue.nguoi_xuat.name|default:"--" }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">
+                                        {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}
+                                        <div style="display: inline-flex; gap: 4px;">
+                                            <a href="{% url 'inventory_issue_edit' issue.id %}" style="color: #2563eb; padding: 3px 8px; background: #eff6ff; border-radius: 4px; text-decoration: none; font-size: 0.8rem; font-weight: 600;">Sửa</a>
+                                            <form action="{% url 'inventory_issue_delete' issue.id %}" method="post" style="margin: 0; display: inline;" onsubmit="return confirm('Bạn có chắc muốn xóa lần xuất này?');">
+                                                {% csrf_token %}
+                                                <button type="submit" style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">Xóa</button>
+                                            </form>
+                                        </div>
+                                        {% else %}
+                                        <span style="font-size: 0.8rem; color: #94a3b8;">--</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" style="border: 1px solid #cbd5e1; padding: 24px; text-align: center; color: #64748b;">Chưa có dữ liệu xuất nguyên liệu nào.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

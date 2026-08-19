@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chỉnh sửa Phiếu Nhập Kho</title>
+    <link rel="icon" type="image/png" href="{% static 'working/images/logo_anphat.png' %}">
+    <link rel="stylesheet" href="{% static 'working/css/premium.css' %}">
+</head>
+<body>
+    <div class="app-layout">
+        {% include 'sidebar.html' %}
+        <div class="app-main">
+            <header class="app-header">
+                <div class="header-left">
+                    <button type="button" class="mobile-toggle-btn" onclick="toggleSidebar()" aria-label="Mở menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="header-title-box">
+                        <h1 class="header-title">Chỉnh sửa Phiếu Nhập Kho</h1>
+                        <span class="header-subtitle">Cập nhật thông tin phiếu nhập nguyên liệu</span>
+                    </div>
+                </div>
+                <div class="header-right" style="display:flex; align-items:center; gap:8px;">
+                    <a href="{% url 'logout' %}" class="btn-entry-list" style="min-height: 34px; padding: 4px 10px; font-size: 0.82rem; color: #dc2626; border-color: #fca5a5; background: #fef2f2; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;" title="Đăng xuất">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        Đăng xuất
+                    </a>
+                    <div class="header-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Trực tuyến</span>
+                    </div>
+                </div>
+            </header>
+            <main class="app-content">
+                <div class="form-container fade-in">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="form-group">
+                                <label for="id_ngay_nhap">Ngày nhập (*)</label>
+                                {{ form.ngay_nhap }}
+                                {{ form.ngay_nhap.errors }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group">
+                                <label for="id_ma_hang">Mã hàng (*)</label>
+                                <select id="id_ma_hang" name="ma_hang" data-initial="{{ form.ma_hang.value|default:'' }}"></select>
+                                {{ form.ma_hang.errors }}
+                            </div>
+                            <div class="form-group">
+                                <label for="id_mau">Màu (*)</label>
+                                <select id="id_mau" name="mau" data-initial="{{ form.mau.value|default:'' }}"></select>
+                                {{ form.mau.errors }}
+                            </div>
+                            <div class="form-group">
+                                <label for="id_ten_vat_tu">Tên vật tư (*)</label>
+                                {{ form.ten_vat_tu }}
+                                {{ form.ten_vat_tu.errors }}
+                            </div>
+                            <div style="display: none;">
+                                <select id="id_co" name="co">
+                                    <option value="N/A" selected>N/A</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group">
+                                <label for="id_so_luong_kien">Số lượng kiện/cây</label>
+                                {{ form.so_luong_kien }}
+                            </div>
+                            <div class="form-group">
+                                <label for="id_so_luong_met">Số lượng mét</label>
+                                {{ form.so_luong_met }}
+                            </div>
+                        </div>
+
+                        <div class="btn-row">
+                            <a class="cancel-btn" href="javascript:history.back()">Hủy</a>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; background-color: #10b981;">Cập nhật</button>
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+    {{ config|json_script:"config-data" }}
+    <script src="{% static 'working/js/cascade_select.js' %}"></script>
+    <script src="{% static 'working/js/numeric_input.js' %}"></script>
+</body>
+</html>

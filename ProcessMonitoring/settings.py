@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'Working.apps.WorkingConfig',
     'Accounting.apps.AccountingConfig',
+    'Inventory.apps.InventoryConfig',
 ]
 
 MIDDLEWARE = [
