@@ -31,6 +31,14 @@
                         </button>
                     </div>
                 </th>
+                <th rowspan="2" style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background-color: #f1f5f9; font-weight: 700; color: #1e293b;">
+                    <div class="th-filter-wrap">
+                        <span>Đơn vị</span>
+                        <button type="button" class="excel-filter-btn" data-col="3" data-title="Đơn vị" title="Lọc Đơn vị">
+                            <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                        </button>
+                    </div>
+                </th>
                 <th colspan="2" style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; background-color: #e0f2fe; color: #0369a1; font-weight: 700;">Thực nhận</th>
                 <th colspan="2" style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; background-color: #fef08a; color: #854d0e; font-weight: 700;">Thực xuất</th>
                 <th colspan="2" style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; background-color: #dcfce3; color: #15803d; font-weight: 700;">Còn lại</th>
@@ -38,11 +46,11 @@
             </tr>
             <tr>
                 <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; background-color: #e0f2fe; font-size: 0.85rem; color: #0369a1;">SL kiện/cây</th>
-                <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; background-color: #e0f2fe; font-size: 0.85rem; color: #0369a1;">SL mét</th>
+                <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; background-color: #e0f2fe; font-size: 0.85rem; color: #0369a1;">Số lượng</th>
                 <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; background-color: #fef08a; font-size: 0.85rem; color: #854d0e;">SL kiện/cây</th>
-                <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; background-color: #fef08a; font-size: 0.85rem; color: #854d0e;">SL mét</th>
+                <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; background-color: #fef08a; font-size: 0.85rem; color: #854d0e;">Số lượng</th>
                 <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; background-color: #dcfce3; font-size: 0.85rem; color: #15803d;">SL kiện/cây</th>
-                <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; background-color: #dcfce3; font-size: 0.85rem; color: #15803d;">SL mét</th>
+                <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; background-color: #dcfce3; font-size: 0.85rem; color: #15803d;">Số lượng</th>
             </tr>
         </thead>
         <tbody>
@@ -51,21 +59,38 @@
                 <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600;">{{ row.ma_hang }}</td>
                 <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">{{ row.mau }}</td>
                 <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 500;">{{ row.ten_vat_tu }}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: #6366f1;">{{ row.don_vi }}</td>
                 
                 <!-- Thực nhận -->
                 <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #0284c7;">{{ row.nhap_kien|default_if_none:0 }}</td>
-                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #0284c7;">{{ row.nhap_met|floatformat:2|default_if_none:0 }}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #0284c7;">
+                    {% if row.don_vi == 'chiếc' %}
+                        {{ row.nhap_so_luong|floatformat:0|default_if_none:0 }}
+                    {% else %}
+                        {{ row.nhap_so_luong|floatformat:2|default_if_none:0 }}
+                    {% endif %}
+                </td>
                 
                 <!-- Thực xuất -->
                 <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #b45309;">{{ row.xuat_kien|default_if_none:0 }}</td>
-                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #b45309;">{{ row.xuat_met|floatformat:2|default_if_none:0 }}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #b45309;">
+                    {% if row.don_vi == 'chiếc' %}
+                        {{ row.xuat_so_luong|floatformat:0|default_if_none:0 }}
+                    {% else %}
+                        {{ row.xuat_so_luong|floatformat:2|default_if_none:0 }}
+                    {% endif %}
+                </td>
                 
                 <!-- Còn lại -->
                 <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: {% if row.con_lai_kien <= 0 %}#dc2626{% else %}#15803d{% endif %};">
                     {{ row.con_lai_kien|default_if_none:0 }}
                 </td>
-                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: {% if row.con_lai_met <= 0 %}#dc2626{% else %}#15803d{% endif %};">
-                    {{ row.con_lai_met|floatformat:2|default_if_none:0 }}
+                <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: {% if row.con_lai_so_luong <= 0 %}#dc2626{% else %}#15803d{% endif %};">
+                    {% if row.don_vi == 'chiếc' %}
+                        {{ row.con_lai_so_luong|floatformat:0|default_if_none:0 }}
+                    {% else %}
+                        {{ row.con_lai_so_luong|floatformat:2|default_if_none:0 }}
+                    {% endif %}
                 </td>
                 
                 <!-- Cột Thao Tác (Nút Xuất - Nếu hết nguyên vật liệu thì ẩn đi) -->
@@ -76,8 +101,9 @@
                             data-ma-hang="{{ row.ma_hang }}"
                             data-mau="{{ row.mau }}"
                             data-ten-vat-tu="{{ row.ten_vat_tu }}"
+                            data-don-vi="{{ row.don_vi }}"
                             data-con-lai-kien="{{ row.con_lai_kien }}"
-                            data-con-lai-met="{{ row.con_lai_met|floatformat:2 }}"
+                            data-con-lai-so-luong="{{ row.con_lai_so_luong }}"
                             onclick="handleOpenIssueModal(this)"
                             style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(245,158,11,0.25); transition: all 0.2s ease;">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -93,7 +119,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="10" style="border: 1px solid #cbd5e1; padding: 24px; text-align: center; color: #64748b;">Chưa có dữ liệu kho. Vui lòng nhập nguyên liệu trước.</td>
+                <td colspan="11" style="border: 1px solid #cbd5e1; padding: 24px; text-align: center; color: #64748b;">Chưa có dữ liệu kho. Vui lòng nhập nguyên liệu trước.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -109,6 +135,7 @@
                 <div style="font-weight: 700; font-size: 1rem; color: #1e293b; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                     <span style="background: #eff6ff; color: #2563eb; padding: 3px 8px; border-radius: 6px; font-size: 0.88rem; font-weight: 700;">{{ row.ma_hang }}</span>
                     <span style="background: #f8fafc; color: #475569; padding: 3px 8px; border-radius: 6px; font-size: 0.85rem; border: 1px solid #e2e8f0; font-weight: 600;">{{ row.mau }}</span>
+                    <span style="background: #eef2ff; color: #4338ca; padding: 2px 7px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">{{ row.don_vi }}</span>
                 </div>
                 <div style="font-weight: 600; font-size: 0.94rem; color: #334155; margin-top: 5px;">
                     {{ row.ten_vat_tu }}
@@ -121,8 +148,9 @@
                         data-ma-hang="{{ row.ma_hang }}"
                         data-mau="{{ row.mau }}"
                         data-ten-vat-tu="{{ row.ten_vat_tu }}"
+                        data-don-vi="{{ row.don_vi }}"
                         data-con-lai-kien="{{ row.con_lai_kien }}"
-                        data-con-lai-met="{{ row.con_lai_met|floatformat:2 }}"
+                        data-con-lai-so-luong="{{ row.con_lai_so_luong }}"
                         onclick="handleOpenIssueModal(this)"
                         style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(245,158,11,0.25);">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -139,19 +167,40 @@
             <div style="border-right: 1px solid #e2e8f0; padding-right: 4px;">
                 <div style="font-size: 0.74rem; color: #0284c7; font-weight: 700; text-transform: uppercase;">Thực nhận</div>
                 <div style="font-size: 0.95rem; font-weight: 700; color: #0284c7; margin-top: 2px;">{{ row.nhap_kien|default:0 }} <span style="font-size: 0.72rem; font-weight: 500;">k</span></div>
-                <div style="font-size: 0.82rem; color: #0369a1; font-weight: 500;">{{ row.nhap_met|floatformat:2|default:0 }} <span style="font-size: 0.72rem;">m</span></div>
+                <div style="font-size: 0.82rem; color: #0369a1; font-weight: 500;">
+                    {% if row.don_vi == 'chiếc' %}
+                        {{ row.nhap_so_luong|floatformat:0|default:0 }}
+                    {% else %}
+                        {{ row.nhap_so_luong|floatformat:2|default:0 }}
+                    {% endif %}
+                    <span style="font-size: 0.72rem;">{{ row.don_vi }}</span>
+                </div>
             </div>
             <!-- Thực xuất -->
             <div style="border-right: 1px solid #e2e8f0; padding-right: 4px;">
                 <div style="font-size: 0.74rem; color: #b45309; font-weight: 700; text-transform: uppercase;">Thực xuất</div>
                 <div style="font-size: 0.95rem; font-weight: 700; color: #b45309; margin-top: 2px;">{{ row.xuat_kien|default:0 }} <span style="font-size: 0.72rem; font-weight: 500;">k</span></div>
-                <div style="font-size: 0.82rem; color: #854d0e; font-weight: 500;">{{ row.xuat_met|floatformat:2|default:0 }} <span style="font-size: 0.72rem;">m</span></div>
+                <div style="font-size: 0.82rem; color: #854d0e; font-weight: 500;">
+                    {% if row.don_vi == 'chiếc' %}
+                        {{ row.xuat_so_luong|floatformat:0|default:0 }}
+                    {% else %}
+                        {{ row.xuat_so_luong|floatformat:2|default:0 }}
+                    {% endif %}
+                    <span style="font-size: 0.72rem;">{{ row.don_vi }}</span>
+                </div>
             </div>
             <!-- Còn lại -->
             <div>
                 <div style="font-size: 0.74rem; color: {% if row.con_lai_kien <= 0 %}#dc2626{% else %}#15803d{% endif %}; font-weight: 700; text-transform: uppercase;">Còn lại</div>
                 <div style="font-size: 0.98rem; font-weight: 800; color: {% if row.con_lai_kien <= 0 %}#dc2626{% else %}#15803d{% endif %}; margin-top: 2px;">{{ row.con_lai_kien|default:0 }} <span style="font-size: 0.72rem; font-weight: 500;">k</span></div>
-                <div style="font-size: 0.82rem; font-weight: 700; color: {% if row.con_lai_met <= 0 %}#dc2626{% else %}#15803d{% endif %};">{{ row.con_lai_met|floatformat:2|default:0 }} <span style="font-size: 0.72rem;">m</span></div>
+                <div style="font-size: 0.82rem; font-weight: 700; color: {% if row.con_lai_so_luong <= 0 %}#dc2626{% else %}#15803d{% endif %};">
+                    {% if row.don_vi == 'chiếc' %}
+                        {{ row.con_lai_so_luong|floatformat:0|default:0 }}
+                    {% else %}
+                        {{ row.con_lai_so_luong|floatformat:2|default:0 }}
+                    {% endif %}
+                    <span style="font-size: 0.72rem;">{{ row.don_vi }}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -182,12 +231,13 @@
             <input type="hidden" id="modal_issue_ma_hang" name="ma_hang">
             <input type="hidden" id="modal_issue_mau" name="mau">
             <input type="hidden" id="modal_issue_ten_vat_tu" name="ten_vat_tu">
+            <input type="hidden" id="modal_issue_don_vi" name="don_vi">
 
             <!-- Card Thông tin vật tư chọn xuất -->
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;">
                 <div style="font-size: 0.96rem; font-weight: 700; color: #1e293b;" id="modal_issue_title">AT2 - Tím</div>
                 <div style="font-size: 0.86rem; color: #475569; margin-top: 2px;" id="modal_issue_material">Vật tư: Vải chính</div>
-                <div style="font-size: 0.86rem; color: #15803d; font-weight: 600; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1;" id="modal_issue_stock">Hiện còn lại: 0 kiện | 0.00 mét</div>
+                <div style="font-size: 0.86rem; color: #15803d; font-weight: 600; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1;" id="modal_issue_stock">Hiện còn lại: 0 kiện | 0.00 m</div>
             </div>
 
             <!-- Ngày xuất -->
@@ -203,36 +253,22 @@
                     <input type="number" name="so_luong_kien" id="modal_issue_so_luong_kien" min="0" value="0" required style="width: 100%; min-height: 44px; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box;">
                 </div>
                 <div>
-                    <label style="display: block; font-size: 0.88rem; font-weight: 600; color: #334155; margin-bottom: 6px;">SL mét xuất (*)</label>
-                    <input type="number" step="0.01" name="so_luong_met" id="modal_issue_so_luong_met" min="0" value="0" required style="width: 100%; min-height: 44px; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box;">
+                    <label style="display: block; font-size: 0.88rem; font-weight: 600; color: #334155; margin-bottom: 6px;" id="modal_issue_lbl_qty">SL xuất (*)</label>
+                    <input type="number" step="0.01" name="so_luong" id="modal_issue_so_luong" min="0" value="0" required style="width: 100%; min-height: 44px; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box;">
                 </div>
             </div>
 
-            <!-- Người nhận (Gõ chữ gợi ý tài khoản) -->
-            <div style="margin-bottom: 20px; position: relative;" id="wrap_nguoi_nhan_sugg">
+            <!-- Người nhận (Nhập tên người nhận) -->
+            <div style="margin-bottom: 20px;">
                 <label style="display: block; font-size: 0.88rem; font-weight: 600; color: #334155; margin-bottom: 6px;">
-                    Người nhận (*) <span style="font-weight: 400; font-size: 0.8rem; color: #64748b;">(Gõ tên để chọn)</span>
+                    Người nhận (*)
                 </label>
-                <div style="position: relative;">
-                    <input type="text" 
-                           id="modal_issue_nguoi_nhan_search" 
-                           placeholder="Nhập tên hoặc tài khoản người nhận..." 
-                           autocomplete="off" 
-                           required 
-                           style="width: 100%; min-height: 44px; padding: 8px 36px 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box; transition: border-color 0.2s;">
-                    <input type="hidden" name="nguoi_nhan" id="modal_issue_nguoi_nhan_id" required>
-                    
-                    <span id="modal_issue_user_check" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: none; color: #10b981;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </span>
-                </div>
-                
-                <!-- Hộp gợi ý nổi -->
-                <div id="modal_issue_user_suggestions" style="display: none; position: absolute; left: 0; right: 0; top: 100%; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; margin-top: 4px; max-height: 220px; overflow-y: auto; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.22); z-index: 1000000; -webkit-overflow-scrolling: touch;">
-                </div>
-                <div id="modal_issue_sugg_error" style="display: none; color: #dc2626; font-size: 0.82rem; margin-top: 4px;">
-                    Vui lòng chọn một tài khoản từ danh sách gợi ý.
-                </div>
+                <input type="text" 
+                       name="nguoi_nhan" 
+                       id="modal_issue_nguoi_nhan" 
+                       placeholder="Ví dụ: Tổ Cắt, Anh Nam, Chị Hoa..." 
+                       required 
+                       style="width: 100%; min-height: 44px; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box; transition: border-color 0.2s;">
             </div>
 
             <!-- Nút bấm xác nhận -->
@@ -244,176 +280,49 @@
     </div>
 </div>
 
-<script id="active-users-data" type="application/json">
-[
-    {% for u in active_users %}
-    {"id": "{{ u.id }}", "name": "{{ u.name|escapejs }}", "account": "{{ u.account|escapejs }}", "role": "{{ u.get_role_display|escapejs }}"}{% if not forloop.last %},{% endif %}
-    {% endfor %}
-]
-</script>
-
 <script>
-    var activeUsersList = [];
-    try {
-        var rawUsers = document.getElementById('active-users-data');
-        if (rawUsers) {
-            activeUsersList = JSON.parse(rawUsers.textContent);
-        }
-    } catch(e) {
-        console.error("Error loading active users data:", e);
-    }
-
-    function removeAccents(str) {
-        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    }
-
-    function initUserAutocomplete() {
-        var searchInput = document.getElementById('modal_issue_nguoi_nhan_search');
-        var hiddenId = document.getElementById('modal_issue_nguoi_nhan_id');
-        var suggBox = document.getElementById('modal_issue_user_suggestions');
-        var checkIcon = document.getElementById('modal_issue_user_check');
-        var errorMsg = document.getElementById('modal_issue_sugg_error');
-        var form = searchInput.closest('form');
-
-        if (!searchInput || !suggBox) return;
-
-        searchInput.addEventListener('input', function() {
-            var query = this.value.trim();
-            hiddenId.value = '';
-            checkIcon.style.display = 'none';
-            if (errorMsg) errorMsg.style.display = 'none';
-            this.style.borderColor = '#cbd5e1';
-
-            if (!query) {
-                suggBox.style.display = 'none';
-                suggBox.innerHTML = '';
-                return;
-            }
-
-            var cleanQ = removeAccents(query);
-            var matches = activeUsersList.filter(function(u) {
-                var cleanName = removeAccents(u.name);
-                var cleanAcc = removeAccents(u.account);
-                var cleanRole = removeAccents(u.role);
-                return cleanName.indexOf(cleanQ) !== -1 || cleanAcc.indexOf(cleanQ) !== -1 || cleanRole.indexOf(cleanQ) !== -1;
-            });
-
-            if (matches.length === 0) {
-                suggBox.innerHTML = '<div style="padding: 10px 14px; color: #94a3b8; font-size: 0.85rem; text-align: center;">Không tìm thấy tài khoản phù hợp</div>';
-                suggBox.style.display = 'block';
-                return;
-            }
-
-            if (matches.length >= 5) {
-                suggBox.innerHTML = '<div style="padding: 10px 14px; color: #475569; font-size: 0.84rem; text-align: center; background: #f8fafc;">'
-                                  + '  <div style="font-weight: 600; color: #334155;">🔍 Có ' + matches.length + ' tài khoản phù hợp</div>'
-                                  + '  <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">Vui lòng nhập thêm chữ để thu hẹp danh sách (< 5 dòng)...</div>'
-                                  + '</div>';
-                suggBox.style.display = 'block';
-                return;
-            }
-
-            var html = '';
-            matches.forEach(function(u) {
-                html += '<div class="user-sugg-row" data-id="' + u.id + '" data-name="' + u.name + '" data-acc="' + u.account + '" style="padding: 8px 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">'
-                      + '  <div>'
-                      + '    <strong style="color: #1e293b; font-size: 0.88rem;">' + u.name + '</strong> '
-                      + '    <span style="color: #64748b; font-size: 0.82rem;">(@' + u.account + ')</span>'
-                      + '  </div>'
-                      + '  <span style="font-size: 0.75rem; background: #eff6ff; color: #2563eb; padding: 2px 6px; border-radius: 4px; font-weight: 500;">' + u.role + '</span>'
-                      + '</div>';
-            });
-            suggBox.innerHTML = html;
-            suggBox.style.display = 'block';
-
-            var rows = suggBox.querySelectorAll('.user-sugg-row');
-            rows.forEach(function(row) {
-                row.addEventListener('mouseenter', function() {
-                    this.style.background = '#f8fafc';
-                });
-                row.addEventListener('mouseleave', function() {
-                    this.style.background = '#ffffff';
-                });
-                row.addEventListener('click', function() {
-                    var uid = this.getAttribute('data-id');
-                    var uname = this.getAttribute('data-name');
-                    var uacc = this.getAttribute('data-acc');
-                    selectUser(uid, uname, uacc);
-                });
-            });
-        });
-
-        function selectUser(uid, uname, uacc) {
-            searchInput.value = uname + ' (@' + uacc + ')';
-            hiddenId.value = uid;
-            checkIcon.style.display = 'block';
-            suggBox.style.display = 'none';
-            suggBox.innerHTML = '';
-            if (errorMsg) errorMsg.style.display = 'none';
-            searchInput.style.borderColor = '#10b981';
-        }
-
-        // Validate form submit
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                if (!hiddenId.value) {
-                    e.preventDefault();
-                    if (errorMsg) errorMsg.style.display = 'block';
-                    searchInput.style.borderColor = '#dc2626';
-                    searchInput.focus();
-                    return false;
-                }
-            });
-        }
-
-        // Click outside closes suggestion box
-        document.addEventListener('click', function(e) {
-            if (!document.getElementById('wrap_nguoi_nhan_sugg').contains(e.target)) {
-                suggBox.style.display = 'none';
-            }
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        initUserAutocomplete();
-    });
-
     function handleOpenIssueModal(btn) {
         var maHang = btn.getAttribute('data-ma-hang');
         var mau = btn.getAttribute('data-mau');
         var tenVatTu = btn.getAttribute('data-ten-vat-tu');
+        var donVi = btn.getAttribute('data-don-vi') || 'm';
         var conLaiKien = btn.getAttribute('data-con-lai-kien');
-        var conLaiMet = btn.getAttribute('data-con-lai-met');
+        var conLaiSoLuong = btn.getAttribute('data-con-lai-so-luong');
 
         document.getElementById('modal_issue_ma_hang').value = maHang;
         document.getElementById('modal_issue_mau').value = mau;
         document.getElementById('modal_issue_ten_vat_tu').value = tenVatTu;
+        document.getElementById('modal_issue_don_vi').value = donVi;
 
         document.getElementById('modal_issue_title').textContent = maHang + ' - Màu: ' + mau;
-        document.getElementById('modal_issue_material').textContent = 'Vật tư: ' + tenVatTu;
-        document.getElementById('modal_issue_stock').textContent = 'Hiện còn tồn: ' + conLaiKien + ' kiện | ' + conLaiMet + ' mét';
+        document.getElementById('modal_issue_material').textContent = 'Vật tư: ' + tenVatTu + ' (ĐVT: ' + donVi + ')';
+        
+        var displayStock = (donVi === 'chiếc') ? Math.round(parseFloat(conLaiSoLuong || 0)) : parseFloat(conLaiSoLuong || 0).toFixed(2);
+        document.getElementById('modal_issue_stock').textContent = 'Hiện còn tồn: ' + conLaiKien + ' kiện | ' + displayStock + ' ' + donVi;
+
+        var lblQty = document.getElementById('modal_issue_lbl_qty');
+        if (lblQty) {
+            lblQty.textContent = 'SL xuất (' + donVi + ') (*)';
+        }
 
         // Reset recipient input
-        var searchInput = document.getElementById('modal_issue_nguoi_nhan_search');
-        var hiddenId = document.getElementById('modal_issue_nguoi_nhan_id');
-        var checkIcon = document.getElementById('modal_issue_user_check');
-        var suggBox = document.getElementById('modal_issue_user_suggestions');
-        var errorMsg = document.getElementById('modal_issue_sugg_error');
+        var receiverInput = document.getElementById('modal_issue_nguoi_nhan');
+        if (receiverInput) receiverInput.value = '';
 
-        if (searchInput) searchInput.value = '';
-        if (hiddenId) hiddenId.value = '';
-        if (checkIcon) checkIcon.style.display = 'none';
-        if (suggBox) { suggBox.style.display = 'none'; suggBox.innerHTML = ''; }
-        if (errorMsg) errorMsg.style.display = 'none';
-
-        // Set max attribute
+        // Set max attribute and step
         var kienInput = document.getElementById('modal_issue_so_luong_kien');
-        var metInput = document.getElementById('modal_issue_so_luong_met');
+        var qtyInput = document.getElementById('modal_issue_so_luong');
         if (parseFloat(conLaiKien) > 0) {
             kienInput.max = conLaiKien;
         }
-        if (parseFloat(conLaiMet) > 0) {
-            metInput.max = conLaiMet;
+        if (parseFloat(conLaiSoLuong) > 0) {
+            qtyInput.max = conLaiSoLuong;
+        }
+
+        if (donVi === 'chiếc') {
+            qtyInput.step = '1';
+        } else {
+            qtyInput.step = '0.01';
         }
 
         // Set default date today

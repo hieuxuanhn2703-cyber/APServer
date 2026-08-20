@@ -103,33 +103,32 @@
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">{{ r.mau }}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 500;">{{ r.ten_vat_tu }}</td>
                                     
-                                    <!-- SL Nhập -->
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #0284c7;">{{ r.so_luong_kien }}</td>
-                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: #0284c7;">{{ r.so_luong_met|floatformat:2 }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: #0284c7;">
+                                        {% if r.don_vi == 'chiếc' %}{{ r.so_luong|floatformat:0 }}{% else %}{{ r.so_luong|floatformat:2 }}{% endif %} {{ r.don_vi }}
+                                    </td>
                                     
-                                    <!-- Người nhập -->
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #475569;">{{ r.nguoi_nhap }}</td>
                                     
-                                    <!-- Còn lại -->
-                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: {% if r.con_lai_kien <= 0 and r.con_lai_met <= 0 %}#94a3b8{% else %}#15803d{% endif %};">
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: {% if r.con_lai_kien <= 0 and r.con_lai_so_luong <= 0 %}#94a3b8{% else %}#15803d{% endif %};">
                                         {{ r.con_lai_kien }}
                                     </td>
-                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: {% if r.con_lai_kien <= 0 and r.con_lai_met <= 0 %}#94a3b8{% else %}#15803d{% endif %};">
-                                        {{ r.con_lai_met|floatformat:2 }}
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: {% if r.con_lai_kien <= 0 and r.con_lai_so_luong <= 0 %}#94a3b8{% else %}#15803d{% endif %};">
+                                        {% if r.don_vi == 'chiếc' %}{{ r.con_lai_so_luong|floatformat:0 }}{% else %}{{ r.con_lai_so_luong|floatformat:2 }}{% endif %} {{ r.don_vi }}
                                     </td>
                                     
-                                    <!-- Thao tác: Nút Xuất -->
                                     <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center;">
                                         <div style="display: inline-flex; align-items: center; gap: 6px;">
-                                            {% if r.con_lai_kien > 0 or r.con_lai_met > 0 %}
+                                            {% if r.con_lai_kien > 0 or r.con_lai_so_luong > 0 %}
                                             <button type="button" 
                                                     class="btn-trigger-quick-issue"
                                                     data-receipt-id="{{ r.id }}"
                                                     data-ma-hang="{{ r.ma_hang }}"
                                                     data-mau="{{ r.mau }}"
                                                     data-ten-vat-tu="{{ r.ten_vat_tu }}"
+                                                    data-don-vi="{{ r.don_vi }}"
                                                     data-con-lai-kien="{{ r.con_lai_kien }}"
-                                                    data-con-lai-met="{{ r.con_lai_met|floatformat:2 }}"
+                                                    data-con-lai-so-luong="{{ r.con_lai_so_luong }}"
                                                     data-ngay-nhap="{{ r.ngay_nhap|date:'d/m/Y' }}"
                                                     onclick="handleOpenMaterialIssueModal(this)"
                                                     style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(245,158,11,0.25);">
@@ -143,7 +142,6 @@
                                             <span style="font-size: 0.78rem; font-weight: 600; color: #94a3b8; padding: 4px 6px; background: #f1f5f9; border-radius: 4px;">Đã hết</span>
                                             {% endif %}
 
-                                            <!-- Sửa/Xóa phiếu nhập (cho người tạo hoặc admin) -->
                                             {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' or user.id == r.nguoi_nhap_id %}
                                             <a href="{% url 'inventory_receipt_edit' r.id %}" title="Sửa phiếu nhập" style="color: #64748b; padding: 2px 4px; text-decoration: none;">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -168,7 +166,6 @@
         </div>
     </div>
 
-    <!-- Modal Nhập Thông Tin Xuất Nguyên Liệu Từ Lô -->
     <div id="materialIssueModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.65); z-index: 999999; backdrop-filter: blur(4px); align-items: center; justify-content: center;">
         <div style="background: #ffffff; width: 92%; max-width: 480px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid #e2e8f0; animation: modalPop 0.2s ease-out;">
             <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 14px 20px; color: white; display: flex; justify-content: space-between; align-items: center;">
@@ -189,8 +186,8 @@
                 <input type="hidden" id="mat_modal_ma_hang" name="ma_hang">
                 <input type="hidden" id="mat_modal_mau" name="mau">
                 <input type="hidden" id="mat_modal_ten_vat_tu" name="ten_vat_tu">
+                <input type="hidden" id="mat_modal_don_vi" name="don_vi">
 
-                <!-- Card Thông tin lô vật tư -->
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
                     <div style="font-size: 0.95rem; font-weight: 700; color: #1e293b;" id="mat_modal_title">AT2 - Tím</div>
                     <div style="font-size: 0.85rem; color: #475569; margin-top: 2px;" id="mat_modal_material">Vật tư: Vải chính (Nhập ngày: 19/08/2026)</div>
@@ -208,8 +205,8 @@
                         <input type="number" name="so_luong_kien" id="mat_modal_kien" min="0" value="0" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-weight: 600; text-align: center; box-sizing: border-box;">
                     </div>
                     <div>
-                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Số lượng mét xuất</label>
-                        <input type="number" step="0.01" min="0" name="so_luong_met" id="mat_modal_met" value="0" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-weight: 600; text-align: center; box-sizing: border-box;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;" id="mat_modal_lbl_qty">Số lượng xuất</label>
+                        <input type="number" step="0.01" min="0" name="so_luong" id="mat_modal_qty" value="0" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-weight: 600; text-align: center; box-sizing: border-box;">
                     </div>
                 </div>
 
@@ -237,24 +234,38 @@
         const maHang = btn.dataset.maHang;
         const mau = btn.dataset.mau;
         const tenVatTu = btn.dataset.tenVatTu;
+        const donVi = btn.dataset.donVi || 'm';
         const conLaiKien = btn.dataset.conLaiKien;
-        const conLaiMet = btn.dataset.conLaiMet;
+        const conLaiSoLuong = btn.dataset.conLaiSoLuong;
         const ngayNhap = btn.dataset.ngayNhap;
 
         document.getElementById('mat_modal_receipt_id').value = receiptId || '';
         document.getElementById('mat_modal_ma_hang').value = maHang;
         document.getElementById('mat_modal_mau').value = mau;
         document.getElementById('mat_modal_ten_vat_tu').value = tenVatTu;
+        document.getElementById('mat_modal_don_vi').value = donVi;
         
         document.getElementById('mat_modal_title').textContent = `${maHang} - Màu: ${mau}`;
-        document.getElementById('mat_modal_material').textContent = `Vật tư: ${tenVatTu} (Nhập ngày: ${ngayNhap})`;
-        document.getElementById('mat_modal_stock').textContent = `Còn lại trong lô: ${conLaiKien} kiện/cây | ${conLaiMet} mét`;
+        document.getElementById('mat_modal_material').textContent = `Vật tư: ${tenVatTu} (${donVi}) (Nhập ngày: ${ngayNhap})`;
         
+        var displayStock = (donVi === 'chiếc') ? Math.round(parseFloat(conLaiSoLuong || 0)) : parseFloat(conLaiSoLuong || 0).toFixed(2);
+        document.getElementById('mat_modal_stock').textContent = `Còn lại trong lô: ${conLaiKien} kiện/cây | ${displayStock} ${donVi}`;
+        
+        const lblQty = document.getElementById('mat_modal_lbl_qty');
+        if (lblQty) lblQty.textContent = `Số lượng xuất (${donVi})`;
+
+        const qtyInput = document.getElementById('mat_modal_qty');
+        if (qtyInput) {
+            qtyInput.step = (donVi === 'chiếc') ? '1' : '0.01';
+            qtyInput.max = conLaiSoLuong;
+            qtyInput.value = '0';
+        }
+
         // Set today's date
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('mat_modal_ngay').value = today;
         document.getElementById('mat_modal_kien').value = '0';
-        document.getElementById('mat_modal_met').value = '0';
+        document.getElementById('mat_modal_kien').max = conLaiKien;
         document.getElementById('mat_modal_receiver').value = '';
 
         const modal = document.getElementById('materialIssueModal');

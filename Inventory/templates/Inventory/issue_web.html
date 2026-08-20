@@ -97,15 +97,21 @@
                                 </div>
                             </div>
 
-                            <div class="entry-section-header">3. Số lượng xuất & Người nhận</div>
-                            <div class="entry-grid grid-cols-3">
+                            <div class="entry-section-header">3. Số lượng xuất, Đơn vị & Người nhận</div>
+                            <div class="entry-grid grid-cols-2">
                                 <div class="entry-form-group">
                                     <label for="id_so_luong_kien" class="entry-label">Số lượng kiện/cây</label>
                                     {{ form.so_luong_kien }}
                                 </div>
                                 <div class="entry-form-group">
-                                    <label for="id_so_luong_met" class="entry-label">Số lượng mét</label>
-                                    {{ form.so_luong_met }}
+                                    <label for="id_don_vi" class="entry-label">Đơn vị (*)</label>
+                                    {{ form.don_vi }}
+                                    {{ form.don_vi.errors }}
+                                </div>
+                                <div class="entry-form-group">
+                                    <label for="id_so_luong" class="entry-label" id="lbl_so_luong">Số lượng (*)</label>
+                                    {{ form.so_luong }}
+                                    {{ form.so_luong.errors }}
                                 </div>
                                 <div class="entry-form-group">
                                     <label for="id_nguoi_nhan" class="entry-label">Người nhận (*)</label>
@@ -142,5 +148,31 @@
 
     <script src="{% static 'working/js/cascade_select.js' %}"></script>
     <script src="{% static 'working/js/numeric_input.js' %}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            initCascadeSelect({
+                productSelectId: 'id_ma_hang',
+                colorSelectId: 'id_mau',
+                sizeSelectId: 'id_co',
+                configScriptId: 'config-data'
+            });
+
+            var donViSelect = document.getElementById('id_don_vi');
+            var soLuongInput = document.getElementById('id_so_luong');
+            function updateQtyStep() {
+                if (donViSelect && soLuongInput) {
+                    if (donViSelect.value === 'chiếc') {
+                        soLuongInput.step = '1';
+                    } else {
+                        soLuongInput.step = '0.01';
+                    }
+                }
+            }
+            if (donViSelect) {
+                donViSelect.addEventListener('change', updateQtyStep);
+                updateQtyStep();
+            }
+        });
+    </script>
 </body>
 </html>

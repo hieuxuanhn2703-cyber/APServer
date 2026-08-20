@@ -1801,6 +1801,7 @@ def dashboard_kho_view(request):
     summary_filter_ma_hang = [v for v in request.GET.getlist('summary_filter_ma_hang') if v]
     summary_filter_mau = [v for v in request.GET.getlist('summary_filter_mau') if v]
     summary_filter_ten_vat_tu = [v for v in request.GET.getlist('summary_filter_ten_vat_tu') if v]
+    summary_filter_don_vi = [v for v in request.GET.getlist('summary_filter_don_vi') if v]
 
     from Inventory.models import MaterialReceipt, MaterialIssue
     r_ma = list(MaterialReceipt.objects.values_list('ma_hang', flat=True).distinct())
@@ -1815,11 +1816,16 @@ def dashboard_kho_view(request):
     i_vt = list(MaterialIssue.objects.values_list('ten_vat_tu', flat=True).distinct())
     opt_ten_vat_tu = sorted(list(set(r_vt + i_vt)))
 
+    r_dv = list(MaterialReceipt.objects.values_list('don_vi', flat=True).distinct())
+    i_dv = list(MaterialIssue.objects.values_list('don_vi', flat=True).distinct())
+    opt_don_vi = sorted(list(set(r_dv + i_dv)))
+
     from Inventory.views import get_inventory_summary_data
     inventory_summary_data = get_inventory_summary_data(
         filter_ma_hang=summary_filter_ma_hang,
         filter_mau=summary_filter_mau,
-        filter_ten_vat_tu=summary_filter_ten_vat_tu
+        filter_ten_vat_tu=summary_filter_ten_vat_tu,
+        filter_don_vi=summary_filter_don_vi
     )
 
     excel_filter_config = {
@@ -1829,11 +1835,12 @@ def dashboard_kho_view(request):
                 "0": {"param": "summary_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(opt_ma_hang), "selected": summary_filter_ma_hang},
                 "1": {"param": "summary_filter_mau", "title": "Màu", "options": _clean_options(opt_mau), "selected": summary_filter_mau},
                 "2": {"param": "summary_filter_ten_vat_tu", "title": "Tên vật tư", "options": _clean_options(opt_ten_vat_tu), "selected": summary_filter_ten_vat_tu},
+                "3": {"param": "summary_filter_don_vi", "title": "Đơn vị", "options": _clean_options(opt_don_vi), "selected": summary_filter_don_vi},
             }
         }
     }
 
-    has_filter = bool(summary_filter_ma_hang or summary_filter_mau or summary_filter_ten_vat_tu)
+    has_filter = bool(summary_filter_ma_hang or summary_filter_mau or summary_filter_ten_vat_tu or summary_filter_don_vi)
 
     context = {
         "user": user,

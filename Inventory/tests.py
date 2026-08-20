@@ -52,7 +52,8 @@ class InventoryComprehensiveTests(TestCase):
             mau="Đen",
             ten_vat_tu="Vải chính",
             so_luong_kien=10,
-            so_luong_met=100.5,
+            so_luong=100.5,
+            don_vi="m",
             nguoi_nhap=self.kho_user
         )
         self.receipt2 = MaterialReceipt.objects.create(
@@ -61,7 +62,8 @@ class InventoryComprehensiveTests(TestCase):
             mau="Đen",
             ten_vat_tu="Vải lót",
             so_luong_kien=5,
-            so_luong_met=50.0,
+            so_luong=50.0,
+            don_vi="y",
             nguoi_nhap=self.kho_user
         )
         self.issue1 = MaterialIssue.objects.create(
@@ -71,8 +73,9 @@ class InventoryComprehensiveTests(TestCase):
             mau="Đen",
             ten_vat_tu="Vải chính",
             so_luong_kien=3,
-            so_luong_met=30.0,
-            nguoi_nhan=self.basic_user,
+            so_luong=30.0,
+            don_vi="m",
+            nguoi_nhan="NV Sản Xuất",
             nguoi_xuat=self.kho_user
         )
 
@@ -88,39 +91,43 @@ class InventoryComprehensiveTests(TestCase):
     # 1. MODEL & SUMMARY CALCULATION LOGIC TESTS
     # ==============================================================================
     def test_model_str_and_relationships(self):
-        """Kiểm tra __str__ và quan hệ ForeignKey của MaterialReceipt & MaterialIssue"""
+        """Kiểm tra __str__ và quan hệ của MaterialReceipt & MaterialIssue"""
         self.assertIn("AT1", str(self.receipt1))
         self.assertIn("Vải chính", str(self.receipt1))
+        self.assertIn("100.5 m", str(self.receipt1))
         self.assertEqual(self.receipt1.nguoi_nhap, self.kho_user)
 
         self.assertIn("AT1", str(self.issue1))
-        self.assertEqual(self.issue1.nguoi_nhan, self.basic_user)
+        self.assertIn("30.0 m", str(self.issue1))
+        self.assertEqual(self.issue1.nguoi_nhan, "NV Sản Xuất")
         self.assertEqual(self.issue1.nguoi_xuat, self.kho_user)
         self.assertEqual(self.issue1.receipt, self.receipt1)
 
     def test_summary_calculation_and_grouping(self):
         """Kiểm tra logic tổng hợp tồn kho, tính Thực nhận - Thực xuất - Còn lại"""
         summary = get_inventory_summary_data()
-        self.assertEqual(len(summary), 2)  # AT1-Đen-Vải chính và AT1-Đen-Vải lót
+        self.assertEqual(len(summary), 2)  # AT1-Đen-Vải chính (m) và AT1-Đen-Vải lót (y)
 
         # Tìm dòng Vải chính
         row_main = next(r for r in summary if r["ten_vat_tu"] == "Vải chính")
         self.assertEqual(row_main["nhap_kien"], 10)
-        self.assertEqual(row_main["nhap_met"], 100.5)
+        self.assertEqual(row_main["nhap_so_luong"], 100.5)
+        self.assertEqual(row_main["don_vi"], "m")
         self.assertEqual(row_main["xuat_kien"], 3)
-        self.assertEqual(row_main["xuat_met"], 30.0)
+        self.assertEqual(row_main["xuat_so_luong"], 30.0)
         self.assertEqual(row_main["con_lai_kien"], 7)
-        self.assertEqual(row_main["con_lai_met"], 70.5)
+        self.assertEqual(row_main["con_lai_so_luong"], 70.5)
 
         # Tìm dòng Vải lót (chưa xuất lần nào)
         row_lining = next(r for r in summary if r["ten_vat_tu"] == "Vải lót")
         self.assertEqual(row_lining["nhap_kien"], 5)
         self.assertEqual(row_lining["xuat_kien"], 0)
         self.assertEqual(row_lining["con_lai_kien"], 5)
-        self.assertEqual(row_lining["con_lai_met"], 50.0)
+        self.assertEqual(row_lining["con_lai_so_luong"], 50.0)
+        self.assertEqual(row_lining["don_vi"], "y")
 
     def test_summary_filters(self):
-        """Kiểm tra lọc bảng tổng hợp theo mã hàng, màu, tên vật tư"""
+        """Kiểm tra lọc bảng tổng hợp theo mã hàng, màu, tên vật tư, đơn vị"""
         res_ma = get_inventory_summary_data(filter_ma_hang=["AT1"])
         self.assertEqual(len(res_ma), 2)
 
@@ -130,6 +137,10 @@ class InventoryComprehensiveTests(TestCase):
         res_vt = get_inventory_summary_data(filter_ten_vat_tu=["Vải chính"])
         self.assertEqual(len(res_vt), 1)
         self.assertEqual(res_vt[0]["ten_vat_tu"], "Vải chính")
+
+        res_dv = get_inventory_summary_data(filter_don_vi=["m"])
+        self.assertEqual(len(res_dv), 1)
+        self.assertEqual(res_dv[0]["don_vi"], "m")
 
     def test_helpers_clean_options_and_date_range(self):
         """Kiểm tra các hàm helper lọc Excel và parse ngày"""
@@ -145,40 +156,82 @@ class InventoryComprehensiveTests(TestCase):
         self.assertIsNone(e_bad)
 
     # ==============================================================================
-    # 2. RECEIPT FORM & ENTRY TESTS
+    # 2. RECEIPT FORM & ENTRY TESTS (INCLUDING UNIT VALIDATION)
     # ==============================================================================
-    def test_receipt_form_validation(self):
-        """Kiểm tra form nhập kho hợp lệ và không hợp lệ"""
-        form_valid = MaterialReceiptForm(data={
+    def test_receipt_form_validation_and_unit(self):
+        """Kiểm tra form nhập kho hợp lệ và không hợp lệ (bao gồm đơn vị chiếc)"""
+        # 1. Hợp lệ với đơn vị mét (cho phép số thập phân)
+        form_m = MaterialReceiptForm(data={
             "ngay_nhap": "2026-08-19",
             "ma_hang": "AT1",
             "mau": "Đen",
             "ten_vat_tu": "Chỉ may",
             "so_luong_kien": 20,
-            "so_luong_met": 200.0,
+            "don_vi": "m",
+            "so_luong": 200.5,
         })
-        self.assertTrue(form_valid.is_valid())
+        self.assertTrue(form_m.is_valid())
 
-        # Sai mã hàng
+        # 2. Hợp lệ với đơn vị chiếc (số nguyên dương)
+        form_chiec_valid = MaterialReceiptForm(data={
+            "ngay_nhap": "2026-08-19",
+            "ma_hang": "AT1",
+            "mau": "Đen",
+            "ten_vat_tu": "Cúc áo",
+            "so_luong_kien": 1,
+            "don_vi": "chiếc",
+            "so_luong": 50,
+        })
+        self.assertTrue(form_chiec_valid.is_valid())
+
+        # 3. Không hợp lệ với đơn vị chiếc (số thập phân)
+        form_chiec_float = MaterialReceiptForm(data={
+            "ngay_nhap": "2026-08-19",
+            "ma_hang": "AT1",
+            "mau": "Đen",
+            "ten_vat_tu": "Cúc áo",
+            "so_luong_kien": 1,
+            "don_vi": "chiếc",
+            "so_luong": 50.5,
+        })
+        self.assertFalse(form_chiec_float.is_valid())
+        self.assertIn("so_luong", form_chiec_float.errors)
+
+        # 4. Không hợp lệ với đơn vị chiếc (số âm hoặc 0)
+        form_chiec_zero = MaterialReceiptForm(data={
+            "ngay_nhap": "2026-08-19",
+            "ma_hang": "AT1",
+            "mau": "Đen",
+            "ten_vat_tu": "Cúc áo",
+            "so_luong_kien": 1,
+            "don_vi": "chiếc",
+            "so_luong": 0,
+        })
+        self.assertFalse(form_chiec_zero.is_valid())
+        self.assertIn("so_luong", form_chiec_zero.errors)
+
+        # 5. Sai mã hàng
         form_invalid_ma = MaterialReceiptForm(data={
             "ngay_nhap": "2026-08-19",
             "ma_hang": "KHONG_TON_TAI",
             "mau": "Đen",
             "ten_vat_tu": "Vải",
             "so_luong_kien": 1,
-            "so_luong_met": 10.0,
+            "don_vi": "m",
+            "so_luong": 10.0,
         })
         self.assertFalse(form_invalid_ma.is_valid())
         self.assertIn("ma_hang", form_invalid_ma.errors)
 
-        # Sai màu so với mã hàng (AT2 chỉ có Đỏ, không có Đen)
+        # 6. Sai màu so với mã hàng (AT2 chỉ có Đỏ, không có Đen)
         form_invalid_color = MaterialReceiptForm(data={
             "ngay_nhap": "2026-08-19",
             "ma_hang": "AT2",
             "mau": "Đen",
             "ten_vat_tu": "Vải",
             "so_luong_kien": 1,
-            "so_luong_met": 10.0,
+            "don_vi": "m",
+            "so_luong": 10.0,
         })
         self.assertFalse(form_invalid_color.is_valid())
         self.assertIn("mau", form_invalid_color.errors)
@@ -192,60 +245,110 @@ class InventoryComprehensiveTests(TestCase):
             "mau": "Trắng",
             "ten_vat_tu": "Khóa kéo",
             "so_luong_kien": 15,
-            "so_luong_met": 150.0,
+            "don_vi": "chiếc",
+            "so_luong": 150,
         })
         self.assertEqual(res.status_code, 302)
         self.assertEqual(res.url, reverse("inventory_summary"))
         created = MaterialReceipt.objects.filter(ten_vat_tu="Khóa kéo").first()
         self.assertIsNotNone(created)
         self.assertEqual(created.nguoi_nhap, self.kho_user)
+        self.assertEqual(created.don_vi, "chiếc")
+        self.assertEqual(created.so_luong, 150.0)
 
     # ==============================================================================
     # 3. ISSUE & QUICK ISSUE TESTS
     # ==============================================================================
-    def test_issue_form_queryset_excludes_unapproved_users(self):
-        """Form xuất chỉ cho phép chọn tài khoản đã được kích hoạt (is_approved=True)"""
-        form = MaterialIssueForm()
-        approved_ids = list(form.fields["nguoi_nhan"].queryset.values_list("id", flat=True))
-        self.assertIn(self.basic_user.id, approved_ids)
-        self.assertNotIn(self.unapproved_user.id, approved_ids)
+    def test_issue_form_fields_and_unit(self):
+        """Form xuất có các trường hợp lệ bao gồm don_vi và nguoi_nhan là text input"""
+        # Hợp lệ với mét
+        form_m = MaterialIssueForm(data={
+            "ngay_xuat": "2026-08-19",
+            "ma_hang": "AT1",
+            "mau": "Đen",
+            "ten_vat_tu": "Vải chính",
+            "so_luong_kien": 2,
+            "don_vi": "m",
+            "so_luong": 20.5,
+            "nguoi_nhan": "Tổ Cắt",
+        })
+        self.assertTrue(form_m.is_valid())
+
+        # Không hợp lệ với chiếc nếu số lẻ
+        form_chiec_invalid = MaterialIssueForm(data={
+            "ngay_xuat": "2026-08-19",
+            "ma_hang": "AT1",
+            "mau": "Đen",
+            "ten_vat_tu": "Khóa kéo",
+            "so_luong_kien": 2,
+            "don_vi": "chiếc",
+            "so_luong": 20.5,
+            "nguoi_nhan": "Tổ Cắt",
+        })
+        self.assertFalse(form_chiec_invalid.is_valid())
+        self.assertIn("so_luong", form_chiec_invalid.errors)
 
     def test_quick_issue_success(self):
-        """Xuất kho nhanh từ modal với tài khoản người nhận hợp lệ"""
+        """Xuất kho nhanh từ modal với tên người nhận và đơn vị hợp lệ"""
         self._login(self.kho_user)
         post_data = {
             "ma_hang": "AT1",
             "mau": "Đen",
             "ten_vat_tu": "Vải chính",
+            "don_vi": "m",
             "ngay_xuat": "2026-08-19",
             "so_luong_kien": "2",
-            "so_luong_met": "20.5",
-            "nguoi_nhan": str(self.basic_user.id),
+            "so_luong": "20.5",
+            "nguoi_nhan": "Tổ Cắt",
         }
         res = self.client.post(reverse("inventory_quick_issue"), post_data, HTTP_REFERER=reverse("inventory_summary"))
         self.assertEqual(res.status_code, 302)
 
         # Kiểm tra bản ghi xuất được tạo
-        latest_issue = MaterialIssue.objects.filter(nguoi_nhan=self.basic_user).order_by("-id").first()
+        latest_issue = MaterialIssue.objects.filter(nguoi_nhan="Tổ Cắt").order_by("-id").first()
         self.assertIsNotNone(latest_issue)
         self.assertEqual(latest_issue.so_luong_kien, 2)
-        self.assertEqual(latest_issue.so_luong_met, 20.5)
+        self.assertEqual(latest_issue.so_luong, 20.5)
+        self.assertEqual(latest_issue.don_vi, "m")
+        self.assertEqual(latest_issue.nguoi_nhan, "Tổ Cắt")
         self.assertEqual(latest_issue.nguoi_xuat, self.kho_user)
 
+    def test_quick_issue_chiec_integer_handling(self):
+        """Xuất kho nhanh với đơn vị chiếc: số nguyên hợp lệ"""
+        self._login(self.kho_user)
+        post_data = {
+            "ma_hang": "AT1",
+            "mau": "Đen",
+            "ten_vat_tu": "Khóa kéo",
+            "don_vi": "chiếc",
+            "ngay_xuat": "2026-08-19",
+            "so_luong_kien": "1",
+            "so_luong": "50",
+            "nguoi_nhan": "Anh Nam",
+        }
+        res = self.client.post(reverse("inventory_quick_issue"), post_data, HTTP_REFERER=reverse("inventory_summary"))
+        self.assertEqual(res.status_code, 302)
+
+        issue_chiec = MaterialIssue.objects.filter(nguoi_nhan="Anh Nam").first()
+        self.assertIsNotNone(issue_chiec)
+        self.assertEqual(issue_chiec.don_vi, "chiếc")
+        self.assertEqual(issue_chiec.so_luong, 50.0)
+
     def test_quick_issue_invalid_user_or_zero_qty(self):
-        """Xuất kho với tài khoản chưa duyệt hoặc số lượng 0 không tạo phiếu xuất"""
+        """Xuất kho không có tên người nhận hoặc số lượng 0 không tạo phiếu xuất"""
         self._login(self.kho_user)
         initial_count = MaterialIssue.objects.count()
 
-        # Người nhận là tài khoản chưa duyệt
+        # Người nhận để trống
         self.client.post(reverse("inventory_quick_issue"), {
             "ma_hang": "AT1",
             "mau": "Đen",
             "ten_vat_tu": "Vải chính",
+            "don_vi": "m",
             "ngay_xuat": "2026-08-19",
             "so_luong_kien": "2",
-            "so_luong_met": "20.5",
-            "nguoi_nhan": str(self.unapproved_user.id),
+            "so_luong": "20.5",
+            "nguoi_nhan": "",
         })
         self.assertEqual(MaterialIssue.objects.count(), initial_count)
 
@@ -254,10 +357,11 @@ class InventoryComprehensiveTests(TestCase):
             "ma_hang": "AT1",
             "mau": "Đen",
             "ten_vat_tu": "Vải chính",
+            "don_vi": "m",
             "ngay_xuat": "2026-08-19",
             "so_luong_kien": "0",
-            "so_luong_met": "0",
-            "nguoi_nhan": str(self.basic_user.id),
+            "so_luong": "0",
+            "nguoi_nhan": "Tổ Cắt",
         })
         self.assertEqual(MaterialIssue.objects.count(), initial_count)
 
@@ -274,7 +378,8 @@ class InventoryComprehensiveTests(TestCase):
                 mau="Trắng",
                 ten_vat_tu=f"Vật tư {i}",
                 so_luong_kien=1,
-                so_luong_met=10.0,
+                so_luong=10.0,
+                don_vi="m",
                 nguoi_nhap=self.kho_user
             )
 
@@ -298,6 +403,10 @@ class InventoryComprehensiveTests(TestCase):
         res_col = self.client.get(reverse("inventory_receipt_history") + "?receipt_filter_mau=Trắng")
         self.assertEqual(len(res_col.context["page_obj"]), 20)
 
+        # Lọc theo cột đơn vị
+        res_dv = self.client.get(reverse("inventory_receipt_history") + "?receipt_filter_don_vi=m")
+        self.assertEqual(len(res_dv.context["page_obj"]), 20)
+
     def test_issue_history_pagination_and_filters(self):
         """Kiểm tra phân trang 20 dòng và lọc theo người nhận / người xuất của lịch sử xuất"""
         for i in range(25):
@@ -307,8 +416,9 @@ class InventoryComprehensiveTests(TestCase):
                 mau="Đen",
                 ten_vat_tu=f"Vật tư xuất {i}",
                 so_luong_kien=1,
-                so_luong_met=5.0,
-                nguoi_nhan=self.basic_user,
+                so_luong=5.0,
+                don_vi="m",
+                nguoi_nhan="NV Sản Xuất",
                 nguoi_xuat=self.kho_user
             )
 
@@ -318,9 +428,14 @@ class InventoryComprehensiveTests(TestCase):
         self.assertEqual(len(res.context["page_obj"]), 20)
 
         # Lọc theo người nhận
-        res_user = self.client.get(reverse("inventory_issue_history") + f"?issue_filter_nguoi_nhan={self.basic_user.name}")
+        res_user = self.client.get(reverse("inventory_issue_history") + "?issue_filter_nguoi_nhan=NV Sản Xuất")
         self.assertEqual(res_user.status_code, 200)
         self.assertEqual(len(res_user.context["page_obj"]), 20)
+
+        # Lọc theo đơn vị
+        res_dv = self.client.get(reverse("inventory_issue_history") + "?issue_filter_don_vi=m")
+        self.assertEqual(res_dv.status_code, 200)
+        self.assertEqual(len(res_dv.context["page_obj"]), 20)
 
     # ==============================================================================
     # 5. EDIT & DELETE PERMISSION TESTS (QUAN_LY / PREMIUM ONLY)
@@ -348,12 +463,14 @@ class InventoryComprehensiveTests(TestCase):
             "mau": "Đen",
             "ten_vat_tu": "Vải chính đã sửa",
             "so_luong_kien": 12,
-            "so_luong_met": 120.0,
+            "don_vi": "m",
+            "so_luong": 120.0,
         })
         self.assertEqual(res_mgr.status_code, 302)
         self.receipt1.refresh_from_db()
         self.assertEqual(self.receipt1.ten_vat_tu, "Vải chính đã sửa")
         self.assertEqual(self.receipt1.so_luong_kien, 12)
+        self.assertEqual(self.receipt1.so_luong, 120.0)
 
         # 4. PREMIUM xóa thành công
         self._login(self.premium_user)
@@ -376,12 +493,15 @@ class InventoryComprehensiveTests(TestCase):
             "mau": "Đen",
             "ten_vat_tu": "Vải chính",
             "so_luong_kien": 4,
-            "so_luong_met": 40.0,
-            "nguoi_nhan": str(self.basic_user.id),
+            "don_vi": "m",
+            "so_luong": 40.0,
+            "nguoi_nhan": "Tổ Cắt Đã Sửa",
         })
         self.assertEqual(res_mgr.status_code, 302)
         self.issue1.refresh_from_db()
         self.assertEqual(self.issue1.so_luong_kien, 4)
+        self.assertEqual(self.issue1.so_luong, 40.0)
+        self.assertEqual(self.issue1.nguoi_nhan, "Tổ Cắt Đã Sửa")
 
         # 3. PREMIUM xóa thành công
         self._login(self.premium_user)
@@ -463,3 +583,4 @@ class InventoryComprehensiveTests(TestCase):
         res_ql = self.client.get(reverse("inventory_receipt_history"))
         html_ql = res_ql.content.decode("utf-8")
         self.assertIn("Thao tác", html_ql)
+

@@ -82,8 +82,12 @@
                                 {{ form.so_luong_kien }}
                             </div>
                             <div class="form-group">
-                                <label for="id_so_luong_met">Số lượng mét</label>
-                                {{ form.so_luong_met }}
+                                <label for="id_don_vi">Đơn vị (*)</label>
+                                {{ form.don_vi }}
+                            </div>
+                            <div class="form-group">
+                                <label for="id_so_luong">Số lượng (*)</label>
+                                {{ form.so_luong }}
                             </div>
                         </div>
 
@@ -99,5 +103,24 @@
     {{ config|json_script:"config-data" }}
     <script src="{% static 'working/js/cascade_select.js' %}"></script>
     <script src="{% static 'working/js/numeric_input.js' %}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var donViSelect = document.getElementById('id_don_vi');
+            var soLuongInput = document.getElementById('id_so_luong');
+            function updateQtyStep() {
+                if (donViSelect && soLuongInput) {
+                    if (donViSelect.value === 'chiếc') {
+                        soLuongInput.step = '1';
+                    } else {
+                        soLuongInput.step = '0.01';
+                    }
+                }
+            }
+            if (donViSelect) {
+                donViSelect.addEventListener('change', updateQtyStep);
+                updateQtyStep();
+            }
+        });
+    </script>
 </body>
 </html>

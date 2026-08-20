@@ -51,10 +51,10 @@ def _get_cascade_options(base_qs, active_filters, current_col_key, val_field):
     return list(qs.values_list(val_field, flat=True).distinct())
 
 
-def get_inventory_summary_data(filter_ma_hang=None, filter_mau=None, filter_ten_vat_tu=None):
+def get_inventory_summary_data(filter_ma_hang=None, filter_mau=None, filter_ten_vat_tu=None, filter_don_vi=None):
     """
     Tính toán bảng tổng hợp cân đối tất cả nguyên vật liệu có trong kho:
-    Thực nhận, Thực xuất, Còn lại (theo mã, màu, tên vật tư)
+    Thực nhận, Thực xuất, Còn lại (theo mã, màu, tên vật tư, đơn vị)
     """
     receipt_qs = MaterialReceipt.objects.all()
     issue_qs = MaterialIssue.objects.all()
@@ -68,53 +68,60 @@ def get_inventory_summary_data(filter_ma_hang=None, filter_mau=None, filter_ten_
     if filter_ten_vat_tu:
         receipt_qs = receipt_qs.filter(ten_vat_tu__in=filter_ten_vat_tu)
         issue_qs = issue_qs.filter(ten_vat_tu__in=filter_ten_vat_tu)
+    if filter_don_vi:
+        receipt_qs = receipt_qs.filter(don_vi__in=filter_don_vi)
+        issue_qs = issue_qs.filter(don_vi__in=filter_don_vi)
 
-    receipts = receipt_qs.values('ma_hang', 'mau', 'ten_vat_tu').annotate(
+    receipts = receipt_qs.values('ma_hang', 'mau', 'ten_vat_tu', 'don_vi').annotate(
         tong_nhap_kien=Sum('so_luong_kien'),
-        tong_nhap_met=Sum('so_luong_met')
+        tong_nhap_so_luong=Sum('so_luong')
     )
-    issues = issue_qs.values('ma_hang', 'mau', 'ten_vat_tu').annotate(
+    issues = issue_qs.values('ma_hang', 'mau', 'ten_vat_tu', 'don_vi').annotate(
         tong_xuat_kien=Sum('so_luong_kien'),
-        tong_xuat_met=Sum('so_luong_met')
+        tong_xuat_so_luong=Sum('so_luong')
     )
 
     summary_map = {}
     
     for r in receipts:
-        key = (r['ma_hang'], r['mau'], r['ten_vat_tu'])
+        d_vi = r['don_vi'] or 'm'
+        key = (r['ma_hang'], r['mau'], r['ten_vat_tu'], d_vi)
         summary_map[key] = {
             'ma_hang': r['ma_hang'],
             'mau': r['mau'],
             'ten_vat_tu': r['ten_vat_tu'],
+            'don_vi': d_vi,
             'nhap_kien': r['tong_nhap_kien'] or 0,
-            'nhap_met': r['tong_nhap_met'] or 0.0,
+            'nhap_so_luong': r['tong_nhap_so_luong'] or 0.0,
             'xuat_kien': 0,
-            'xuat_met': 0.0,
+            'xuat_so_luong': 0.0,
         }
 
     for i in issues:
-        key = (i['ma_hang'], i['mau'], i['ten_vat_tu'])
+        d_vi = i['don_vi'] or 'm'
+        key = (i['ma_hang'], i['mau'], i['ten_vat_tu'], d_vi)
         if key not in summary_map:
             summary_map[key] = {
                 'ma_hang': i['ma_hang'],
                 'mau': i['mau'],
                 'ten_vat_tu': i['ten_vat_tu'],
+                'don_vi': d_vi,
                 'nhap_kien': 0,
-                'nhap_met': 0.0,
+                'nhap_so_luong': 0.0,
                 'xuat_kien': 0,
-                'xuat_met': 0.0,
+                'xuat_so_luong': 0.0,
             }
         summary_map[key]['xuat_kien'] = i['tong_xuat_kien'] or 0
-        summary_map[key]['xuat_met'] = i['tong_xuat_met'] or 0.0
+        summary_map[key]['xuat_so_luong'] = i['tong_xuat_so_luong'] or 0.0
 
     results = []
     for key, data in summary_map.items():
         data['con_lai_kien'] = data['nhap_kien'] - data['xuat_kien']
-        data['con_lai_met'] = data['nhap_met'] - data['xuat_met']
-        data['has_stock'] = (data['con_lai_kien'] > 0 or data['con_lai_met'] > 0)
+        data['con_lai_so_luong'] = data['nhap_so_luong'] - data['xuat_so_luong']
+        data['has_stock'] = (data['con_lai_kien'] > 0 or data['con_lai_so_luong'] > 0)
         results.append(data)
 
-    results.sort(key=lambda x: (x['ma_hang'], x['mau'], x['ten_vat_tu']))
+    results.sort(key=lambda x: (x['ma_hang'], x['mau'], x['ten_vat_tu'], x['don_vi']))
     return results
 
 
@@ -134,6 +141,7 @@ def inventory_summary_view(request):
     summary_filter_ma_hang = [v for v in request.GET.getlist('summary_filter_ma_hang') if v]
     summary_filter_mau = [v for v in request.GET.getlist('summary_filter_mau') if v]
     summary_filter_ten_vat_tu = [v for v in request.GET.getlist('summary_filter_ten_vat_tu') if v]
+    summary_filter_don_vi = [v for v in request.GET.getlist('summary_filter_don_vi') if v]
 
     # Danh sách options cho bộ lọc
     r_ma = list(MaterialReceipt.objects.values_list('ma_hang', flat=True).distinct())
@@ -148,10 +156,15 @@ def inventory_summary_view(request):
     i_vt = list(MaterialIssue.objects.values_list('ten_vat_tu', flat=True).distinct())
     opt_ten_vat_tu = sorted(list(set(r_vt + i_vt)))
 
+    r_dv = list(MaterialReceipt.objects.values_list('don_vi', flat=True).distinct())
+    i_dv = list(MaterialIssue.objects.values_list('don_vi', flat=True).distinct())
+    opt_don_vi = sorted(list(set(r_dv + i_dv)))
+
     summary_data = get_inventory_summary_data(
         filter_ma_hang=summary_filter_ma_hang,
         filter_mau=summary_filter_mau,
-        filter_ten_vat_tu=summary_filter_ten_vat_tu
+        filter_ten_vat_tu=summary_filter_ten_vat_tu,
+        filter_don_vi=summary_filter_don_vi
     )
 
     excel_filter_config = {
@@ -161,15 +174,15 @@ def inventory_summary_view(request):
                 "0": {"param": "summary_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(opt_ma_hang), "selected": summary_filter_ma_hang},
                 "1": {"param": "summary_filter_mau", "title": "Màu", "options": _clean_options(opt_mau), "selected": summary_filter_mau},
                 "2": {"param": "summary_filter_ten_vat_tu", "title": "Tên vật tư", "options": _clean_options(opt_ten_vat_tu), "selected": summary_filter_ten_vat_tu},
+                "3": {"param": "summary_filter_don_vi", "title": "Đơn vị", "options": _clean_options(opt_don_vi), "selected": summary_filter_don_vi},
             }
         }
     }
 
-    has_filter = bool(summary_filter_ma_hang or summary_filter_mau or summary_filter_ten_vat_tu)
+    has_filter = bool(summary_filter_ma_hang or summary_filter_mau or summary_filter_ten_vat_tu or summary_filter_don_vi)
 
     return render(request, "Inventory/summary.html", {
         "user": user,
-        "active_users": AppUser.objects.filter(is_approved=True).order_by('name'),
         "inventory_summary_data": summary_data,
         "summary_data": summary_data,
         "excel_filter_config": excel_filter_config,
@@ -184,7 +197,7 @@ def inventory_summary_view(request):
 def receipt_history_view(request):
     """
     2. Bảng lịch sử nhập nguyên vật liệu, lưu lại tất cả những lần nhập nguyên vật liệu (20 dòng / trang)
-    Hỗ trợ lọc ngày (từ ngày - đến ngày) và lọc cột Excel (Mã hàng, Màu, Tên vật tư, Người nhập)
+    Hỗ trợ lọc ngày (từ ngày - đến ngày) và lọc cột Excel (Mã hàng, Màu, Tên vật tư, Đơn vị, Người nhập)
     """
     user = get_current_user(request)
     if not is_authorized(user):
@@ -203,18 +216,21 @@ def receipt_history_view(request):
     receipt_filter_ma_hang = [v for v in request.GET.getlist('receipt_filter_ma_hang') if v]
     receipt_filter_mau = [v for v in request.GET.getlist('receipt_filter_mau') if v]
     receipt_filter_ten_vat_tu = [v for v in request.GET.getlist('receipt_filter_ten_vat_tu') if v]
+    receipt_filter_don_vi = [v for v in request.GET.getlist('receipt_filter_don_vi') if v]
     receipt_filter_nguoi_nhap = [v for v in request.GET.getlist('receipt_filter_nguoi_nhap') if v]
 
     receipt_filters = {
         'ma_hang': ('ma_hang__in', receipt_filter_ma_hang),
         'mau': ('mau__in', receipt_filter_mau),
         'ten_vat_tu': ('ten_vat_tu__in', receipt_filter_ten_vat_tu),
+        'don_vi': ('don_vi__in', receipt_filter_don_vi),
         'nguoi_nhap': ('nguoi_nhap__name__in', receipt_filter_nguoi_nhap),
     }
 
     opt_ma_hang = _get_cascade_options(receipt_base_qs, receipt_filters, 'ma_hang', 'ma_hang')
     opt_mau = _get_cascade_options(receipt_base_qs, receipt_filters, 'mau', 'mau')
     opt_ten_vat_tu = _get_cascade_options(receipt_base_qs, receipt_filters, 'ten_vat_tu', 'ten_vat_tu')
+    opt_don_vi = _get_cascade_options(receipt_base_qs, receipt_filters, 'don_vi', 'don_vi')
     opt_nguoi_nhap = _get_cascade_options(receipt_base_qs, receipt_filters, 'nguoi_nhap', 'nguoi_nhap__name')
 
     receipt_qs = receipt_base_qs
@@ -224,6 +240,8 @@ def receipt_history_view(request):
         receipt_qs = receipt_qs.filter(mau__in=receipt_filter_mau)
     if receipt_filter_ten_vat_tu:
         receipt_qs = receipt_qs.filter(ten_vat_tu__in=receipt_filter_ten_vat_tu)
+    if receipt_filter_don_vi:
+        receipt_qs = receipt_qs.filter(don_vi__in=receipt_filter_don_vi)
     if receipt_filter_nguoi_nhap:
         receipt_qs = receipt_qs.filter(nguoi_nhap__name__in=receipt_filter_nguoi_nhap)
 
@@ -236,7 +254,8 @@ def receipt_history_view(request):
                 "1": {"param": "receipt_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(opt_ma_hang), "selected": receipt_filter_ma_hang},
                 "2": {"param": "receipt_filter_mau", "title": "Màu", "options": _clean_options(opt_mau), "selected": receipt_filter_mau},
                 "3": {"param": "receipt_filter_ten_vat_tu", "title": "Tên vật tư", "options": _clean_options(opt_ten_vat_tu), "selected": receipt_filter_ten_vat_tu},
-                "6": {"param": "receipt_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(opt_nguoi_nhap), "selected": receipt_filter_nguoi_nhap},
+                "4": {"param": "receipt_filter_don_vi", "title": "Đơn vị", "options": _clean_options(opt_don_vi), "selected": receipt_filter_don_vi},
+                "7": {"param": "receipt_filter_nguoi_nhap", "title": "Người nhập", "options": _clean_options(opt_nguoi_nhap), "selected": receipt_filter_nguoi_nhap},
             }
         }
     }
@@ -248,7 +267,7 @@ def receipt_history_view(request):
     has_filter = bool(
         receipt_start_date or receipt_end_date or
         receipt_filter_ma_hang or receipt_filter_mau or
-        receipt_filter_ten_vat_tu or receipt_filter_nguoi_nhap
+        receipt_filter_ten_vat_tu or receipt_filter_don_vi or receipt_filter_nguoi_nhap
     )
 
     return render(request, "Inventory/receipt_history.html", {
@@ -268,7 +287,7 @@ def receipt_history_view(request):
 def issue_history_view(request):
     """
     3. Bảng lịch sử xuất nguyên vật liệu, lưu lại tất cả những lần xuất nguyên vật liệu (20 dòng / trang)
-    Hỗ trợ lọc ngày (từ ngày - đến ngày) và lọc cột Excel (Mã hàng, Màu, Tên vật tư, Người nhận, Người xuất)
+    Hỗ trợ lọc ngày (từ ngày - đến ngày) và lọc cột Excel (Mã hàng, Màu, Tên vật tư, Đơn vị, Người nhận, Người xuất)
     """
     user = get_current_user(request)
     if not is_authorized(user):
@@ -278,7 +297,7 @@ def issue_history_view(request):
     issue_end_date = request.GET.get('issue_end_date', '')
     issue_s, issue_e = parse_date_range(issue_start_date, issue_end_date)
 
-    issue_base_qs = MaterialIssue.objects.select_related('nguoi_nhan', 'nguoi_xuat').all()
+    issue_base_qs = MaterialIssue.objects.select_related('nguoi_xuat').all()
     if issue_s:
         issue_base_qs = issue_base_qs.filter(ngay_xuat__gte=issue_s)
     if issue_e:
@@ -287,6 +306,7 @@ def issue_history_view(request):
     issue_filter_ma_hang = [v for v in request.GET.getlist('issue_filter_ma_hang') if v]
     issue_filter_mau = [v for v in request.GET.getlist('issue_filter_mau') if v]
     issue_filter_ten_vat_tu = [v for v in request.GET.getlist('issue_filter_ten_vat_tu') if v]
+    issue_filter_don_vi = [v for v in request.GET.getlist('issue_filter_don_vi') if v]
     issue_filter_nguoi_nhan = [v for v in request.GET.getlist('issue_filter_nguoi_nhan') if v]
     issue_filter_nguoi_xuat = [v for v in request.GET.getlist('issue_filter_nguoi_xuat') if v]
 
@@ -294,14 +314,16 @@ def issue_history_view(request):
         'ma_hang': ('ma_hang__in', issue_filter_ma_hang),
         'mau': ('mau__in', issue_filter_mau),
         'ten_vat_tu': ('ten_vat_tu__in', issue_filter_ten_vat_tu),
-        'nguoi_nhan': ('nguoi_nhan__name__in', issue_filter_nguoi_nhan),
+        'don_vi': ('don_vi__in', issue_filter_don_vi),
+        'nguoi_nhan': ('nguoi_nhan__in', issue_filter_nguoi_nhan),
         'nguoi_xuat': ('nguoi_xuat__name__in', issue_filter_nguoi_xuat),
     }
 
     opt_ma_hang = _get_cascade_options(issue_base_qs, issue_filters, 'ma_hang', 'ma_hang')
     opt_mau = _get_cascade_options(issue_base_qs, issue_filters, 'mau', 'mau')
     opt_ten_vat_tu = _get_cascade_options(issue_base_qs, issue_filters, 'ten_vat_tu', 'ten_vat_tu')
-    opt_nguoi_nhan = _get_cascade_options(issue_base_qs, issue_filters, 'nguoi_nhan', 'nguoi_nhan__name')
+    opt_don_vi = _get_cascade_options(issue_base_qs, issue_filters, 'don_vi', 'don_vi')
+    opt_nguoi_nhan = _get_cascade_options(issue_base_qs, issue_filters, 'nguoi_nhan', 'nguoi_nhan')
     opt_nguoi_xuat = _get_cascade_options(issue_base_qs, issue_filters, 'nguoi_xuat', 'nguoi_xuat__name')
 
     issue_qs = issue_base_qs
@@ -311,8 +333,10 @@ def issue_history_view(request):
         issue_qs = issue_qs.filter(mau__in=issue_filter_mau)
     if issue_filter_ten_vat_tu:
         issue_qs = issue_qs.filter(ten_vat_tu__in=issue_filter_ten_vat_tu)
+    if issue_filter_don_vi:
+        issue_qs = issue_qs.filter(don_vi__in=issue_filter_don_vi)
     if issue_filter_nguoi_nhan:
-        issue_qs = issue_qs.filter(nguoi_nhan__name__in=issue_filter_nguoi_nhan)
+        issue_qs = issue_qs.filter(nguoi_nhan__in=issue_filter_nguoi_nhan)
     if issue_filter_nguoi_xuat:
         issue_qs = issue_qs.filter(nguoi_xuat__name__in=issue_filter_nguoi_xuat)
 
@@ -325,8 +349,9 @@ def issue_history_view(request):
                 "1": {"param": "issue_filter_ma_hang", "title": "Mã hàng", "options": _clean_options(opt_ma_hang), "selected": issue_filter_ma_hang},
                 "2": {"param": "issue_filter_mau", "title": "Màu", "options": _clean_options(opt_mau), "selected": issue_filter_mau},
                 "3": {"param": "issue_filter_ten_vat_tu", "title": "Tên vật tư", "options": _clean_options(opt_ten_vat_tu), "selected": issue_filter_ten_vat_tu},
-                "6": {"param": "issue_filter_nguoi_nhan", "title": "Người nhận", "options": _clean_options(opt_nguoi_nhan), "selected": issue_filter_nguoi_nhan},
-                "7": {"param": "issue_filter_nguoi_xuat", "title": "Người xuất", "options": _clean_options(opt_nguoi_xuat), "selected": issue_filter_nguoi_xuat},
+                "4": {"param": "issue_filter_don_vi", "title": "Đơn vị", "options": _clean_options(opt_don_vi), "selected": issue_filter_don_vi},
+                "7": {"param": "issue_filter_nguoi_nhan", "title": "Người nhận", "options": _clean_options(opt_nguoi_nhan), "selected": issue_filter_nguoi_nhan},
+                "8": {"param": "issue_filter_nguoi_xuat", "title": "Người xuất", "options": _clean_options(opt_nguoi_xuat), "selected": issue_filter_nguoi_xuat},
             }
         }
     }
@@ -338,7 +363,7 @@ def issue_history_view(request):
     has_filter = bool(
         issue_start_date or issue_end_date or
         issue_filter_ma_hang or issue_filter_mau or
-        issue_filter_ten_vat_tu or issue_filter_nguoi_nhan or issue_filter_nguoi_xuat
+        issue_filter_ten_vat_tu or issue_filter_don_vi or issue_filter_nguoi_nhan or issue_filter_nguoi_xuat
     )
 
     return render(request, "Inventory/issue_history.html", {
@@ -395,12 +420,11 @@ def quick_issue_view(request):
         ma_hang = request.POST.get("ma_hang", "").strip()
         mau = request.POST.get("mau", "").strip()
         ten_vat_tu = request.POST.get("ten_vat_tu", "").strip()
+        don_vi = request.POST.get("don_vi", "m").strip() or "m"
         ngay_xuat_str = request.POST.get("ngay_xuat", "").strip()
         so_luong_kien_str = request.POST.get("so_luong_kien", "0").strip()
-        so_luong_met_str = request.POST.get("so_luong_met", "0").strip()
-        nguoi_nhan_id = request.POST.get("nguoi_nhan", "").strip()
-
-        nguoi_nhan = AppUser.objects.filter(id=nguoi_nhan_id, is_approved=True).first()
+        so_luong_str = request.POST.get("so_luong", "0").strip()
+        nguoi_nhan = request.POST.get("nguoi_nhan", "").strip()
 
         ngay_xuat = datetime.date.today()
         if ngay_xuat_str:
@@ -415,24 +439,28 @@ def quick_issue_view(request):
             so_luong_kien = 0
 
         try:
-            so_luong_met = max(0.0, float(so_luong_met_str or 0))
+            so_luong = max(0.0, float(so_luong_str or 0))
         except (ValueError, TypeError):
-            so_luong_met = 0.0
+            so_luong = 0.0
 
-        if ma_hang and mau and ten_vat_tu and nguoi_nhan and (so_luong_kien > 0 or so_luong_met > 0):
+        if don_vi == "chiếc":
+            if so_luong <= 0 or not float(so_luong).is_integer():
+                so_luong = int(so_luong) if float(so_luong).is_integer() and so_luong > 0 else 0
+
+        if ma_hang and mau and ten_vat_tu and nguoi_nhan and (so_luong_kien > 0 or so_luong > 0):
             MaterialIssue.objects.create(
                 ngay_xuat=ngay_xuat,
                 ma_hang=ma_hang,
                 mau=mau,
                 ten_vat_tu=ten_vat_tu,
                 so_luong_kien=so_luong_kien,
-                so_luong_met=so_luong_met,
+                so_luong=so_luong,
+                don_vi=don_vi,
                 nguoi_nhan=nguoi_nhan,
                 nguoi_xuat=user
             )
 
         next_url = request.POST.get("next") or request.META.get('HTTP_REFERER') or reverse('inventory_summary')
-        return redirect(next_url)
         return redirect(next_url)
 
     return redirect('inventory_summary')
@@ -497,7 +525,6 @@ def issue_edit_view(request, row_id):
         "form": form,
         "report": report,
         "user": user,
-        "active_users": AppUser.objects.filter(is_approved=True).order_by('name'),
         "config": load_config(),
     })
 

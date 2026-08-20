@@ -100,7 +100,9 @@
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">{{ issue.mau }}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 500;">{{ issue.ten_vat_tu }}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #b45309;">{{ issue.so_luong_kien }}</td>
-                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: #b45309;">{{ issue.so_luong_met|floatformat:2 }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: #b45309;">
+                                        {% if issue.don_vi == 'chiếc' %}{{ issue.so_luong|floatformat:0 }}{% else %}{{ issue.so_luong|floatformat:2 }}{% endif %} {{ issue.don_vi }}
+                                    </td>
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #1e293b;">{{ issue.nguoi_nhan }}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #64748b;">{{ issue.nguoi_xuat.name|default:"--" }}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">

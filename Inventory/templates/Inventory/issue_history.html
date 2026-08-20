@@ -127,12 +127,20 @@
                                             </button>
                                         </div>
                                     </th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">
+                                        <div class="th-filter-wrap">
+                                            <span>Đơn vị</span>
+                                            <button type="button" class="excel-filter-btn" data-col="4" data-title="Đơn vị" title="Lọc Đơn vị">
+                                                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                                            </button>
+                                        </div>
+                                    </th>
                                     <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background: #fef08a; color: #854d0e;">SL kiện/cây</th>
-                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background: #fef08a; color: #854d0e;">SL mét</th>
+                                    <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background: #fef08a; color: #854d0e;">Số lượng</th>
                                     <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; font-weight: 700; color: #1e293b;">
                                         <div class="th-filter-wrap">
                                             <span>Người nhận</span>
-                                            <button type="button" class="excel-filter-btn" data-col="6" data-title="Người nhận" title="Lọc Người nhận">
+                                            <button type="button" class="excel-filter-btn" data-col="7" data-title="Người nhận" title="Lọc Người nhận">
                                                 <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
                                             </button>
                                         </div>
@@ -140,7 +148,7 @@
                                     <th style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center;">
                                         <div class="th-filter-wrap">
                                             <span>Người xuất</span>
-                                            <button type="button" class="excel-filter-btn" data-col="7" data-title="Người xuất" title="Lọc Người xuất">
+                                            <button type="button" class="excel-filter-btn" data-col="8" data-title="Người xuất" title="Lọc Người xuất">
                                                 <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
                                             </button>
                                         </div>
@@ -157,9 +165,16 @@
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600;">{{ issue.ma_hang }}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">{{ issue.mau }}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 500;">{{ issue.ten_vat_tu }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 600; color: #6366f1;">{{ issue.don_vi }}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #b45309;">{{ issue.so_luong_kien }}</td>
-                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #b45309;">{{ issue.so_luong_met|floatformat:2 }}</td>
-                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #1e293b;">{{ issue.nguoi_nhan.name|default:issue.nguoi_nhan.account|default:"--" }}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #b45309;">
+                                        {% if issue.don_vi == 'chiếc' %}
+                                            {{ issue.so_luong|floatformat:0 }}
+                                        {% else %}
+                                            {{ issue.so_luong|floatformat:2 }}
+                                        {% endif %}
+                                    </td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: 700; color: #1e293b;">{{ issue.nguoi_nhan|default:"--" }}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: #64748b;">{{ issue.nguoi_xuat.name|default:"--" }}</td>
                                     {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}
                                     <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">
@@ -175,7 +190,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="{% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}9{% else %}8{% endif %}" style="border: 1px solid #cbd5e1; padding: 24px; text-align: center; color: #64748b;">Chưa có dữ liệu xuất nguyên vật liệu nào.</td>
+                                    <td colspan="{% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}10{% else %}9{% endif %}" style="border: 1px solid #cbd5e1; padding: 24px; text-align: center; color: #64748b;">Chưa có dữ liệu xuất nguyên vật liệu nào.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -191,6 +206,7 @@
                                     <span style="font-size: 0.84rem; color: #475569; font-weight: 600;">📅 {{ issue.ngay_xuat|date:"d/m/Y" }}</span>
                                     <span style="background: #fef08a; color: #854d0e; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.84rem;">{{ issue.ma_hang }}</span>
                                     <span style="background: #f8fafc; color: #475569; padding: 2px 8px; border-radius: 6px; font-size: 0.82rem; border: 1px solid #e2e8f0; font-weight: 600;">{{ issue.mau }}</span>
+                                    <span style="background: #eef2ff; color: #4338ca; padding: 2px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 700;">{{ issue.don_vi }}</span>
                                 </div>
                                 {% if user.role == 'PREMIUM' or user.role == 'QUAN_LY' %}
                                 <div style="display: flex; gap: 6px;">
@@ -212,12 +228,18 @@
                                     <span style="font-size: 0.8rem; color: #92400e; font-weight: 600;">SL Xuất:</span>
                                     <strong style="font-size: 0.96rem; color: #b45309; margin-left: 4px;">{{ issue.so_luong_kien }}</strong> <span style="font-size: 0.78rem; color: #92400e;">kiện</span>
                                     <span style="color: #fcd34d; margin: 0 6px;">|</span>
-                                    <strong style="font-size: 0.96rem; color: #b45309;">{{ issue.so_luong_met|floatformat:2 }}</strong> <span style="font-size: 0.78rem; color: #92400e;">mét</span>
+                                    <strong style="font-size: 0.96rem; color: #b45309;">
+                                        {% if issue.don_vi == 'chiếc' %}
+                                            {{ issue.so_luong|floatformat:0 }}
+                                        {% else %}
+                                            {{ issue.so_luong|floatformat:2 }}
+                                        {% endif %}
+                                    </strong> <span style="font-size: 0.78rem; color: #92400e;">{{ issue.don_vi }}</span>
                                 </div>
                             </div>
 
                             <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #475569; padding-top: 4px; flex-wrap: wrap; gap: 4px;">
-                                <div>📥 Người nhận: <strong style="color: #1e293b;">{{ issue.nguoi_nhan.name|default:issue.nguoi_nhan.account|default:"--" }}</strong></div>
+                                <div>📥 Người nhận: <strong style="color: #1e293b;">{{ issue.nguoi_nhan|default:"--" }}</strong></div>
                                 <div>📤 Người xuất: <span>{{ issue.nguoi_xuat.name|default:"--" }}</span></div>
                             </div>
                         </div>
