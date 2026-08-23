@@ -1,3 +1,4 @@
+import calendar
 import datetime
 from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
@@ -8,7 +9,7 @@ from django.core.paginator import Paginator
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
-from Working.models import AppUser, Product, ProductColor
+from Working.models import AppUser, Product, ProductColor, ProcessReport
 from Working.auth_utils import get_current_user, login_required
 from Working.forms import load_config
 from .models import ProductPrice, ExportReport
@@ -429,3 +430,437 @@ def accounting_export_excel_view(request):
 
     wb.save(response)
     return response
+
+
+def _get_team_revenue_data(request):
+    """
+    Tính toán doanh thu làm được của từng tổ/xưởng theo ngày dựa trên:
+    Doanh thu = Sản lượng ra chuyền * Đơn giá của từng mã hàng/màu sắc.
+    Xử lý trường hợp 1 tổ có thể ra chuyền nhiều mã hàng khác nhau trong 1 ngày.
+    """
+    has_filter_params = any(k in request.GET for k in ["tu_ngay", "den_ngay", "xuong", "to", "ma_hang", "thang"])
+    today = datetime.date.today()
+
+    thang_param = request.GET.get("thang", "").strip()
+    tu_ngay_str = request.GET.get("tu_ngay", "").strip()
+    den_ngay_str = request.GET.get("den_ngay", "").strip()
+
+    tu_ngay = None
+    den_ngay = None
+
+    if thang_param:
+        try:
+            parts = thang_param.split("-")
+            y, m = int(parts[0]), int(parts[1])
+            tu_ngay = datetime.date(y, m, 1)
+            _, last_day = calendar.monthrange(y, m)
+            den_ngay = datetime.date(y, m, last_day)
+            tu_ngay_str = tu_ngay.strftime("%Y-%m-%d")
+            den_ngay_str = den_ngay.strftime("%Y-%m-%d")
+        except Exception:
+            pass
+
+    if not tu_ngay and not den_ngay:
+        if not has_filter_params:
+            # Mặc định theo tháng hiện tại: từ ngày 1 đầu tháng đến ngày hiện tại
+            # Tự động reset lại từ 0 khi bước sang tháng mới
+            tu_ngay = today.replace(day=1)
+            den_ngay = today
+            tu_ngay_str = tu_ngay.strftime("%Y-%m-%d")
+            den_ngay_str = den_ngay.strftime("%Y-%m-%d")
+        else:
+            if tu_ngay_str:
+                try:
+                    tu_ngay = datetime.date.fromisoformat(tu_ngay_str)
+                except (ValueError, TypeError):
+                    pass
+            if den_ngay_str:
+                try:
+                    den_ngay = datetime.date.fromisoformat(den_ngay_str)
+                except (ValueError, TypeError):
+                    pass
+
+    selected_xuong = request.GET.get("xuong", "").strip()
+    selected_to = request.GET.get("to", "").strip()
+    selected_ma_hang = request.GET.get("ma_hang", "").strip()
+
+    # 1. Bảng đơn giá từ ProductPrice
+    price_map = {}
+    product_price_fallback = {}
+    for pc in ProductColor.objects.select_related("product", "price").all():
+        p_val = pc.price.don_gia if hasattr(pc, "price") else 0
+        price_map[(pc.product.name, pc.name)] = p_val
+        if p_val > 0 and pc.product.name not in product_price_fallback:
+            product_price_fallback[pc.product.name] = p_val
+
+    # 2. Truy vấn ProcessReport có ra chuyền > 0
+    qs = ProcessReport.objects.filter(ra_chuyen__gt=0)
+
+    if tu_ngay:
+        qs = qs.filter(ngay_lam_viec__gte=tu_ngay)
+    if den_ngay:
+        qs = qs.filter(ngay_lam_viec__lte=den_ngay)
+    if selected_xuong:
+        try:
+            qs = qs.filter(xuong=int(selected_xuong))
+        except (ValueError, TypeError):
+            pass
+    if selected_to:
+        try:
+            qs = qs.filter(to=int(selected_to))
+        except (ValueError, TypeError):
+            pass
+    if selected_ma_hang:
+        qs = qs.filter(ma_hang=selected_ma_hang)
+
+    reports = qs.order_by("-ngay_lam_viec", "xuong", "to", "ma_hang", "mau", "size")
+
+    # 3. Gom nhóm theo (ngay_lam_viec, xuong, to)
+    daily_team_dict = {}
+
+    for r in reports:
+        dt_key = (r.ngay_lam_viec, r.xuong, r.to)
+        if dt_key not in daily_team_dict:
+            daily_team_dict[dt_key] = {
+                "ngay_lam_viec": r.ngay_lam_viec,
+                "xuong": r.xuong,
+                "to": r.to,
+                "so_luong_ld": r.so_luong_ld,
+                "items_map": {},
+                "tong_ra_chuyen": 0,
+                "tong_tien": 0,
+                "has_missing_price": False,
+            }
+
+        group = daily_team_dict[dt_key]
+        if r.so_luong_ld and not group["so_luong_ld"]:
+            group["so_luong_ld"] = r.so_luong_ld
+
+        item_key = (r.ma_hang, r.mau)
+        if item_key not in group["items_map"]:
+            don_gia = price_map.get(item_key, product_price_fallback.get(r.ma_hang, 0))
+            group["items_map"][item_key] = {
+                "ma_hang": r.ma_hang,
+                "mau": r.mau,
+                "don_gia": don_gia,
+                "so_luong": 0,
+                "thanh_tien": 0,
+                "has_price": (don_gia > 0),
+            }
+
+        item = group["items_map"][item_key]
+        item["so_luong"] += r.ra_chuyen
+        item["thanh_tien"] += r.ra_chuyen * item["don_gia"]
+
+        group["tong_ra_chuyen"] += r.ra_chuyen
+        group["tong_tien"] += r.ra_chuyen * item["don_gia"]
+        if item["don_gia"] == 0:
+            group["has_missing_price"] = True
+
+    daily_team_groups = []
+    kpi_tong_tien = 0
+    kpi_tong_ra_chuyen = 0
+    active_teams_set = set()
+    active_dates_set = set()
+
+    for dt_key, group in daily_team_dict.items():
+        items_list = list(group["items_map"].values())
+        items_list.sort(key=lambda x: (x["ma_hang"], x["mau"]))
+        group["items"] = items_list
+        group["item_count"] = len(items_list)
+
+        daily_team_groups.append(group)
+        kpi_tong_tien += group["tong_tien"]
+        kpi_tong_ra_chuyen += group["tong_ra_chuyen"]
+        active_teams_set.add((group["xuong"], group["to"]))
+        active_dates_set.add(group["ngay_lam_viec"])
+
+    # 4. Tổng hợp theo Xưởng & Tổ
+    team_summary_dict = {}
+    for g in daily_team_groups:
+        team_key = (g["xuong"], g["to"])
+        if team_key not in team_summary_dict:
+            team_summary_dict[team_key] = {
+                "xuong": g["xuong"],
+                "to": g["to"],
+                "so_ngay_sx": 0,
+                "dates": set(),
+                "tong_ra_chuyen": 0,
+                "tong_tien": 0,
+                "ma_hang_set": set(),
+            }
+        ts = team_summary_dict[team_key]
+        ts["dates"].add(g["ngay_lam_viec"])
+        ts["tong_ra_chuyen"] += g["tong_ra_chuyen"]
+        ts["tong_tien"] += g["tong_tien"]
+        for it in g["items"]:
+            ts["ma_hang_set"].add(it["ma_hang"])
+
+    team_summary_list = []
+    for team_key, ts in team_summary_dict.items():
+        so_ngay = len(ts["dates"])
+        ts["so_ngay_sx"] = so_ngay
+        ts["so_ma_hang"] = len(ts["ma_hang_set"])
+        ts["tien_bq_ngay"] = round(ts["tong_tien"] / so_ngay) if so_ngay > 0 else 0
+        team_summary_list.append(ts)
+    team_summary_list.sort(key=lambda x: (x["xuong"], x["to"]))
+
+    # 5. Tổng hợp theo Ngày
+    date_summary_dict = {}
+    for g in daily_team_groups:
+        d = g["ngay_lam_viec"]
+        if d not in date_summary_dict:
+            date_summary_dict[d] = {
+                "ngay_lam_viec": d,
+                "teams_set": set(),
+                "tong_ra_chuyen": 0,
+                "tong_tien": 0,
+            }
+        ds = date_summary_dict[d]
+        ds["teams_set"].add((g["xuong"], g["to"]))
+        ds["tong_ra_chuyen"] += g["tong_ra_chuyen"]
+        ds["tong_tien"] += g["tong_tien"]
+
+    date_summary_list = []
+    for d, ds in date_summary_dict.items():
+        ds["so_to_hoat_dong"] = len(ds["teams_set"])
+        date_summary_list.append(ds)
+    date_summary_list.sort(key=lambda x: x["ngay_lam_viec"], reverse=True)
+
+    # 6. KPI metrics
+    so_ngay_sx = len(active_dates_set)
+    kpi_tien_bq_ngay = round(kpi_tong_tien / so_ngay_sx) if so_ngay_sx > 0 else 0
+    kpi_so_to = len(active_teams_set)
+
+    # 7. Nhãn chu kỳ & Tháng
+    if tu_ngay and den_ngay:
+        if tu_ngay.year == den_ngay.year and tu_ngay.month == den_ngay.month:
+            ky_thang_label = f"Tháng {tu_ngay.month:02d}/{tu_ngay.year}"
+        else:
+            ky_thang_label = f"{tu_ngay.strftime('%d/%m/%Y')} - {den_ngay.strftime('%d/%m/%Y')}"
+    elif tu_ngay:
+        ky_thang_label = f"Từ {tu_ngay.strftime('%d/%m/%Y')}"
+    elif den_ngay:
+        ky_thang_label = f"Đến {den_ngay.strftime('%d/%m/%Y')}"
+    else:
+        ky_thang_label = "Toàn bộ thời gian"
+
+    thang_hien_tai_str = today.strftime("%Y-%m")
+    thang_truoc_date = (today.replace(day=1) - datetime.timedelta(days=1))
+    thang_truoc_str = thang_truoc_date.strftime("%Y-%m")
+
+    # 8. Bộ lọc danh sách (Dùng set và order_by() để loại bỏ hoàn toàn các giá trị trùng lặp)
+    all_xuong_raw = ProcessReport.objects.order_by().values_list("xuong", flat=True).distinct()
+    all_xuong = sorted(list(set(int(x) for x in all_xuong_raw if x is not None and int(x) > 0)))
+
+    all_to_raw = ProcessReport.objects.order_by().values_list("to", flat=True).distinct()
+    all_to = sorted(list(set(int(t) for t in all_to_raw if t is not None and int(t) > 0)))
+
+    all_products = Product.objects.all().order_by("name")
+
+    # 9. Phân trang cho Bảng Chi Tiết Theo Ngày & Tổ (5 hàng / trang)
+    total_daily_groups_count = len(daily_team_groups)
+    paginator = Paginator(daily_team_groups, 5)
+    page_number = request.GET.get("page", 1)
+    daily_page_obj = paginator.get_page(page_number)
+
+    return {
+        "tu_ngay": tu_ngay_str,
+        "den_ngay": den_ngay_str,
+        "selected_xuong": selected_xuong,
+        "selected_to": selected_to,
+        "selected_ma_hang": selected_ma_hang,
+        "daily_team_groups": daily_team_groups,
+        "daily_page_obj": daily_page_obj,
+        "total_daily_groups_count": total_daily_groups_count,
+        "team_summary_list": team_summary_list,
+        "date_summary_list": date_summary_list,
+        "kpi_tong_tien": kpi_tong_tien,
+        "kpi_tong_ra_chuyen": kpi_tong_ra_chuyen,
+        "kpi_so_to": kpi_so_to,
+        "kpi_so_ngay_sx": so_ngay_sx,
+        "kpi_tien_bq_ngay": kpi_tien_bq_ngay,
+        "all_xuong": all_xuong,
+        "all_to": all_to,
+        "all_products": all_products,
+        "ky_thang_label": ky_thang_label,
+        "thang_hien_tai_str": thang_hien_tai_str,
+        "thang_truoc_str": thang_truoc_str,
+        "thang_param": thang_param,
+    }
+
+
+@login_required
+def team_revenue_report_view(request):
+    user, redirect_resp = _check_accounting_permission(request)
+    if redirect_resp:
+        return redirect_resp
+
+    data = _get_team_revenue_data(request)
+    data["user"] = user
+    return render(request, "accounting/team_revenue_report.html", data)
+
+
+@login_required
+def team_revenue_export_excel_view(request):
+    user, redirect_resp = _check_accounting_permission(request)
+    if redirect_resp:
+        return redirect_resp
+
+    data = _get_team_revenue_data(request)
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    filename = f"BaoCao_DoanhThu_ToXuong_{datetime.date.today().strftime('%Y%m%d')}.xlsx"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    wb = openpyxl.Workbook()
+
+    # Style definitions
+    header_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
+    header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
+    group_fill = PatternFill(start_color="E0F2FE", end_color="E0F2FE", fill_type="solid")
+    group_font = Font(name="Arial", size=10, bold=True, color="0369A1")
+    total_fill = PatternFill(start_color="FEF08A", end_color="FEF08A", fill_type="solid")
+    total_font = Font(name="Arial", size=11, bold=True, color="854D0E")
+    thin_border = Border(
+        left=Side(style='thin', color='CBD5E1'),
+        right=Side(style='thin', color='CBD5E1'),
+        top=Side(style='thin', color='CBD5E1'),
+        bottom=Side(style='thin', color='CBD5E1')
+    )
+
+    # -------------------------------------------------------------
+    # SHEET 1: Chi Tiết Theo Ngày & Tổ
+    # -------------------------------------------------------------
+    ws1 = wb.active
+    ws1.title = "Chi Tiết Ngày & Tổ"
+
+    headers1 = [
+        "STT", "Ngày làm việc", "Xưởng", "Tổ", "Mã hàng", "Màu sắc",
+        "Số lượng ra chuyền (Cái)", "Đơn giá (VNĐ)", "Thành tiền (VNĐ)", "Trạng thái đơn giá"
+    ]
+    ws1.append(headers1)
+
+    stt = 1
+    for g in data["daily_team_groups"]:
+        ngay_str = g["ngay_lam_viec"].strftime("%d/%m/%Y")
+        xuong_label = f"Xưởng {g['xuong']}" if g['xuong'] else "Chưa phân xưởng"
+        to_label = f"Tổ {g['to']}" if g['to'] else "Chưa phân tổ"
+
+        for it in g["items"]:
+            status_dg = "Đã có giá" if it["has_price"] else "CHƯA CÓ ĐƠN GIÁ"
+            ws1.append([
+                stt,
+                ngay_str,
+                xuong_label,
+                to_label,
+                it["ma_hang"],
+                it["mau"],
+                it["so_luong"],
+                it["don_gia"],
+                it["thanh_tien"],
+                status_dg
+            ])
+            stt += 1
+
+    # Dòng tổng cộng Sheet 1
+    total_row_idx_1 = ws1.max_row + 1
+    ws1.append([
+        "TỔNG CỘNG", "", "", "", "", "",
+        data["kpi_tong_ra_chuyen"], "", data["kpi_tong_tien"], ""
+    ])
+
+    # -------------------------------------------------------------
+    # SHEET 2: Tổng Hợp Theo Tổ & Xưởng
+    # -------------------------------------------------------------
+    ws2 = wb.create_sheet(title="Tổng Hợp Tổ Xưởng")
+    headers2 = [
+        "STT", "Xưởng", "Tổ", "Số ngày làm việc", "Số mã hàng đã làm",
+        "Tổng SL ra chuyền (Cái)", "Tổng tiền làm được (VNĐ)", "Tiền bình quân / ngày (VNĐ)"
+    ]
+    ws2.append(headers2)
+
+    for idx, ts in enumerate(data["team_summary_list"], 1):
+        xuong_label = f"Xưởng {ts['xuong']}" if ts['xuong'] else "Chưa phân xưởng"
+        to_label = f"Tổ {ts['to']}" if ts['to'] else "Chưa phân tổ"
+        ws2.append([
+            idx,
+            xuong_label,
+            to_label,
+            ts["so_ngay_sx"],
+            ts["so_ma_hang"],
+            ts["tong_ra_chuyen"],
+            ts["tong_tien"],
+            ts["tien_bq_ngay"]
+        ])
+
+    # Dòng tổng cộng Sheet 2
+    ws2.append([
+        "TỔNG CỘNG", "", "", data["kpi_so_ngay_sx"], "",
+        data["kpi_tong_ra_chuyen"], data["kpi_tong_tien"], data["kpi_tien_bq_ngay"]
+    ])
+
+    # -------------------------------------------------------------
+    # SHEET 3: Tổng Hợp Theo Ngày
+    # -------------------------------------------------------------
+    ws3 = wb.create_sheet(title="Tổng Hợp Theo Ngày")
+    headers3 = [
+        "STT", "Ngày làm việc", "Số tổ hoạt động",
+        "Tổng SL ra chuyền (Cái)", "Tổng tiền làm được (VNĐ)"
+    ]
+    ws3.append(headers3)
+
+    for idx, ds in enumerate(data["date_summary_list"], 1):
+        ws3.append([
+            idx,
+            ds["ngay_lam_viec"].strftime("%d/%m/%Y"),
+            ds["so_to_hoat_dong"],
+            ds["tong_ra_chuyen"],
+            ds["tong_tien"]
+        ])
+
+    # Dòng tổng cộng Sheet 3
+    ws3.append([
+        "TỔNG CỘNG", "", data["kpi_so_to"],
+        data["kpi_tong_ra_chuyen"], data["kpi_tong_tien"]
+    ])
+
+    # -------------------------------------------------------------
+    # Formatting Style cho cả 3 Sheets
+    # -------------------------------------------------------------
+    for ws in [ws1, ws2, ws3]:
+        # Header formatting
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        ws.row_dimensions[1].height = 28
+
+        # Data row formatting
+        last_row = ws.max_row
+        for r_idx, row in enumerate(ws.iter_rows(min_row=2, max_row=last_row), start=2):
+            is_total = (r_idx == last_row)
+            ws.row_dimensions[r_idx].height = 22 if is_total else 20
+            for cell in row:
+                cell.border = thin_border
+                if is_total:
+                    cell.fill = total_fill
+                    cell.font = total_font
+                else:
+                    cell.font = Font(name="Arial", size=10)
+
+                # Format số tiền và số lượng
+                if isinstance(cell.value, (int, float)):
+                    cell.number_format = '#,##0'
+
+        # Auto width
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 4, 14)
+
+    wb.save(response)
+    return response
+

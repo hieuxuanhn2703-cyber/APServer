@@ -4,7 +4,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.core.exceptions import PermissionDenied
 
-from Working.models import AppUser, Product, ProductColor
+from Working.models import AppUser, Product, ProductColor, ProcessReport
 from Working.auth_utils import SESSION_KEY
 from Accounting.models import ProductPrice, ExportReport
 
@@ -214,4 +214,423 @@ class AccountingTests(TestCase):
         # 3. Quản lý mã hàng
         resp = self.client.get(reverse("config_list"))
         self.assertEqual(resp.status_code, 200)
+
+    def test_team_revenue_report_permission(self):
+        """Test access control: Only KE_TOAN and PREMIUM can access team revenue report."""
+        # Basic user gets 403
+        self._login(self.basic_user)
+        resp = self.client.get(reverse("accounting:team_revenue_report"))
+        self.assertEqual(resp.status_code, 403)
+        resp = self.client.get(reverse("accounting:team_revenue_export_excel"))
+        self.assertEqual(resp.status_code, 403)
+
+        # Accountant user gets 200
+        self._login(self.accountant_user)
+        resp = self.client.get(reverse("accounting:team_revenue_report"))
+        self.assertEqual(resp.status_code, 200)
+
+        # Premium admin gets 200
+        self._login(self.admin_user)
+        resp = self.client.get(reverse("accounting:team_revenue_report"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_team_revenue_calculation_multiple_products(self):
+        """
+        Test team revenue calculation:
+        1 team outputs multiple different products/colors on the same day.
+        Calculation: sum(ra_chuyen * don_gia) for each product code.
+        """
+        # Create product 2 with unit price
+        product2 = Product.objects.create(name="AO-KHOAC-02")
+        color2_den = ProductColor.objects.create(product=product2, name="Đen", quantity=800)
+        ProductPrice.objects.create(
+            product_color=color2_den,
+            don_gia=250000,
+            updated_by=self.accountant_user
+        )
+
+        # Also set unit price for product 1 / Xanh = 150,000 VNĐ
+        ProductPrice.objects.create(
+            product_color=self.color1_blue,
+            don_gia=150000,
+            updated_by=self.accountant_user
+        )
+
+        # Work day 1: 2026-08-20, Xuong 1, To 1
+        # Product 1 / Do: 50 pcs * 120,000 = 6,000,000 VNĐ
+        ProcessReport.objects.create(
+            ngay_lam_viec=datetime.date(2026, 8, 20),
+            xuong=1,
+            to=1,
+            so_luong_ld=20,
+            ma_hang="AO-POLO-01",
+            mau="Đỏ",
+            size="L",
+            ra_chuyen=50,
+            nguoi_nhap=self.basic_user
+        )
+        # Product 1 / Xanh: 30 pcs * 150,000 = 4,500,000 VNĐ
+        ProcessReport.objects.create(
+            ngay_lam_viec=datetime.date(2026, 8, 20),
+            xuong=1,
+            to=1,
+            so_luong_ld=20,
+            ma_hang="AO-POLO-01",
+            mau="Xanh",
+            size="M",
+            ra_chuyen=30,
+            nguoi_nhap=self.basic_user
+        )
+        # Product 2 / Den: 20 pcs * 250,000 = 5,000,000 VNĐ
+        ProcessReport.objects.create(
+            ngay_lam_viec=datetime.date(2026, 8, 20),
+            xuong=1,
+            to=1,
+            so_luong_ld=20,
+            ma_hang="AO-KHOAC-02",
+            mau="Đen",
+            size="XL",
+            ra_chuyen=20,
+            nguoi_nhap=self.basic_user
+        )
+        # => Xuong 1 - To 1 total: 100 pcs, 15,500,000 VNĐ
+
+        # Work day 1: 2026-08-20, Xuong 2, To 3
+        # Product 1 / Do: 40 pcs * 120,000 = 4,800,000 VNĐ
+        ProcessReport.objects.create(
+            ngay_lam_viec=datetime.date(2026, 8, 20),
+            xuong=2,
+            to=3,
+            so_luong_ld=15,
+            ma_hang="AO-POLO-01",
+            mau="Đỏ",
+            size="S",
+            ra_chuyen=40,
+            nguoi_nhap=self.basic_user
+        )
+
+        self._login(self.accountant_user)
+        resp = self.client.get(reverse("accounting:team_revenue_report"), {
+            "tu_ngay": "2026-08-01",
+            "den_ngay": "2026-08-31"
+        })
+        self.assertEqual(resp.status_code, 200)
+
+        ctx = resp.context
+        # Total output = 50 + 30 + 20 + 40 = 140 pcs
+        self.assertEqual(ctx["kpi_tong_ra_chuyen"], 140)
+        # Total money = 6,000,000 + 4,500,000 + 5,000,000 + 4,800,000 = 20,300,000 VNĐ
+        self.assertEqual(ctx["kpi_tong_tien"], 20300000)
+        # Active teams = 2 (Xuong 1 - To 1, Xuong 2 - To 3)
+        self.assertEqual(ctx["kpi_so_to"], 2)
+        # Active days = 1 (2026-08-20)
+        self.assertEqual(ctx["kpi_so_ngay_sx"], 1)
+
+        # Check daily team groups
+        groups = ctx["daily_team_groups"]
+        self.assertEqual(len(groups), 2)
+        # Find group Xuong 1, To 1
+        g_x1_t1 = next(g for g in groups if g["xuong"] == 1 and g["to"] == 1)
+        self.assertEqual(g_x1_t1["tong_ra_chuyen"], 100)
+        self.assertEqual(g_x1_t1["tong_tien"], 15500000)
+        self.assertEqual(len(g_x1_t1["items"]), 3)
+
+        # Find group Xuong 2, To 3
+        g_x2_t3 = next(g for g in groups if g["xuong"] == 2 and g["to"] == 3)
+        self.assertEqual(g_x2_t3["tong_ra_chuyen"], 40)
+        self.assertEqual(g_x2_t3["tong_tien"], 4800000)
+        self.assertEqual(len(g_x2_t3["items"]), 1)
+
+    def test_team_revenue_filters(self):
+        """Test filtering by workshop, team, product code, and date range."""
+        ProcessReport.objects.create(
+            ngay_lam_viec=datetime.date(2026, 8, 10),
+            xuong=1,
+            to=1,
+            ma_hang="AO-POLO-01",
+            mau="Đỏ",
+            size="M",
+            ra_chuyen=20,
+            nguoi_nhap=self.basic_user
+        )
+        ProcessReport.objects.create(
+            ngay_lam_viec=datetime.date(2026, 8, 20),
+            xuong=2,
+            to=2,
+            ma_hang="AO-POLO-01",
+            mau="Đỏ",
+            size="M",
+            ra_chuyen=50,
+            nguoi_nhap=self.basic_user
+        )
+
+        self._login(self.accountant_user)
+
+        # Filter by xuong=2
+        resp = self.client.get(reverse("accounting:team_revenue_report"), {
+            "xuong": "2",
+            "tu_ngay": "2026-08-01",
+            "den_ngay": "2026-08-31"
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["kpi_tong_ra_chuyen"], 50)
+        self.assertEqual(resp.context["kpi_tong_tien"], 50 * 120000)
+
+        # Filter by date range (only 2026-08-10)
+        resp = self.client.get(reverse("accounting:team_revenue_report"), {
+            "tu_ngay": "2026-08-05",
+            "den_ngay": "2026-08-15"
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["kpi_tong_ra_chuyen"], 20)
+
+    def test_team_revenue_export_excel(self):
+        """Test team revenue Excel export response and sheets."""
+        ProcessReport.objects.create(
+            ngay_lam_viec=datetime.date(2026, 8, 20),
+            xuong=1,
+            to=1,
+            ma_hang="AO-POLO-01",
+            mau="Đỏ",
+            size="L",
+            ra_chuyen=50,
+            nguoi_nhap=self.basic_user
+        )
+
+        self._login(self.accountant_user)
+        resp = self.client.get(reverse("accounting:team_revenue_export_excel"), {
+            "tu_ngay": "2026-08-01",
+            "den_ngay": "2026-08-31"
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.assertIn("attachment; filename=", resp["Content-Disposition"])
+
+    def test_all_xuong_and_to_no_duplicates(self):
+        """Test that all_xuong and all_to dropdown options do not have duplicate entries."""
+        # Create multiple reports for the same xuong=1 and to=1
+        for i in range(5):
+            ProcessReport.objects.create(
+                ngay_lam_viec=datetime.date(2026, 8, 20),
+                xuong=1,
+                to=1,
+                ma_hang="AO-POLO-01",
+                mau="Đỏ",
+                size=f"Size-{i}",
+                ra_chuyen=10,
+                nguoi_nhap=self.basic_user
+            )
+        # Create multiple reports for xuong=2 and to=3
+        for i in range(3):
+            ProcessReport.objects.create(
+                ngay_lam_viec=datetime.date(2026, 8, 21),
+                xuong=2,
+                to=3,
+                ma_hang="AO-POLO-01",
+                mau="Đỏ",
+                size=f"Size-{i}",
+                ra_chuyen=10,
+                nguoi_nhap=self.basic_user
+            )
+
+        self._login(self.accountant_user)
+        resp = self.client.get(reverse("accounting:team_revenue_report"))
+        self.assertEqual(resp.status_code, 200)
+
+        all_xuong = resp.context["all_xuong"]
+        all_to = resp.context["all_to"]
+
+        # Ensure no duplicates
+        self.assertEqual(len(all_xuong), len(set(all_xuong)))
+        self.assertEqual(len(all_to), len(set(all_to)))
+        self.assertEqual(all_xuong, [1, 2])
+        self.assertEqual(all_to, [1, 3])
+
+    def test_team_revenue_pagination_5_per_page(self):
+        """Test that daily team detail view is paginated at 5 rows/groups per page."""
+        # Create 12 distinct daily team entries in current month
+        today = datetime.date.today()
+        for day in range(1, 13):
+            d = today.replace(day=day)
+            ProcessReport.objects.create(
+                ngay_lam_viec=d,
+                xuong=1,
+                to=1,
+                ma_hang="AO-POLO-01",
+                mau="Đỏ",
+                size="L",
+                ra_chuyen=50,
+                nguoi_nhap=self.basic_user
+            )
+
+        self._login(self.accountant_user)
+
+        # Page 1
+        resp = self.client.get(reverse("accounting:team_revenue_report"))
+        self.assertEqual(resp.status_code, 200)
+        daily_page_obj = resp.context["daily_page_obj"]
+        self.assertEqual(daily_page_obj.paginator.per_page, 5)
+        self.assertEqual(len(daily_page_obj.object_list), 5)
+        self.assertEqual(daily_page_obj.paginator.num_pages, 3) # 12 items / 5 = 3 pages
+        self.assertEqual(resp.context["total_daily_groups_count"], 12)
+
+        # Page 2
+        resp = self.client.get(reverse("accounting:team_revenue_report") + "?page=2")
+        self.assertEqual(resp.status_code, 200)
+        daily_page_obj = resp.context["daily_page_obj"]
+        self.assertEqual(daily_page_obj.number, 2)
+        self.assertEqual(len(daily_page_obj.object_list), 5)
+
+        # Page 3 (remaining 2 items)
+        resp = self.client.get(reverse("accounting:team_revenue_report") + "?page=3")
+        self.assertEqual(resp.status_code, 200)
+        daily_page_obj = resp.context["daily_page_obj"]
+        self.assertEqual(daily_page_obj.number, 3)
+        self.assertEqual(len(daily_page_obj.object_list), 2)
+
+    def test_team_revenue_mathematical_precision_audit(self):
+        """
+        Audit all calculations for 100% mathematical precision:
+        - Multiple teams (Xuong 1 To 1, Xuong 1 To 2, Xuong 2 To 1)
+        - Multiple days (Day 1, Day 2, Day 3)
+        - Multiple products (AO-POLO-01 @ 120,000, AO-KHOAC-02 @ 250,000, AO-THUN-03 @ 80,000)
+        - Multiple colors and sizes
+        - Strict cross-verification across:
+            KPI Summary == Tab 1 items sum == Tab 2 team sum == Tab 3 date sum == Excel export.
+        """
+        # Create products and prices
+        p2 = Product.objects.create(name="AO-KHOAC-02")
+        c2_den = ProductColor.objects.create(product=p2, name="Đen", quantity=1000)
+        ProductPrice.objects.create(product_color=c2_den, don_gia=250000, updated_by=self.accountant_user)
+
+        p3 = Product.objects.create(name="AO-THUN-03")
+        c3_trang = ProductColor.objects.create(product=p3, name="Trắng", quantity=1000)
+        ProductPrice.objects.create(product_color=c3_trang, don_gia=80000, updated_by=self.accountant_user)
+
+        # Expected totals tracker
+        expected_total_qty = 0
+        expected_total_money = 0
+        expected_active_dates = set()
+        expected_active_teams = set()
+
+        # Day 1: 2026-08-05
+        d1 = datetime.date(2026, 8, 5)
+        # Xuong 1 To 1:
+        # - AO-POLO-01 (Đỏ): Size S=10, Size M=20, Size L=30 -> 60 pcs * 120,000 = 7,200,000
+        # - AO-KHOAC-02 (Đen): Size XL=15 -> 15 pcs * 250,000 = 3,750,000
+        # Subtotal: 75 pcs, 10,950,000 VNĐ
+        for size, q in [("S", 10), ("M", 20), ("L", 30)]:
+            ProcessReport.objects.create(
+                ngay_lam_viec=d1, xuong=1, to=1, ma_hang="AO-POLO-01", mau="Đỏ", size=size,
+                ra_chuyen=q, so_luong_ld=12, nguoi_nhap=self.basic_user
+            )
+        ProcessReport.objects.create(
+            ngay_lam_viec=d1, xuong=1, to=1, ma_hang="AO-KHOAC-02", mau="Đen", size="XL",
+            ra_chuyen=15, so_luong_ld=12, nguoi_nhap=self.basic_user
+        )
+        expected_total_qty += 75
+        expected_total_money += 10950000
+        expected_active_dates.add(d1)
+        expected_active_teams.add((1, 1))
+
+        # Xuong 1 To 2:
+        # - AO-THUN-03 (Trắng): Size M=100 -> 100 pcs * 80,000 = 8,000,000
+        ProcessReport.objects.create(
+            ngay_lam_viec=d1, xuong=1, to=2, ma_hang="AO-THUN-03", mau="Trắng", size="M",
+            ra_chuyen=100, so_luong_ld=10, nguoi_nhap=self.basic_user
+        )
+        expected_total_qty += 100
+        expected_total_money += 8000000
+        expected_active_teams.add((1, 2))
+
+        # Day 2: 2026-08-06
+        d2 = datetime.date(2026, 8, 6)
+        # Xuong 2 To 1:
+        # - AO-KHOAC-02 (Đen): Size L=40 -> 40 pcs * 250,000 = 10,000,000
+        ProcessReport.objects.create(
+            ngay_lam_viec=d2, xuong=2, to=1, ma_hang="AO-KHOAC-02", mau="Đen", size="L",
+            ra_chuyen=40, so_luong_ld=15, nguoi_nhap=self.basic_user
+        )
+        expected_total_qty += 40
+        expected_total_money += 10000000
+        expected_active_dates.add(d2)
+        expected_active_teams.add((2, 1))
+
+        # Xuong 1 To 1:
+        # - AO-THUN-03 (Trắng): Size S=50 -> 50 pcs * 80,000 = 4,000,000
+        ProcessReport.objects.create(
+            ngay_lam_viec=d2, xuong=1, to=1, ma_hang="AO-THUN-03", mau="Trắng", size="S",
+            ra_chuyen=50, so_luong_ld=12, nguoi_nhap=self.basic_user
+        )
+        expected_total_qty += 50
+        expected_total_money += 4000000
+
+        # Grand Total across dataset:
+        # Qty = 75 + 100 + 40 + 50 = 265 pcs
+        # Money = 10,950,000 + 8,000,000 + 10,000,000 + 4,000,000 = 32,950,000 VNĐ
+        # Active teams = 3 (X1-T1, X1-T2, X2-T1)
+        # Active days = 2 (2026-08-05, 2026-08-06)
+        # Avg money per day = 32,950,000 / 2 = 16,475,000 VNĐ
+
+        self.assertEqual(expected_total_qty, 265)
+        self.assertEqual(expected_total_money, 32950000)
+
+        self._login(self.accountant_user)
+        resp = self.client.get(reverse("accounting:team_revenue_report") + "?thang=2026-08")
+        self.assertEqual(resp.status_code, 200)
+
+        # 1. Audit KPIs
+        self.assertEqual(resp.context["kpi_tong_ra_chuyen"], 265)
+        self.assertEqual(resp.context["kpi_tong_tien"], 32950000)
+        self.assertEqual(resp.context["kpi_so_to"], 3)
+        self.assertEqual(resp.context["kpi_so_ngay_sx"], 2)
+        self.assertEqual(resp.context["kpi_tien_bq_ngay"], 16475000)
+
+        # 2. Audit Tab 1 (Detail groups)
+        daily_groups = resp.context["daily_team_groups"]
+        self.assertEqual(len(daily_groups), 4) # (d1, 1, 1), (d1, 1, 2), (d2, 2, 1), (d2, 1, 1)
+        tab1_qty_sum = sum(g["tong_ra_chuyen"] for g in daily_groups)
+        tab1_money_sum = sum(g["tong_tien"] for g in daily_groups)
+        self.assertEqual(tab1_qty_sum, 265)
+        self.assertEqual(tab1_money_sum, 32950000)
+
+        # 3. Audit Tab 2 (Team summary)
+        team_summary = resp.context["team_summary_list"]
+        self.assertEqual(len(team_summary), 3)
+        tab2_qty_sum = sum(ts["tong_ra_chuyen"] for ts in team_summary)
+        tab2_money_sum = sum(ts["tong_tien"] for ts in team_summary)
+        self.assertEqual(tab2_qty_sum, 265)
+        self.assertEqual(tab2_money_sum, 32950000)
+
+        # Xưởng 1 Tổ 1: worked 2 days, total money = 10,950,000 + 4,000,000 = 14,950,000
+        x1_t1 = next(ts for ts in team_summary if ts["xuong"] == 1 and ts["to"] == 1)
+        self.assertEqual(x1_t1["so_ngay_sx"], 2)
+        self.assertEqual(x1_t1["so_ma_hang"], 3) # AO-POLO-01, AO-KHOAC-02, AO-THUN-03
+        self.assertEqual(x1_t1["tong_ra_chuyen"], 125)
+        self.assertEqual(x1_t1["tong_tien"], 14950000)
+        self.assertEqual(x1_t1["tien_bq_ngay"], round(14950000 / 2))
+
+        # 4. Audit Tab 3 (Date summary)
+        date_summary = resp.context["date_summary_list"]
+        self.assertEqual(len(date_summary), 2)
+        tab3_qty_sum = sum(ds["tong_ra_chuyen"] for ds in date_summary)
+        tab3_money_sum = sum(ds["tong_tien"] for ds in date_summary)
+        self.assertEqual(tab3_qty_sum, 265)
+        self.assertEqual(tab3_money_sum, 32950000)
+
+        # Day 1: 75 + 100 = 175 pcs, 10,950,000 + 8,000,000 = 18,950,000 VNĐ, 2 active teams
+        d1_summary = next(ds for ds in date_summary if ds["ngay_lam_viec"] == d1)
+        self.assertEqual(d1_summary["so_to_hoat_dong"], 2)
+        self.assertEqual(d1_summary["tong_ra_chuyen"], 175)
+        self.assertEqual(d1_summary["tong_tien"], 18950000)
+
+        # Day 2: 40 + 50 = 90 pcs, 10,000,000 + 4,000,000 = 14,000,000 VNĐ, 2 active teams
+        d2_summary = next(ds for ds in date_summary if ds["ngay_lam_viec"] == d2)
+        self.assertEqual(d2_summary["so_to_hoat_dong"], 2)
+        self.assertEqual(d2_summary["tong_ra_chuyen"], 90)
+        self.assertEqual(d2_summary["tong_tien"], 14000000)
+
+
+
+
 
