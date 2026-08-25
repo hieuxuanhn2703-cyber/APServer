@@ -12,7 +12,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from Working.models import AppUser, Product, ProductColor, ProcessReport
 from Working.auth_utils import get_current_user, login_required
 from Working.forms import load_config
-from .models import ProductPrice, ExportReport
+from .models import ProductPrice, ExportReport, PaymentReport
 from .forms import ExportReportForm, load_price_map
 
 
@@ -32,6 +32,48 @@ def accounting_dashboard_view(request):
         return redirect_resp
 
     selected_ma_hang = request.GET.get("ma_hang", "").strip()
+    success_msg = None
+    error_msg = None
+
+    if request.method == "POST":
+        action = request.POST.get("action", "").strip()
+        if action == "create_payment":
+            pc_id = request.POST.get("product_color_id")
+            ngay_tt_str = request.POST.get("ngay_thanh_toan")
+            so_tien_raw = request.POST.get("so_tien", "0")
+            ghi_chu = request.POST.get("ghi_chu", "").strip()
+
+            pc = ProductColor.objects.filter(id=pc_id).select_related("product").first()
+            if not pc:
+                error_msg = "Không tìm thấy mặt hàng để ghi nhận thanh toán."
+            else:
+                so_tien = _parse_currency(so_tien_raw)
+                if so_tien <= 0:
+                    error_msg = "Số tiền thanh toán phải lớn hơn 0 VNĐ."
+                else:
+                    try:
+                        ngay_tt = datetime.date.fromisoformat(ngay_tt_str) if ngay_tt_str else datetime.date.today()
+                    except (ValueError, TypeError):
+                        ngay_tt = datetime.date.today()
+
+                    PaymentReport.objects.create(
+                        ngay_thanh_toan=ngay_tt,
+                        product_color=pc,
+                        so_tien=so_tien,
+                        ghi_chu=ghi_chu,
+                        nguoi_nhap=user,
+                    )
+                    success_msg = f"Đã ghi nhận thanh toán {so_tien:,.0f} VNĐ cho {pc.product.name} — {pc.name} thành công!"
+        
+        elif action == "delete_payment":
+            pay_id = request.POST.get("payment_id")
+            pay = PaymentReport.objects.filter(id=pay_id).select_related("product_color__product").first()
+            if pay:
+                pc_name = f"{pay.product_color.product.name} — {pay.product_color.name}"
+                pay.delete()
+                success_msg = f"Đã xóa phiếu thanh toán của {pc_name} thành công!"
+            else:
+                error_msg = "Không tìm thấy phiếu thanh toán cần xóa."
 
     # Lấy toàn bộ ProductColor kèm Product và ProductPrice
     colors_qs = ProductColor.objects.select_related("product", "price").all()
@@ -57,6 +99,28 @@ def accounting_dashboard_view(request):
         for item in export_agg
     }
 
+    # Lấy tổng tiền đã thanh toán nhóm theo product_color_id
+    payment_agg = (
+        PaymentReport.objects
+        .values("product_color_id")
+        .annotate(tong_da_thanh_toan=Sum("so_tien"))
+    )
+    payment_map = {item["product_color_id"]: (item["tong_da_thanh_toan"] or 0) for item in payment_agg}
+
+    # Lịch sử các lần thanh toán theo từng product_color
+    payments_by_pc = {}
+    for pay in PaymentReport.objects.select_related("nguoi_nhap").order_by("-ngay_thanh_toan", "-created_at"):
+        if pay.product_color_id not in payments_by_pc:
+            payments_by_pc[pay.product_color_id] = []
+        payments_by_pc[pay.product_color_id].append({
+            "id": pay.id,
+            "ngay_thanh_toan": pay.ngay_thanh_toan.strftime("%d/%m/%Y"),
+            "so_tien": pay.so_tien,
+            "ghi_chu": pay.ghi_chu,
+            "nguoi_nhap": pay.nguoi_nhap.name or pay.nguoi_nhap.account if pay.nguoi_nhap else "",
+            "created_at": pay.created_at.strftime("%d/%m/%Y %H:%M"),
+        })
+
     rows = []
     kpi_tong_tien_dh = 0
     kpi_tong_da_xuat_tien = 0
@@ -64,6 +128,8 @@ def accounting_dashboard_view(request):
     kpi_tong_so_luong_dh = 0
     kpi_tong_da_xuat_sl = 0
     kpi_tong_con_lai_sl = 0
+    kpi_tong_da_thanh_toan = 0
+    kpi_tong_chua_thanh_toan = 0
 
     for pc in colors_qs:
         ma = pc.product.name
@@ -80,6 +146,10 @@ def accounting_dashboard_view(request):
         tien_con_lai = con_lai * don_gia
         ty_le_xuat = round((da_xuat / tong_sl * 100), 1) if tong_sl > 0 else 0
 
+        tien_da_thanh_toan = payment_map.get(pc.id, 0)
+        # Tiền chưa thanh toán = Tiền đã xuất - Tiền đã thanh toán
+        tien_chua_thanh_toan = max(0, tien_da_xuat - tien_da_thanh_toan)
+
         rows.append({
             "product_color_id": pc.id,
             "ma_hang": ma,
@@ -92,6 +162,9 @@ def accounting_dashboard_view(request):
             "con_lai": con_lai,
             "tien_con_lai": tien_con_lai,
             "ty_le_xuat": ty_le_xuat,
+            "tien_da_thanh_toan": tien_da_thanh_toan,
+            "tien_chua_thanh_toan": tien_chua_thanh_toan,
+            "payments_list": payments_by_pc.get(pc.id, []),
         })
 
         kpi_tong_so_luong_dh += tong_sl
@@ -100,6 +173,8 @@ def accounting_dashboard_view(request):
         kpi_tong_da_xuat_tien += tien_da_xuat
         kpi_tong_con_lai_sl += con_lai
         kpi_tong_con_lai_tien += tien_con_lai
+        kpi_tong_da_thanh_toan += tien_da_thanh_toan
+        kpi_tong_chua_thanh_toan += tien_chua_thanh_toan
 
     kpi_tien_do_tong = round((kpi_tong_da_xuat_sl / kpi_tong_so_luong_dh * 100), 1) if kpi_tong_so_luong_dh > 0 else 0
 
@@ -117,7 +192,12 @@ def accounting_dashboard_view(request):
         "kpi_tong_so_luong_dh": kpi_tong_so_luong_dh,
         "kpi_tong_da_xuat_sl": kpi_tong_da_xuat_sl,
         "kpi_tong_con_lai_sl": kpi_tong_con_lai_sl,
+        "kpi_tong_da_thanh_toan": kpi_tong_da_thanh_toan,
+        "kpi_tong_chua_thanh_toan": kpi_tong_chua_thanh_toan,
         "kpi_tien_do_tong": kpi_tien_do_tong,
+        "success_msg": success_msg,
+        "error_msg": error_msg,
+        "payments_by_pc": payments_by_pc,
     }
     return render(request, "accounting/dashboard.html", context)
 
@@ -199,19 +279,28 @@ def price_management_view(request):
         if action == "update_single":
             color_id = request.POST.get("product_color_id")
             don_gia = _parse_currency(request.POST.get("don_gia"))
+            gia_cm = _parse_currency(request.POST.get("gia_cm"))
             if color_id:
                 pc = get_object_or_404(ProductColor, id=color_id)
                 price_obj, _ = ProductPrice.objects.get_or_create(product_color=pc)
                 price_obj.don_gia = don_gia
+                price_obj.gia_cm = gia_cm
                 price_obj.updated_by = user
                 price_obj.save()
-                success_msg = f"Đã lưu đơn giá cho [{pc.product.name} - {pc.name}]: {don_gia:,} VNĐ"
+                success_msg = f"Đã lưu bảng giá cho [{pc.product.name} - {pc.name}]: Đơn giá {don_gia:,} VNĐ | Giá CM {gia_cm:,} VNĐ"
         elif action == "update_bulk":
             updated_count = 0
-            # Collect unique color ids and values
             color_prices = {}
+            color_cm_prices = {}
             for key, val in request.POST.items():
-                if key.startswith("price_") or key.startswith("m_price_"):
+                if key.startswith("cm_price_") or key.startswith("m_cm_price_"):
+                    try:
+                        clean_key = key.replace("m_cm_price_", "").replace("cm_price_", "")
+                        color_id = int(clean_key)
+                        color_cm_prices[color_id] = _parse_currency(val)
+                    except Exception:
+                        pass
+                elif key.startswith("price_") or key.startswith("m_price_"):
                     try:
                         clean_key = key.replace("m_price_", "").replace("price_", "")
                         color_id = int(clean_key)
@@ -219,12 +308,17 @@ def price_management_view(request):
                     except Exception:
                         pass
 
-            for color_id, don_gia in color_prices.items():
+            all_ids = set(color_prices.keys()) | set(color_cm_prices.keys())
+            for color_id in all_ids:
                 try:
                     pc = ProductColor.objects.get(id=color_id)
                     price_obj, _ = ProductPrice.objects.get_or_create(product_color=pc)
-                    if price_obj.don_gia != don_gia or not price_obj.id:
-                        price_obj.don_gia = don_gia
+                    new_don_gia = color_prices.get(color_id, price_obj.don_gia)
+                    new_gia_cm = color_cm_prices.get(color_id, price_obj.gia_cm)
+
+                    if price_obj.don_gia != new_don_gia or price_obj.gia_cm != new_gia_cm or not price_obj.id:
+                        price_obj.don_gia = new_don_gia
+                        price_obj.gia_cm = new_gia_cm
                         price_obj.updated_by = user
                         price_obj.save()
                         updated_count += 1
@@ -232,9 +326,9 @@ def price_management_view(request):
                     pass
 
             if updated_count > 0:
-                success_msg = f"Đã lưu thành công đơn giá cho {updated_count} mặt hàng."
+                success_msg = f"Đã lưu thành công bảng giá cho {updated_count} mặt hàng."
             else:
-                success_msg = "Dữ liệu đơn giá đã được cập nhật đồng bộ."
+                success_msg = "Dữ liệu bảng giá đã được cập nhật đồng bộ."
 
     # Lấy danh sách ProductColor kèm Product & ProductPrice
     colors = ProductColor.objects.select_related("product", "price").all().order_by("product__name", "name")
@@ -242,6 +336,7 @@ def price_management_view(request):
     price_items = []
     for pc in colors:
         don_gia = pc.price.don_gia if hasattr(pc, "price") else 0
+        gia_cm = pc.price.gia_cm if hasattr(pc, "price") else 0
         tong_tien = pc.quantity * don_gia
         price_items.append({
             "id": pc.id,
@@ -249,6 +344,7 @@ def price_management_view(request):
             "mau": pc.name,
             "quantity": pc.quantity,
             "don_gia": don_gia,
+            "gia_cm": gia_cm,
             "tong_tien": tong_tien,
             "updated_at": pc.price.updated_at if hasattr(pc, "price") else None,
             "updated_by": pc.price.updated_by.name if (hasattr(pc, "price") and pc.price.updated_by) else "",
@@ -337,7 +433,9 @@ def accounting_export_excel_view(request):
         "STT", "Mã hàng", "Màu sắc", "Tổng đơn hàng (Cái)",
         "Đơn giá (VNĐ)", "Tổng giá trị ĐH (VNĐ)",
         "Đã xuất (Cái)", "Tiền đã xuất (VNĐ)",
-        "Còn lại (Cái)", "Tiền còn lại (VNĐ)", "Tiến độ xuất (%)"
+        "Còn lại (Cái)", "Tiền còn lại (VNĐ)",
+        "Tiền đã thanh toán (VNĐ)", "Tiền chưa thanh toán (VNĐ)",
+        "Tiến độ xuất (%)"
     ]
     ws1.append(headers1)
 
@@ -358,6 +456,14 @@ def accounting_export_excel_view(request):
         for item in export_agg
     }
 
+    # Lấy tổng tiền đã thanh toán nhóm theo product_color_id
+    payment_agg = (
+        PaymentReport.objects
+        .values("product_color_id")
+        .annotate(tong_da_thanh_toan=Sum("so_tien"))
+    )
+    payment_map = {item["product_color_id"]: (item["tong_da_thanh_toan"] or 0) for item in payment_agg}
+
     for idx, pc in enumerate(colors_qs, 1):
         ma = pc.product.name
         mau = pc.name
@@ -372,8 +478,12 @@ def accounting_export_excel_view(request):
         tien_con_lai = con_lai * don_gia
         ty_le = round((da_xuat / tong_sl * 100), 1) if tong_sl > 0 else 0
 
+        tien_da_thanh_toan = payment_map.get(pc.id, 0)
+        tien_chua_thanh_toan = max(0, tien_da_xuat - tien_da_thanh_toan)
+
         ws1.append([
-            idx, ma, mau, tong_sl, don_gia, tong_tien, da_xuat, tien_da_xuat, con_lai, tien_con_lai, f"{ty_le}%"
+            idx, ma, mau, tong_sl, don_gia, tong_tien, da_xuat, tien_da_xuat, con_lai, tien_con_lai,
+            tien_da_thanh_toan, tien_chua_thanh_toan, f"{ty_le}%"
         ])
 
     # Sheet 2: Danh Sách Các Đợt Xuất Hàng Chi Tiết
@@ -399,7 +509,28 @@ def accounting_export_excel_view(request):
             r.created_at.strftime("%d/%m/%Y %H:%M"),
         ])
 
-    # Style cả 2 sheets
+    # Sheet 3: Danh Sách Các Đợt Thanh Toán Chi Tiết
+    ws3 = wb.create_sheet(title="Lịch Sử Thanh Toán Chi Tiết")
+    headers3 = [
+        "STT", "Ngày thanh toán", "Mã hàng", "Màu sắc", "Số tiền thanh toán (VNĐ)",
+        "Người ghi nhận", "Ghi chú / Chứng từ", "Thời gian ghi nhận"
+    ]
+    ws3.append(headers3)
+
+    payments = PaymentReport.objects.select_related("product_color__product", "nguoi_nhap").all().order_by("-ngay_thanh_toan", "-created_at")
+    for idx, p in enumerate(payments, 1):
+        ws3.append([
+            idx,
+            p.ngay_thanh_toan.strftime("%d/%m/%Y"),
+            p.product_color.product.name,
+            p.product_color.name,
+            p.so_tien,
+            p.nguoi_nhap.name or p.nguoi_nhap.account if p.nguoi_nhap else "",
+            p.ghi_chu,
+            p.created_at.strftime("%d/%m/%Y %H:%M"),
+        ])
+
+    # Style cả 3 sheets
     header_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
     header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
     thin_border = Border(
@@ -409,7 +540,7 @@ def accounting_export_excel_view(request):
         bottom=Side(style='thin', color='CBD5E1')
     )
 
-    for ws in [ws1, ws2]:
+    for ws in [ws1, ws2, ws3]:
         for cell in ws[1]:
             cell.fill = header_fill
             cell.font = header_font
@@ -484,14 +615,14 @@ def _get_team_revenue_data(request):
     selected_to = request.GET.get("to", "").strip()
     selected_ma_hang = request.GET.get("ma_hang", "").strip()
 
-    # 1. Bảng đơn giá từ ProductPrice
-    price_map = {}
-    product_price_fallback = {}
+    # 1. Bảng giá CM từ ProductPrice
+    cm_price_map = {}
+    product_cm_price_fallback = {}
     for pc in ProductColor.objects.select_related("product", "price").all():
-        p_val = pc.price.don_gia if hasattr(pc, "price") else 0
-        price_map[(pc.product.name, pc.name)] = p_val
-        if p_val > 0 and pc.product.name not in product_price_fallback:
-            product_price_fallback[pc.product.name] = p_val
+        p_val = pc.price.gia_cm if hasattr(pc, "price") else 0
+        cm_price_map[(pc.product.name, pc.name)] = p_val
+        if p_val > 0 and pc.product.name not in product_cm_price_fallback:
+            product_cm_price_fallback[pc.product.name] = p_val
 
     # 2. Truy vấn ProcessReport có ra chuyền > 0
     qs = ProcessReport.objects.filter(ra_chuyen__gt=0)
@@ -538,23 +669,24 @@ def _get_team_revenue_data(request):
 
         item_key = (r.ma_hang, r.mau)
         if item_key not in group["items_map"]:
-            don_gia = price_map.get(item_key, product_price_fallback.get(r.ma_hang, 0))
+            gia_cm = cm_price_map.get(item_key, product_cm_price_fallback.get(r.ma_hang, 0))
             group["items_map"][item_key] = {
                 "ma_hang": r.ma_hang,
                 "mau": r.mau,
-                "don_gia": don_gia,
+                "gia_cm": gia_cm,
+                "don_gia": gia_cm,
                 "so_luong": 0,
                 "thanh_tien": 0,
-                "has_price": (don_gia > 0),
+                "has_price": (gia_cm > 0),
             }
 
         item = group["items_map"][item_key]
         item["so_luong"] += r.ra_chuyen
-        item["thanh_tien"] += r.ra_chuyen * item["don_gia"]
+        item["thanh_tien"] += r.ra_chuyen * item["gia_cm"]
 
         group["tong_ra_chuyen"] += r.ra_chuyen
-        group["tong_tien"] += r.ra_chuyen * item["don_gia"]
-        if item["don_gia"] == 0:
+        group["tong_tien"] += r.ra_chuyen * item["gia_cm"]
+        if item["gia_cm"] == 0:
             group["has_missing_price"] = True
 
     daily_team_groups = []
@@ -739,7 +871,7 @@ def team_revenue_export_excel_view(request):
 
     headers1 = [
         "STT", "Ngày làm việc", "Xưởng", "Tổ", "Mã hàng", "Màu sắc",
-        "Số lượng ra chuyền (Cái)", "Đơn giá (VNĐ)", "Thành tiền (VNĐ)", "Trạng thái đơn giá"
+        "Số lượng ra chuyền (Cái)", "Giá CM (VNĐ)", "Thành tiền (VNĐ)", "Trạng thái giá CM"
     ]
     ws1.append(headers1)
 
@@ -750,7 +882,7 @@ def team_revenue_export_excel_view(request):
         to_label = f"Tổ {g['to']}" if g['to'] else "Chưa phân tổ"
 
         for it in g["items"]:
-            status_dg = "Đã có giá" if it["has_price"] else "CHƯA CÓ ĐƠN GIÁ"
+            status_dg = "Đã có giá CM" if it["has_price"] else "CHƯA CÓ GIÁ CM"
             ws1.append([
                 stt,
                 ngay_str,
@@ -759,7 +891,7 @@ def team_revenue_export_excel_view(request):
                 it["ma_hang"],
                 it["mau"],
                 it["so_luong"],
-                it["don_gia"],
+                it["gia_cm"],
                 it["thanh_tien"],
                 status_dg
             ])

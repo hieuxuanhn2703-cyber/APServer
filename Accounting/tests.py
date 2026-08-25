@@ -6,7 +6,7 @@ from django.core.exceptions import PermissionDenied
 
 from Working.models import AppUser, Product, ProductColor, ProcessReport
 from Working.auth_utils import SESSION_KEY
-from Accounting.models import ProductPrice, ExportReport
+from Accounting.models import ProductPrice, ExportReport, PaymentReport
 
 
 class AccountingTests(TestCase):
@@ -41,10 +41,11 @@ class AccountingTests(TestCase):
         self.color1_red = ProductColor.objects.create(product=self.product1, name="Đỏ", quantity=1000)
         self.color1_blue = ProductColor.objects.create(product=self.product1, name="Xanh", quantity=500)
 
-        # Set initial unit price for Đỏ = 120,000 VNĐ
+        # Set initial unit price and CM price for Đỏ = 120,000 VNĐ & 25,000 VNĐ
         self.price1_red = ProductPrice.objects.create(
             product_color=self.color1_red,
             don_gia=120000,
+            gia_cm=25000,
             updated_by=self.accountant_user
         )
 
@@ -78,30 +79,36 @@ class AccountingTests(TestCase):
         self.assertEqual(resp.status_code, 200)
 
     def test_price_management_updates(self):
-        """Test single and bulk price updates."""
+        """Test single and bulk price updates (don_gia & gia_cm)."""
         self._login(self.accountant_user)
 
         # 1. Update single price with formatted string
         resp = self.client.post(reverse("accounting:price_management"), {
             "action": "update_single",
             "product_color_id": self.color1_blue.id,
-            "don_gia": "150.000"
+            "don_gia": "150.000",
+            "gia_cm": "30.000"
         })
         self.assertEqual(resp.status_code, 200)
         self.color1_blue.refresh_from_db()
         self.assertEqual(self.color1_blue.price.don_gia, 150000)
+        self.assertEqual(self.color1_blue.price.gia_cm, 30000)
 
-        # 2. Update bulk price with commas and m_price prefix
+        # 2. Update bulk price with commas and m_price / cm_price prefixes
         resp = self.client.post(reverse("accounting:price_management"), {
             "action": "update_bulk",
             f"price_{self.color1_red.id}": "130,000 đ",
+            f"cm_price_{self.color1_red.id}": "28,000 đ",
             f"m_price_{self.color1_blue.id}": "160.000",
+            f"m_cm_price_{self.color1_blue.id}": "35.000",
         })
         self.assertEqual(resp.status_code, 200)
         self.color1_red.refresh_from_db()
         self.color1_blue.refresh_from_db()
         self.assertEqual(self.color1_red.price.don_gia, 130000)
+        self.assertEqual(self.color1_red.price.gia_cm, 28000)
         self.assertEqual(self.color1_blue.price.don_gia, 160000)
+        self.assertEqual(self.color1_blue.price.gia_cm, 35000)
 
     def test_export_entry_and_automatic_thanh_tien(self):
         """Test recording an export and verifying automatic total calculation."""
@@ -238,26 +245,28 @@ class AccountingTests(TestCase):
         """
         Test team revenue calculation:
         1 team outputs multiple different products/colors on the same day.
-        Calculation: sum(ra_chuyen * don_gia) for each product code.
+        Calculation: sum(ra_chuyen * gia_cm) for each product code based on gia_cm.
         """
-        # Create product 2 with unit price
+        # Create product 2 with prices
         product2 = Product.objects.create(name="AO-KHOAC-02")
         color2_den = ProductColor.objects.create(product=product2, name="Đen", quantity=800)
         ProductPrice.objects.create(
             product_color=color2_den,
             don_gia=250000,
+            gia_cm=50000,
             updated_by=self.accountant_user
         )
 
-        # Also set unit price for product 1 / Xanh = 150,000 VNĐ
+        # Also set prices for product 1 / Xanh = don_gia 150k, gia_cm = 30,000 VNĐ
         ProductPrice.objects.create(
             product_color=self.color1_blue,
             don_gia=150000,
+            gia_cm=30000,
             updated_by=self.accountant_user
         )
 
         # Work day 1: 2026-08-20, Xuong 1, To 1
-        # Product 1 / Do: 50 pcs * 120,000 = 6,000,000 VNĐ
+        # Product 1 / Do: 50 pcs * 25,000 (gia_cm) = 1,250,000 VNĐ
         ProcessReport.objects.create(
             ngay_lam_viec=datetime.date(2026, 8, 20),
             xuong=1,
@@ -269,7 +278,7 @@ class AccountingTests(TestCase):
             ra_chuyen=50,
             nguoi_nhap=self.basic_user
         )
-        # Product 1 / Xanh: 30 pcs * 150,000 = 4,500,000 VNĐ
+        # Product 1 / Xanh: 30 pcs * 30,000 (gia_cm) = 900,000 VNĐ
         ProcessReport.objects.create(
             ngay_lam_viec=datetime.date(2026, 8, 20),
             xuong=1,
@@ -281,7 +290,7 @@ class AccountingTests(TestCase):
             ra_chuyen=30,
             nguoi_nhap=self.basic_user
         )
-        # Product 2 / Den: 20 pcs * 250,000 = 5,000,000 VNĐ
+        # Product 2 / Den: 20 pcs * 50,000 (gia_cm) = 1,000,000 VNĐ
         ProcessReport.objects.create(
             ngay_lam_viec=datetime.date(2026, 8, 20),
             xuong=1,
@@ -293,10 +302,10 @@ class AccountingTests(TestCase):
             ra_chuyen=20,
             nguoi_nhap=self.basic_user
         )
-        # => Xuong 1 - To 1 total: 100 pcs, 15,500,000 VNĐ
+        # => Xuong 1 - To 1 total: 100 pcs, 3,150,000 VNĐ
 
         # Work day 1: 2026-08-20, Xuong 2, To 3
-        # Product 1 / Do: 40 pcs * 120,000 = 4,800,000 VNĐ
+        # Product 1 / Do: 40 pcs * 25,000 (gia_cm) = 1,000,000 VNĐ
         ProcessReport.objects.create(
             ngay_lam_viec=datetime.date(2026, 8, 20),
             xuong=2,
@@ -319,8 +328,8 @@ class AccountingTests(TestCase):
         ctx = resp.context
         # Total output = 50 + 30 + 20 + 40 = 140 pcs
         self.assertEqual(ctx["kpi_tong_ra_chuyen"], 140)
-        # Total money = 6,000,000 + 4,500,000 + 5,000,000 + 4,800,000 = 20,300,000 VNĐ
-        self.assertEqual(ctx["kpi_tong_tien"], 20300000)
+        # Total money = 1,250,000 + 900,000 + 1,000,000 + 1,000,000 = 4,150,000 VNĐ
+        self.assertEqual(ctx["kpi_tong_tien"], 4150000)
         # Active teams = 2 (Xuong 1 - To 1, Xuong 2 - To 3)
         self.assertEqual(ctx["kpi_so_to"], 2)
         # Active days = 1 (2026-08-20)
@@ -332,13 +341,13 @@ class AccountingTests(TestCase):
         # Find group Xuong 1, To 1
         g_x1_t1 = next(g for g in groups if g["xuong"] == 1 and g["to"] == 1)
         self.assertEqual(g_x1_t1["tong_ra_chuyen"], 100)
-        self.assertEqual(g_x1_t1["tong_tien"], 15500000)
+        self.assertEqual(g_x1_t1["tong_tien"], 3150000)
         self.assertEqual(len(g_x1_t1["items"]), 3)
 
         # Find group Xuong 2, To 3
         g_x2_t3 = next(g for g in groups if g["xuong"] == 2 and g["to"] == 3)
         self.assertEqual(g_x2_t3["tong_ra_chuyen"], 40)
-        self.assertEqual(g_x2_t3["tong_tien"], 4800000)
+        self.assertEqual(g_x2_t3["tong_tien"], 1000000)
         self.assertEqual(len(g_x2_t3["items"]), 1)
 
     def test_team_revenue_filters(self):
@@ -366,7 +375,7 @@ class AccountingTests(TestCase):
 
         self._login(self.accountant_user)
 
-        # Filter by xuong=2
+        # Filter by xuong=2 -> 50 pcs * 25,000 (gia_cm) = 1,250,000 VNĐ
         resp = self.client.get(reverse("accounting:team_revenue_report"), {
             "xuong": "2",
             "tu_ngay": "2026-08-01",
@@ -374,13 +383,15 @@ class AccountingTests(TestCase):
         })
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.context["kpi_tong_ra_chuyen"], 50)
-        self.assertEqual(resp.context["kpi_tong_tien"], 50 * 120000)
+        self.assertEqual(resp.context["kpi_tong_tien"], 50 * 25000)
 
         # Filter by date range (only 2026-08-10)
         resp = self.client.get(reverse("accounting:team_revenue_report"), {
             "tu_ngay": "2026-08-05",
             "den_ngay": "2026-08-15"
         })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["kpi_tong_ra_chuyen"], 20)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.context["kpi_tong_ra_chuyen"], 20)
 
@@ -490,10 +501,10 @@ class AccountingTests(TestCase):
 
     def test_team_revenue_mathematical_precision_audit(self):
         """
-        Audit all calculations for 100% mathematical precision:
+        Audit all calculations for 100% mathematical precision based on gia_cm:
         - Multiple teams (Xuong 1 To 1, Xuong 1 To 2, Xuong 2 To 1)
         - Multiple days (Day 1, Day 2, Day 3)
-        - Multiple products (AO-POLO-01 @ 120,000, AO-KHOAC-02 @ 250,000, AO-THUN-03 @ 80,000)
+        - Multiple products (AO-POLO-01 @ 25,000 CM, AO-KHOAC-02 @ 50,000 CM, AO-THUN-03 @ 16,000 CM)
         - Multiple colors and sizes
         - Strict cross-verification across:
             KPI Summary == Tab 1 items sum == Tab 2 team sum == Tab 3 date sum == Excel export.
@@ -501,11 +512,11 @@ class AccountingTests(TestCase):
         # Create products and prices
         p2 = Product.objects.create(name="AO-KHOAC-02")
         c2_den = ProductColor.objects.create(product=p2, name="Đen", quantity=1000)
-        ProductPrice.objects.create(product_color=c2_den, don_gia=250000, updated_by=self.accountant_user)
+        ProductPrice.objects.create(product_color=c2_den, don_gia=250000, gia_cm=50000, updated_by=self.accountant_user)
 
         p3 = Product.objects.create(name="AO-THUN-03")
         c3_trang = ProductColor.objects.create(product=p3, name="Trắng", quantity=1000)
-        ProductPrice.objects.create(product_color=c3_trang, don_gia=80000, updated_by=self.accountant_user)
+        ProductPrice.objects.create(product_color=c3_trang, don_gia=80000, gia_cm=16000, updated_by=self.accountant_user)
 
         # Expected totals tracker
         expected_total_qty = 0
@@ -516,9 +527,9 @@ class AccountingTests(TestCase):
         # Day 1: 2026-08-05
         d1 = datetime.date(2026, 8, 5)
         # Xuong 1 To 1:
-        # - AO-POLO-01 (Đỏ): Size S=10, Size M=20, Size L=30 -> 60 pcs * 120,000 = 7,200,000
-        # - AO-KHOAC-02 (Đen): Size XL=15 -> 15 pcs * 250,000 = 3,750,000
-        # Subtotal: 75 pcs, 10,950,000 VNĐ
+        # - AO-POLO-01 (Đỏ): Size S=10, Size M=20, Size L=30 -> 60 pcs * 25,000 = 1,500,000
+        # - AO-KHOAC-02 (Đen): Size XL=15 -> 15 pcs * 50,000 = 750,000
+        # Subtotal: 75 pcs, 2,250,000 VNĐ
         for size, q in [("S", 10), ("M", 20), ("L", 30)]:
             ProcessReport.objects.create(
                 ngay_lam_viec=d1, xuong=1, to=1, ma_hang="AO-POLO-01", mau="Đỏ", size=size,
@@ -529,51 +540,51 @@ class AccountingTests(TestCase):
             ra_chuyen=15, so_luong_ld=12, nguoi_nhap=self.basic_user
         )
         expected_total_qty += 75
-        expected_total_money += 10950000
+        expected_total_money += 2250000
         expected_active_dates.add(d1)
         expected_active_teams.add((1, 1))
 
         # Xuong 1 To 2:
-        # - AO-THUN-03 (Trắng): Size M=100 -> 100 pcs * 80,000 = 8,000,000
+        # - AO-THUN-03 (Trắng): Size M=100 -> 100 pcs * 16,000 = 1,600,000
         ProcessReport.objects.create(
             ngay_lam_viec=d1, xuong=1, to=2, ma_hang="AO-THUN-03", mau="Trắng", size="M",
             ra_chuyen=100, so_luong_ld=10, nguoi_nhap=self.basic_user
         )
         expected_total_qty += 100
-        expected_total_money += 8000000
+        expected_total_money += 1600000
         expected_active_teams.add((1, 2))
 
         # Day 2: 2026-08-06
         d2 = datetime.date(2026, 8, 6)
         # Xuong 2 To 1:
-        # - AO-KHOAC-02 (Đen): Size L=40 -> 40 pcs * 250,000 = 10,000,000
+        # - AO-KHOAC-02 (Đen): Size L=40 -> 40 pcs * 50,000 = 2,000,000
         ProcessReport.objects.create(
             ngay_lam_viec=d2, xuong=2, to=1, ma_hang="AO-KHOAC-02", mau="Đen", size="L",
             ra_chuyen=40, so_luong_ld=15, nguoi_nhap=self.basic_user
         )
         expected_total_qty += 40
-        expected_total_money += 10000000
+        expected_total_money += 2000000
         expected_active_dates.add(d2)
         expected_active_teams.add((2, 1))
 
         # Xuong 1 To 1:
-        # - AO-THUN-03 (Trắng): Size S=50 -> 50 pcs * 80,000 = 4,000,000
+        # - AO-THUN-03 (Trắng): Size S=50 -> 50 pcs * 16,000 = 800,000
         ProcessReport.objects.create(
             ngay_lam_viec=d2, xuong=1, to=1, ma_hang="AO-THUN-03", mau="Trắng", size="S",
             ra_chuyen=50, so_luong_ld=12, nguoi_nhap=self.basic_user
         )
         expected_total_qty += 50
-        expected_total_money += 4000000
+        expected_total_money += 8000000 * 0.1 # 800,000
 
         # Grand Total across dataset:
         # Qty = 75 + 100 + 40 + 50 = 265 pcs
-        # Money = 10,950,000 + 8,000,000 + 10,000,000 + 4,000,000 = 32,950,000 VNĐ
+        # Money = 2,250,000 + 1,600,000 + 2,000,000 + 800,000 = 6,650,000 VNĐ
         # Active teams = 3 (X1-T1, X1-T2, X2-T1)
         # Active days = 2 (2026-08-05, 2026-08-06)
-        # Avg money per day = 32,950,000 / 2 = 16,475,000 VNĐ
+        # Avg money per day = 6,650,000 / 2 = 3,325,000 VNĐ
 
         self.assertEqual(expected_total_qty, 265)
-        self.assertEqual(expected_total_money, 32950000)
+        self.assertEqual(expected_total_money, 6650000)
 
         self._login(self.accountant_user)
         resp = self.client.get(reverse("accounting:team_revenue_report") + "?thang=2026-08")
@@ -581,10 +592,10 @@ class AccountingTests(TestCase):
 
         # 1. Audit KPIs
         self.assertEqual(resp.context["kpi_tong_ra_chuyen"], 265)
-        self.assertEqual(resp.context["kpi_tong_tien"], 32950000)
+        self.assertEqual(resp.context["kpi_tong_tien"], 6650000)
         self.assertEqual(resp.context["kpi_so_to"], 3)
         self.assertEqual(resp.context["kpi_so_ngay_sx"], 2)
-        self.assertEqual(resp.context["kpi_tien_bq_ngay"], 16475000)
+        self.assertEqual(resp.context["kpi_tien_bq_ngay"], 3325000)
 
         # 2. Audit Tab 1 (Detail groups)
         daily_groups = resp.context["daily_team_groups"]
@@ -592,7 +603,7 @@ class AccountingTests(TestCase):
         tab1_qty_sum = sum(g["tong_ra_chuyen"] for g in daily_groups)
         tab1_money_sum = sum(g["tong_tien"] for g in daily_groups)
         self.assertEqual(tab1_qty_sum, 265)
-        self.assertEqual(tab1_money_sum, 32950000)
+        self.assertEqual(tab1_money_sum, 6650000)
 
         # 3. Audit Tab 2 (Team summary)
         team_summary = resp.context["team_summary_list"]
@@ -600,15 +611,15 @@ class AccountingTests(TestCase):
         tab2_qty_sum = sum(ts["tong_ra_chuyen"] for ts in team_summary)
         tab2_money_sum = sum(ts["tong_tien"] for ts in team_summary)
         self.assertEqual(tab2_qty_sum, 265)
-        self.assertEqual(tab2_money_sum, 32950000)
+        self.assertEqual(tab2_money_sum, 6650000)
 
-        # Xưởng 1 Tổ 1: worked 2 days, total money = 10,950,000 + 4,000,000 = 14,950,000
+        # Xưởng 1 Tổ 1: worked 2 days, total money = 2,250,000 + 800,000 = 3,050,000
         x1_t1 = next(ts for ts in team_summary if ts["xuong"] == 1 and ts["to"] == 1)
         self.assertEqual(x1_t1["so_ngay_sx"], 2)
         self.assertEqual(x1_t1["so_ma_hang"], 3) # AO-POLO-01, AO-KHOAC-02, AO-THUN-03
         self.assertEqual(x1_t1["tong_ra_chuyen"], 125)
-        self.assertEqual(x1_t1["tong_tien"], 14950000)
-        self.assertEqual(x1_t1["tien_bq_ngay"], round(14950000 / 2))
+        self.assertEqual(x1_t1["tong_tien"], 3050000)
+        self.assertEqual(x1_t1["tien_bq_ngay"], round(3050000 / 2))
 
         # 4. Audit Tab 3 (Date summary)
         date_summary = resp.context["date_summary_list"]
@@ -616,19 +627,113 @@ class AccountingTests(TestCase):
         tab3_qty_sum = sum(ds["tong_ra_chuyen"] for ds in date_summary)
         tab3_money_sum = sum(ds["tong_tien"] for ds in date_summary)
         self.assertEqual(tab3_qty_sum, 265)
-        self.assertEqual(tab3_money_sum, 32950000)
+        self.assertEqual(tab3_money_sum, 6650000)
 
-        # Day 1: 75 + 100 = 175 pcs, 10,950,000 + 8,000,000 = 18,950,000 VNĐ, 2 active teams
+        # Day 1: 75 + 100 = 175 pcs, 2,250,000 + 1,600,000 = 3,850,000 VNĐ, 2 active teams
         d1_summary = next(ds for ds in date_summary if ds["ngay_lam_viec"] == d1)
         self.assertEqual(d1_summary["so_to_hoat_dong"], 2)
         self.assertEqual(d1_summary["tong_ra_chuyen"], 175)
-        self.assertEqual(d1_summary["tong_tien"], 18950000)
+        self.assertEqual(d1_summary["tong_tien"], 3850000)
 
-        # Day 2: 40 + 50 = 90 pcs, 10,000,000 + 4,000,000 = 14,000,000 VNĐ, 2 active teams
+        # Day 2: 40 + 50 = 90 pcs, 2,000,000 + 800,000 = 2,800,000 VNĐ, 2 active teams
         d2_summary = next(ds for ds in date_summary if ds["ngay_lam_viec"] == d2)
         self.assertEqual(d2_summary["so_to_hoat_dong"], 2)
         self.assertEqual(d2_summary["tong_ra_chuyen"], 90)
-        self.assertEqual(d2_summary["tong_tien"], 14000000)
+        self.assertEqual(d2_summary["tong_tien"], 2800000)
+
+    def test_payment_report_and_dashboard_calculations(self):
+        """Test recording payments and calculating paid vs unpaid amounts on dashboard."""
+        self._login(self.accountant_user)
+
+        # 1. Create an export for AO-POLO-01 Đỏ: 100 pcs @ 120,000 = 12,000,000 VNĐ
+        ExportReport.objects.create(
+            ngay_xuat=datetime.date(2026, 8, 20),
+            ma_hang="AO-POLO-01",
+            mau="Đỏ",
+            so_luong_xuat=100,
+            don_gia=120000,
+            thanh_tien=12000000,
+            nguoi_nhap=self.accountant_user
+        )
+
+        # Check initial dashboard state before any payments
+        resp = self.client.get(reverse("accounting:dashboard"))
+        self.assertEqual(resp.status_code, 200)
+        row_red = next(r for r in resp.context["rows"] if r["ma_hang"] == "AO-POLO-01" and r["mau"] == "Đỏ")
+        self.assertEqual(row_red["tien_da_xuat"], 12000000)
+        self.assertEqual(row_red["tien_da_thanh_toan"], 0)
+        self.assertEqual(row_red["tien_chua_thanh_toan"], 12000000)
+        self.assertEqual(resp.context["kpi_tong_da_thanh_toan"], 0)
+        self.assertEqual(resp.context["kpi_tong_chua_thanh_toan"], 12000000)
+
+        # 2. Record payment 1 via POST action="create_payment": 7,000,000 VNĐ
+        resp = self.client.post(reverse("accounting:dashboard"), {
+            "action": "create_payment",
+            "product_color_id": self.color1_red.id,
+            "ngay_thanh_toan": "2026-08-22",
+            "so_tien": "7,000,000",
+            "ghi_chu": "UNC 001/VCB"
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(PaymentReport.objects.count(), 1)
+        pay1 = PaymentReport.objects.first()
+        self.assertEqual(pay1.so_tien, 7000000)
+        self.assertEqual(pay1.product_color, self.color1_red)
+
+        # Check dashboard state after payment 1:
+        # tien_da_thanh_toan = 7,000,000; tien_chua_thanh_toan = 12,000,000 - 7,000,000 = 5,000,000
+        resp = self.client.get(reverse("accounting:dashboard"))
+        row_red = next(r for r in resp.context["rows"] if r["ma_hang"] == "AO-POLO-01" and r["mau"] == "Đỏ")
+        self.assertEqual(row_red["tien_da_thanh_toan"], 7000000)
+        self.assertEqual(row_red["tien_chua_thanh_toan"], 5000000)
+        self.assertEqual(resp.context["kpi_tong_da_thanh_toan"], 7000000)
+        self.assertEqual(resp.context["kpi_tong_chua_thanh_toan"], 5000000)
+        self.assertEqual(len(row_red["payments_list"]), 1)
+
+        # 3. Record payment 2: 5,000,000 VNĐ (Pay off remaining balance)
+        self.client.post(reverse("accounting:dashboard"), {
+            "action": "create_payment",
+            "product_color_id": self.color1_red.id,
+            "ngay_thanh_toan": "2026-08-25",
+            "so_tien": "5000000",
+            "ghi_chu": "UNC 002/VCB"
+        })
+        self.assertEqual(PaymentReport.objects.count(), 2)
+
+        resp = self.client.get(reverse("accounting:dashboard"))
+        row_red = next(r for r in resp.context["rows"] if r["ma_hang"] == "AO-POLO-01" and r["mau"] == "Đỏ")
+        self.assertEqual(row_red["tien_da_thanh_toan"], 12000000)
+        self.assertEqual(row_red["tien_chua_thanh_toan"], 0)
+        self.assertEqual(resp.context["kpi_tong_da_thanh_toan"], 12000000)
+        self.assertEqual(resp.context["kpi_tong_chua_thanh_toan"], 0)
+        self.assertEqual(len(row_red["payments_list"]), 2)
+
+        # 4. Test deleting payment via POST action="delete_payment"
+        self.client.post(reverse("accounting:dashboard"), {
+            "action": "delete_payment",
+            "payment_id": pay1.id
+        })
+        self.assertEqual(PaymentReport.objects.count(), 1)
+        resp = self.client.get(reverse("accounting:dashboard"))
+        row_red = next(r for r in resp.context["rows"] if r["ma_hang"] == "AO-POLO-01" and r["mau"] == "Đỏ")
+        self.assertEqual(row_red["tien_da_thanh_toan"], 5000000)
+        self.assertEqual(row_red["tien_chua_thanh_toan"], 7000000)
+
+    def test_export_excel_with_payments(self):
+        """Test that Excel export contains Sheet 1 with payment columns and Sheet 3 for payment logs."""
+        PaymentReport.objects.create(
+            ngay_thanh_toan=datetime.date(2026, 8, 22),
+            product_color=self.color1_red,
+            so_tien=3000000,
+            ghi_chu="Thanh toán đợt 1",
+            nguoi_nhap=self.accountant_user
+        )
+
+        self._login(self.accountant_user)
+        resp = self.client.get(reverse("accounting:export_excel"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
 
 
 

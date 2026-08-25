@@ -14,6 +14,7 @@
             --primary-cyan: #06b6d4;
             --primary-amber: #f59e0b;
             --primary-blue: #2563eb;
+            --primary-purple: #8b5cf6;
             --dark-slate: #0f172a;
         }
 
@@ -26,10 +27,38 @@
             box-sizing: border-box;
         }
 
+        /* Alerts */
+        .alert-success-custom {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #15803d;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .alert-error-custom {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         /* KPI Statistics Grid */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 16px;
             margin-bottom: 20px;
         }
@@ -58,8 +87,8 @@
 
         .kpi-card.blue::before { background: var(--primary-blue); }
         .kpi-card.emerald::before { background: var(--primary-emerald); }
+        .kpi-card.purple::before { background: var(--primary-purple); }
         .kpi-card.amber::before { background: var(--primary-amber); }
-        .kpi-card.cyan::before { background: var(--primary-cyan); }
 
         .kpi-title {
             font-size: 0.82rem;
@@ -183,7 +212,7 @@
             border-color: #fca5a5;
         }
 
-        /* Dashboard Table Box - Full Screen Width No Horizontal Scroll */
+        /* Dashboard Table Box */
         .dashboard-table-card {
             background: #ffffff;
             border-radius: 12px;
@@ -197,7 +226,7 @@
         .table-dash-wrap {
             border: 1px solid #cbd5e1;
             border-radius: 10px;
-            overflow: hidden;
+            overflow-x: auto;
             background: #ffffff;
             margin-top: 12px;
             width: 100%;
@@ -206,7 +235,6 @@
         .table-dash-wrap table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* Fit precisely without scrolling */
         }
 
         .table-dash-wrap th {
@@ -219,20 +247,22 @@
             vertical-align: middle;
             text-align: center;
             box-sizing: border-box;
+            white-space: nowrap;
         }
 
         .th-main { background: #f8fafc; color: #1e293b; }
         .th-group-dh { background: #f1f5f9; color: #1e3a8a; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; }
         .th-group-xuat { background: #f0fdf4; color: #065f46; border-right: 1px solid #cbd5e1; }
         .th-group-ton { background: #fffbeb; color: #92400e; border-right: 1px solid #cbd5e1; }
+        .th-group-pay { background: #f5f3ff; color: #5b21b6; border-right: 1px solid #cbd5e1; }
 
         .table-dash-wrap td {
-            padding: 9px 6px;
+            padding: 9px 8px;
             border-bottom: 1px solid #f1f5f9;
             font-size: 0.86rem;
             vertical-align: middle;
             box-sizing: border-box;
-            word-break: break-word;
+            white-space: nowrap;
         }
 
         .table-dash-wrap tr:last-child td {
@@ -251,6 +281,8 @@
         .money-val { font-weight: 700; color: #1e40af; }
         .money-shipped { font-weight: 700; color: #16a34a; }
         .money-pending { font-weight: 700; color: #ea580c; }
+        .money-paid { font-weight: 700; color: #6d28d9; }
+        .money-unpaid { font-weight: 700; color: #dc2626; }
         
         .badge-pct {
             display: inline-block;
@@ -262,6 +294,27 @@
         .badge-pct.green { background: #dcfce7; color: #15803d; }
         .badge-pct.yellow { background: #fef9c3; color: #854d0e; }
         .badge-pct.red { background: #fee2e2; color: #b91c1c; }
+
+        .btn-pay-action {
+            background: #f5f3ff;
+            color: #6d28d9;
+            border: 1.5px solid #ddd6fe;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .btn-pay-action:hover {
+            background: #6d28d9;
+            color: #ffffff;
+            border-color: #6d28d9;
+        }
 
         /* Responsive */
         .desktop-table-container { display: block; width: 100%; }
@@ -308,6 +361,190 @@
         }
         .acc-card-lbl { font-size: 0.78rem; color: #64748b; margin-bottom: 2px; }
         .acc-card-val { font-weight: 700; color: #1e293b; }
+
+        /* Modal Styles */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+        .modal-backdrop.active {
+            display: flex;
+        }
+        .modal-dialog-box {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 580px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            border-radius: 16px 16px 0 0;
+        }
+        .modal-title {
+            font-size: 1.12rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            color: #64748b;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .modal-close-btn:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .modal-body {
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .modal-info-banner {
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            text-align: center;
+        }
+        .modal-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .modal-info-lbl { font-size: 0.76rem; color: #6d28d9; font-weight: 700; text-transform: uppercase; }
+        .modal-info-val { font-size: 1.05rem; font-weight: 800; color: #0f172a; }
+        
+        .form-group-modal {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-label-modal {
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: #334155;
+        }
+        .form-input-modal {
+            height: 42px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 0 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #0f172a;
+            outline: none;
+        }
+        .form-input-modal:focus {
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+        .btn-fill-all {
+            background: #eef2ff;
+            color: #4338ca;
+            border: 1px dashed #a5b4fc;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 4px;
+            align-self: flex-start;
+        }
+        .btn-fill-all:hover {
+            background: #4338ca;
+            color: #ffffff;
+        }
+
+        .btn-submit-modal {
+            height: 46px;
+            background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+            transition: all 0.15s ease;
+        }
+        .btn-submit-modal:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        .history-section-modal {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 14px;
+            margin-top: 4px;
+        }
+        .history-title-modal {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .history-table-modal {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.84rem;
+        }
+        .history-table-modal th {
+            background: #f1f5f9;
+            padding: 6px 8px;
+            color: #475569;
+            font-weight: 700;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        .history-table-modal td {
+            padding: 6px 8px;
+            border: 1px solid #f1f5f9;
+            color: #1e293b;
+        }
     </style>
 </head>
 <body>
@@ -327,7 +564,7 @@
                     </button>
                     <div class="header-title-box">
                         <h1 class="header-title">Kế Toán — Theo Dõi Doanh Thu & Xuất Hàng</h1>
-                        <span class="header-subtitle">Tổng hợp số lượng, giá trị xuất và tồn đọng theo từng mã hàng & màu</span>
+                        <span class="header-subtitle">Tổng hợp số lượng, giá trị xuất, công nợ thanh toán theo từng mã hàng & màu</span>
                     </div>
                 </div>
                 <div class="header-right">
@@ -337,7 +574,28 @@
             <main class="app-content" style="padding: 0;">
                 <div class="accounting-page-container">
                     
-                    <!-- KPI TOP STATS -->
+                    {% if success_msg %}
+                    <div class="alert-success-custom">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        <span>{{ success_msg }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if error_msg %}
+                    <div class="alert-error-custom">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
+                        <span>{{ error_msg }}</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- KPI TOP STATS (4 Cards) -->
                     <div class="kpi-grid">
                         <!-- KPI 1: Tổng Doanh Thu Đơn Hàng -->
                         <div class="kpi-card blue">
@@ -361,13 +619,31 @@
                             </div>
                         </div>
 
-                        <!-- KPI 3: Còn Lại Chưa Xuất -->
-                        <div class="kpi-card amber">
-                            <div class="kpi-title">Giá Trị Hàng Chưa Xuất</div>
-                            <div class="kpi-value" style="color: #b45309;">{{ kpi_tong_con_lai_tien|comma_num }} <small style="font-size:0.85rem;">VNĐ</small></div>
+                        <!-- KPI 3: Đã Thanh Toán -->
+                        <div class="kpi-card purple">
+                            <div class="kpi-title">Tiền Đã Thanh Toán</div>
+                            <div class="kpi-value" style="color: #7c3aed;">{{ kpi_tong_da_thanh_toan|comma_num }} <small style="font-size:0.85rem;">VNĐ</small></div>
                             <div class="kpi-sub">
-                                <span>Còn lại:</span>
-                                <strong style="color: #dc2626;">{{ kpi_tong_con_lai_sl|comma_num }} cái</strong>
+                                <span>Đã thu:</span>
+                                <strong style="color: #6d28d9;">
+                                    {% if kpi_tong_da_xuat_tien > 0 %}
+                                        {{ kpi_tong_da_thanh_toan|comma_num }} đ
+                                    {% else %}
+                                        0 đ
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </div>
+
+                        <!-- KPI 4: Tiền Chưa Thanh Toán -->
+                        <div class="kpi-card amber">
+                            <div class="kpi-title">Tiền Chưa Thanh Toán</div>
+                            <div class="kpi-value" style="color: {% if kpi_tong_chua_thanh_toan > 0 %}#dc2626{% else %}#15803d{% endif %};">
+                                {{ kpi_tong_chua_thanh_toan|comma_num }} <small style="font-size:0.85rem;">VNĐ</small>
+                            </div>
+                            <div class="kpi-sub">
+                                <span>Công nợ hàng xuất:</span>
+                                <strong style="color: #ea580c;">{{ kpi_tong_chua_thanh_toan|comma_num }} đ</strong>
                             </div>
                         </div>
                     </div>
@@ -420,27 +696,31 @@
                             <span style="font-size: 0.82rem; color: #64748b;">Tổng cộng: <b>{{ rows|length }}</b> mặt hàng (Đơn vị tiền: VNĐ)</span>
                         </div>
 
-                        <!-- DESKTOP TABLE (Structured Headers, Full Width, No Horizontal Scroll) -->
+                        <!-- DESKTOP TABLE -->
                         <div class="desktop-table-container">
                             <div class="table-dash-wrap">
                                 <table>
                                     <thead>
                                         <tr>
-                                            <th rowspan="2" class="th-main" style="width: 8%; text-align: left; padding-left: 10px;">Mã hàng</th>
-                                            <th rowspan="2" class="th-main" style="width: 8%; text-align: left;">Màu</th>
+                                            <th rowspan="2" class="th-main" style="width: 7%; text-align: left; padding-left: 10px;">Mã hàng</th>
+                                            <th rowspan="2" class="th-main" style="width: 6%; text-align: left;">Màu</th>
                                             <th colspan="3" class="th-group-dh">THÔNG TIN ĐƠN HÀNG</th>
                                             <th colspan="2" class="th-group-xuat">ĐÃ XUẤT HÀNG</th>
                                             <th colspan="2" class="th-group-ton">CÒN LẠI</th>
-                                            <th rowspan="2" class="th-main" style="width: 7%; text-align: center;">Tiến độ</th>
+                                            <th colspan="2" class="th-group-pay">THANH TOÁN TIỀN HÀNG ĐÃ XUẤT</th>
+                                            <th rowspan="2" class="th-main" style="width: 5%; text-align: center;">Tiến độ</th>
+                                            <th rowspan="2" class="th-main" style="width: 8%; text-align: center;">Thao tác</th>
                                         </tr>
                                         <tr>
-                                            <th class="th-group-dh number-col" style="width: 8%;">Số lượng</th>
-                                            <th class="th-group-dh number-col" style="width: 9%;">Đơn giá</th>
-                                            <th class="th-group-dh number-col" style="width: 14%;">Thành tiền</th>
-                                            <th class="th-group-xuat number-col" style="width: 8%;">SL xuất</th>
-                                            <th class="th-group-xuat number-col" style="width: 14%;">Tiền đã xuất</th>
-                                            <th class="th-group-ton number-col" style="width: 8%;">SL còn</th>
-                                            <th class="th-group-ton number-col" style="width: 14%;">Tiền còn lại</th>
+                                            <th class="th-group-dh number-col" style="width: 6%;">Số lượng</th>
+                                            <th class="th-group-dh number-col" style="width: 7%;">Đơn giá</th>
+                                            <th class="th-group-dh number-col" style="width: 10%;">Thành tiền</th>
+                                            <th class="th-group-xuat number-col" style="width: 6%;">SL xuất</th>
+                                            <th class="th-group-xuat number-col" style="width: 10%;">Tiền đã xuất</th>
+                                            <th class="th-group-ton number-col" style="width: 6%;">SL còn</th>
+                                            <th class="th-group-ton number-col" style="width: 10%;">Tiền còn lại</th>
+                                            <th class="th-group-pay number-col" style="width: 10%;">Tiền đã thanh toán</th>
+                                            <th class="th-group-pay number-col" style="width: 10%;">Tiền chưa thanh toán</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -463,14 +743,27 @@
                                                 {{ r.con_lai|comma_num }}
                                             </td>
                                             <td class="number-col money-pending">{{ r.tien_con_lai|comma_num }}</td>
+                                            <td class="number-col money-paid">{{ r.tien_da_thanh_toan|comma_num }}</td>
+                                            <td class="number-col" style="font-weight: 800; color: {% if r.tien_chua_thanh_toan > 0 %}#dc2626{% else %}#16a34a{% endif %};">
+                                                {{ r.tien_chua_thanh_toan|comma_num }}
+                                            </td>
                                             <td style="text-align: center;">
                                                 <span class="badge-pct {% if r.ty_le_xuat >= 100 %}green{% elif r.ty_le_xuat > 0 %}yellow{% else %}red{% endif %}">
                                                     {{ r.ty_le_xuat }}%
                                                 </span>
                                             </td>
+                                            <td style="text-align: center;">
+                                                <button type="button" class="btn-pay-action" onclick="openPaymentModal({{ r.product_color_id }}, '{{ r.ma_hang }}', '{{ r.mau }}', {{ r.tien_da_xuat }}, {{ r.tien_da_thanh_toan }}, {{ r.tien_chua_thanh_toan }})" title="Ghi nhận thanh toán cho mã này">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                                                    </svg>
+                                                    Thanh toán
+                                                </button>
+                                            </td>
                                         </tr>
                                         {% empty %}
-                                        <tr><td colspan="10" style="text-align: center; padding: 24px; color: #64748b;">Chưa có dữ liệu mã hàng.</td></tr>
+                                        <tr><td colspan="13" style="text-align: center; padding: 24px; color: #64748b;">Chưa có dữ liệu mã hàng.</td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -511,13 +804,21 @@
                                         <div class="acc-card-val" style="color: #16a34a;">{{ r.tien_da_xuat|comma_num }} đ</div>
                                     </div>
                                     <div>
-                                        <div class="acc-card-lbl">Còn lại</div>
-                                        <div class="acc-card-val" style="color: #dc2626;">{{ r.con_lai|comma_num }} cái</div>
+                                        <div class="acc-card-lbl">Đã thanh toán</div>
+                                        <div class="acc-card-val" style="color: #6d28d9;">{{ r.tien_da_thanh_toan|comma_num }} đ</div>
                                     </div>
                                     <div>
-                                        <div class="acc-card-lbl">Tiền còn lại</div>
-                                        <div class="acc-card-val" style="color: #ea580c;">{{ r.tien_con_lai|comma_num }} đ</div>
+                                        <div class="acc-card-lbl">Chưa thanh toán</div>
+                                        <div class="acc-card-val" style="color: {% if r.tien_chua_thanh_toan > 0 %}#dc2626{% else %}#16a34a{% endif %};">
+                                            {{ r.tien_chua_thanh_toan|comma_num }} đ
+                                        </div>
                                     </div>
+                                </div>
+
+                                <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
+                                    <button type="button" class="btn-pay-action" style="padding: 6px 12px; font-size: 0.85rem;" onclick="openPaymentModal({{ r.product_color_id }}, '{{ r.ma_hang }}', '{{ r.mau }}', {{ r.tien_da_xuat }}, {{ r.tien_da_thanh_toan }}, {{ r.tien_chua_thanh_toan }})">
+                                        💳 Ghi nhận thanh toán
+                                    </button>
                                 </div>
                             </div>
                             {% empty %}
@@ -531,5 +832,177 @@
             </main>
         </div>
     </div>
+
+    <!-- MODAL GHI NHẬN THANH TOÁN -->
+    <div id="paymentModalBackdrop" class="modal-backdrop">
+        <div class="modal-dialog-box">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    💳 Ghi Nhận Thanh Toán: <span id="modalProductColorLabel" style="color: #6d28d9;"></span>
+                </h3>
+                <button type="button" class="modal-close-btn" onclick="closePaymentModal()" aria-label="Đóng">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Banner tóm tắt công nợ mặt hàng -->
+                <div class="modal-info-banner">
+                    <div class="modal-info-item">
+                        <span class="modal-info-lbl">Tiền Đã Xuất</span>
+                        <span class="modal-info-val" id="modalTienDaXuat" style="color: #16a34a;">0 đ</span>
+                    </div>
+                    <div class="modal-info-item">
+                        <span class="modal-info-lbl">Đã Thanh Toán</span>
+                        <span class="modal-info-val" id="modalTienDaThanhToan" style="color: #6d28d9;">0 đ</span>
+                    </div>
+                    <div class="modal-info-item">
+                        <span class="modal-info-lbl">Chưa Thanh Toán</span>
+                        <span class="modal-info-val" id="modalTienChuaThanhToan" style="color: #dc2626;">0 đ</span>
+                    </div>
+                </div>
+
+                <!-- Form tạo đợt thanh toán mới -->
+                <form method="post" action="{% url 'accounting:dashboard' %}{% if selected_ma_hang %}?ma_hang={{ selected_ma_hang }}{% endif %}" id="createPaymentForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_payment">
+                    <input type="hidden" name="product_color_id" id="modal_product_color_id">
+
+                    <div class="form-group-modal" style="margin-bottom: 12px;">
+                        <label class="form-label-modal">Ngày thanh toán (*)</label>
+                        <input type="date" name="ngay_thanh_toan" id="modal_ngay_thanh_toan" class="form-input-modal" required>
+                    </div>
+
+                    <div class="form-group-modal" style="margin-bottom: 12px;">
+                        <label class="form-label-modal">Số tiền thanh toán (VNĐ) (*)</label>
+                        <input type="text" name="so_tien" id="modal_so_tien" class="form-input-modal" placeholder="Nhập số tiền VNĐ..." required autocomplete="off">
+                        <button type="button" class="btn-fill-all" id="btnFillRemaining">
+                            ⚡ Điền toàn bộ số tiền chưa thanh toán
+                        </button>
+                    </div>
+
+                    <div class="form-group-modal" style="margin-bottom: 18px;">
+                        <label class="form-label-modal">Ghi chú / Chứng từ thanh toán</label>
+                        <input type="text" name="ghi_chu" id="modal_ghi_chu" class="form-input-modal" placeholder="Số ủy nhiệm chi, ngân hàng, người nộp...">
+                    </div>
+
+                    <button type="submit" class="btn-submit-modal">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Lưu Đợt Thanh Toán
+                    </button>
+                </form>
+
+                <!-- Lịch sử các lần thanh toán trước -->
+                <div class="history-section-modal" id="modalHistorySection">
+                    <div class="history-title-modal">
+                        📜 Lịch sử các lần thanh toán trước:
+                    </div>
+                    <div id="modalHistoryList" style="max-height: 160px; overflow-y: auto;">
+                        <!-- Injected via JavaScript -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden form to handle delete payment -->
+    <form method="post" action="{% url 'accounting:dashboard' %}{% if selected_ma_hang %}?ma_hang={{ selected_ma_hang }}{% endif %}" id="deletePaymentForm" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_payment">
+        <input type="hidden" name="payment_id" id="delete_payment_id">
+    </form>
+
+    {{ payments_by_pc|json_script:"payments-history-data" }}
+
+    <script>
+        let currentRemainingDebt = 0;
+        let paymentsHistoryMap = {};
+
+        try {
+            const dataEl = document.getElementById('payments-history-data');
+            if (dataEl) {
+                paymentsHistoryMap = JSON.parse(dataEl.textContent);
+            }
+        } catch (e) {
+            console.error("Error loading payments history data", e);
+        }
+
+        function openPaymentModal(pcId, maHang, mau, tienDaXuat, tienDaThanhToan, tienChuaThanhToan) {
+            document.getElementById('modal_product_color_id').value = pcId;
+            document.getElementById('modalProductColorLabel').textContent = maHang + ' — ' + mau;
+            document.getElementById('modalTienDaXuat').textContent = (tienDaXuat || 0).toLocaleString('en-US') + ' đ';
+            document.getElementById('modalTienDaThanhToan').textContent = (tienDaThanhToan || 0).toLocaleString('en-US') + ' đ';
+            document.getElementById('modalTienChuaThanhToan').textContent = (tienChuaThanhToan || 0).toLocaleString('en-US') + ' đ';
+
+            currentRemainingDebt = tienChuaThanhToan > 0 ? tienChuaThanhToan : 0;
+
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('modal_ngay_thanh_toan').value = today;
+            document.getElementById('modal_so_tien').value = currentRemainingDebt > 0 ? currentRemainingDebt.toLocaleString('en-US') : '';
+            document.getElementById('modal_ghi_chu').value = '';
+
+            // Render history safely from paymentsHistoryMap
+            const paymentsList = paymentsHistoryMap[pcId] || paymentsHistoryMap[String(pcId)] || [];
+            const historyContainer = document.getElementById('modalHistoryList');
+            if (paymentsList && paymentsList.length > 0) {
+                let html = '<table class="history-table-modal"><thead><tr><th>Ngày</th><th>Số tiền</th><th>Ghi chú</th><th>Người ghi</th><th></th></tr></thead><tbody>';
+                paymentsList.forEach(p => {
+                    html += `<tr>
+                        <td>${p.ngay_thanh_toan}</td>
+                        <td style="font-weight:700; color:#6d28d9;">${(p.so_tien || 0).toLocaleString('en-US')} đ</td>
+                        <td>${p.ghi_chu || '-'}</td>
+                        <td style="color:#64748b; font-size:0.78rem;">${p.nguoi_nhap}</td>
+                        <td style="text-align:center;">
+                            <button type="button" onclick="confirmDeletePayment(${p.id})" style="background:none; border:none; color:#dc2626; font-weight:700; cursor:pointer; font-size:0.82rem;" title="Xóa đợt thanh toán này">🗑️</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                historyContainer.innerHTML = html;
+                document.getElementById('modalHistorySection').style.display = 'block';
+            } else {
+                historyContainer.innerHTML = '<div style="font-size:0.84rem; color:#64748b; font-style:italic; padding: 6px 0;">Chưa có lịch sử thanh toán nào cho mặt hàng này.</div>';
+                document.getElementById('modalHistorySection').style.display = 'block';
+            }
+
+            document.getElementById('paymentModalBackdrop').classList.add('active');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModalBackdrop').classList.remove('active');
+        }
+
+        // Close when clicking outside dialog
+        document.getElementById('paymentModalBackdrop').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePaymentModal();
+            }
+        });
+
+        // Quick fill remaining debt button
+        document.getElementById('btnFillRemaining').addEventListener('click', function() {
+            document.getElementById('modal_so_tien').value = currentRemainingDebt.toLocaleString('en-US');
+        });
+
+        // Format commas on typing
+        document.getElementById('modal_so_tien').addEventListener('input', function(e) {
+            let raw = this.value.replace(/[^\d]/g, '');
+            if (raw) {
+                let num = parseInt(raw, 10);
+                this.value = num.toLocaleString('en-US');
+            } else {
+                this.value = '';
+            }
+        });
+
+        function confirmDeletePayment(payId) {
+            if (confirm('Bạn có chắc chắn muốn xóa đợt thanh toán này không?')) {
+                document.getElementById('delete_payment_id').value = payId;
+                document.getElementById('deletePaymentForm').submit();
+            }
+        }
+    </script>
 </body>
 </html>
+

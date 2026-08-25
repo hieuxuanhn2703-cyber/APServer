@@ -4,7 +4,7 @@ import datetime
 
 class ProductPrice(models.Model):
     """
-    Lưu đơn giá (VNĐ/cái) cho từng (Mã hàng, Màu sắc).
+    Lưu đơn giá xuất và giá CM (VNĐ/cái) cho từng (Mã hàng, Màu sắc).
     Liên kết 1-1 với ProductColor của app Working.
     """
     product_color = models.OneToOneField(
@@ -14,6 +14,7 @@ class ProductPrice(models.Model):
         verbose_name='Mã & Màu sản phẩm'
     )
     don_gia = models.PositiveBigIntegerField('Đơn giá (VNĐ)', default=0)
+    gia_cm = models.PositiveBigIntegerField('Giá CM (VNĐ)', default=0)
     updated_by = models.ForeignKey(
         'Working.AppUser',
         on_delete=models.SET_NULL,
@@ -25,12 +26,12 @@ class ProductPrice(models.Model):
     updated_at = models.DateTimeField('Cập nhật lần cuối', auto_now=True)
 
     class Meta:
-        verbose_name = 'Đơn giá sản phẩm'
-        verbose_name_plural = 'Đơn giá sản phẩm'
+        verbose_name = 'Đơn giá & Giá CM sản phẩm'
+        verbose_name_plural = 'Đơn giá & Giá CM sản phẩm'
         ordering = ['product_color__product__name', 'product_color__name']
 
     def __str__(self):
-        return f"{self.product_color} - {self.don_gia:,.0f} VNĐ"
+        return f"{self.product_color} - Đơn giá: {self.don_gia:,.0f} VNĐ - Giá CM: {self.gia_cm:,.0f} VNĐ"
 
 
 class ExportReport(models.Model):
@@ -67,3 +68,37 @@ class ExportReport(models.Model):
 
     def __str__(self):
         return f"Xuất {self.so_luong_xuat} cái {self.ma_hang}-{self.mau} ({self.ngay_xuat}) - {self.thanh_tien:,.0f} VNĐ"
+
+
+class PaymentReport(models.Model):
+    """
+    Lưu thông tin từng lần/đợt thanh toán tiền hàng của khách hàng/đối tác.
+    Liên kết trực tiếp tới Mã hàng & Màu sắc (ProductColor).
+    """
+    ngay_thanh_toan = models.DateField('Ngày thanh toán', default=datetime.date.today)
+    product_color = models.ForeignKey(
+        'Working.ProductColor',
+        on_delete=models.CASCADE,
+        related_name='payments',
+        verbose_name='Mã hàng & Màu sắc'
+    )
+    so_tien = models.PositiveBigIntegerField('Số tiền đã thanh toán (VNĐ)', default=0)
+    ghi_chu = models.CharField('Ghi chú / Chứng từ', max_length=500, blank=True, default='')
+
+    nguoi_nhap = models.ForeignKey(
+        'Working.AppUser',
+        on_delete=models.PROTECT,
+        related_name='payment_reports',
+        verbose_name='Người nhập'
+    )
+    created_at = models.DateTimeField('Thời gian tạo', auto_now_add=True)
+    updated_at = models.DateTimeField('Cập nhật lần cuối', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Phiếu thanh toán'
+        verbose_name_plural = 'Phiếu thanh toán'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Thanh toán {self.product_color} - {self.so_tien:,.0f} VNĐ ({self.ngay_thanh_toan})"
+

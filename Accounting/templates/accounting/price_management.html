@@ -184,8 +184,8 @@
                         </svg>
                     </button>
                     <div class="header-title-box">
-                        <h1 class="header-title">Kế Toán — Quản Lý Đơn Giá</h1>
-                        <span class="header-subtitle">Thiết lập đơn giá xuất hàng (VNĐ/cái) cho từng mã hàng và màu sắc</span>
+                        <h1 class="header-title">Kế Toán — Quản Lý Bảng Giá</h1>
+                        <span class="header-subtitle">Thiết lập Đơn giá xuất hàng và Giá CM (VNĐ/cái) cho từng mã hàng và màu sắc</span>
                     </div>
                 </div>
                 <div class="header-right">
@@ -213,8 +213,8 @@
 
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
                                 <div>
-                                    <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">Bảng Thiết Lập Đơn Giá Từng Mặt Hàng</h2>
-                                    <span style="font-size: 0.86rem; color: #64748b;">Nhập số tiền VNĐ vào từng ô rồi bấm <b>Lưu dòng</b> hoặc <b>Lưu Toàn Bộ Đơn Giá</b></span>
+                                    <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">Bảng Thiết Lập Đơn Giá & Giá CM Từng Mặt Hàng</h2>
+                                    <span style="font-size: 0.86rem; color: #64748b;">Nhập số tiền VNĐ vào từng ô rồi bấm <b>Lưu dòng</b> hoặc <b>Lưu Toàn Bộ Bảng Giá</b></span>
                                 </div>
                                 <button type="submit" class="btn-save-bulk">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -222,7 +222,7 @@
                                         <polyline points="17 21 17 13 7 13 7 21"></polyline>
                                         <polyline points="7 3 7 8 15 8"></polyline>
                                     </svg>
-                                    Lưu Toàn Bộ Đơn Giá
+                                    Lưu Toàn Bộ Bảng Giá
                                 </button>
                             </div>
 
@@ -234,11 +234,12 @@
                                             <tr>
                                                 <th>Mã hàng</th>
                                                 <th>Màu sắc</th>
-                                                <th style="text-align: right;">Tổng Số Lượng (Cái)</th>
-                                                <th style="text-align: right; width: 190px;">Đơn Giá (VNĐ/cái)</th>
+                                                <th style="text-align: right;">Tổng SL (Cái)</th>
+                                                <th style="text-align: right; width: 160px;">Đơn Giá (VNĐ/cái)</th>
+                                                <th style="text-align: right; width: 160px; color: #7c3aed;">Giá CM (VNĐ/cái)</th>
                                                 <th style="text-align: right;">Tổng Giá Trị ĐH (VNĐ)</th>
                                                 <th>Cập nhật gần nhất</th>
-                                                <th style="text-align: center; width: 120px;">Thao tác</th>
+                                                <th style="text-align: center; width: 100px;">Thao tác</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -253,9 +254,18 @@
                                                            id="price_{{ item.id }}" 
                                                            value="{{ item.don_gia|comma_num }}" 
                                                            class="price-input-table" 
-                                                           oninput="formatAndSync(this, {{ item.id }}, false)" 
-                                                           placeholder="0" 
-                                                           required>
+                                                           oninput="formatAndSyncPrice(this, {{ item.id }}, false)" 
+                                                           placeholder="0">
+                                                </td>
+                                                <td style="text-align: right;">
+                                                    <input type="text" 
+                                                           name="cm_price_{{ item.id }}" 
+                                                           id="cm_price_{{ item.id }}" 
+                                                           value="{{ item.gia_cm|comma_num }}" 
+                                                           class="price-input-table" 
+                                                           style="border-color: #c4b5fd; color: #6d28d9;"
+                                                           oninput="formatAndSyncCmPrice(this, {{ item.id }}, false)" 
+                                                           placeholder="0">
                                                 </td>
                                                 <td style="text-align: right; font-weight: 800; color: #1e40af;">
                                                     {{ item.tong_tien|comma_num }} đ
@@ -275,7 +285,7 @@
                                                 </td>
                                             </tr>
                                             {% empty %}
-                                            <tr><td colspan="7" style="text-align: center; padding: 32px; color: #64748b;">Chưa có mã hàng nào trong hệ thống.</td></tr>
+                                            <tr><td colspan="8" style="text-align: center; padding: 32px; color: #64748b;">Chưa có mã hàng nào trong hệ thống.</td></tr>
                                             {% endfor %}
                                         </tbody>
                                     </table>
@@ -296,17 +306,29 @@
                                         </span>
                                     </div>
 
-                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
-                                        <span style="font-size: 0.9rem; font-weight: 700; color: #334155;">Đơn giá (VNĐ):</span>
-                                        <input type="text" 
-                                               name="m_price_{{ item.id }}" 
-                                               id="m_price_{{ item.id }}" 
-                                               value="{{ item.don_gia|comma_num }}" 
-                                               class="price-input-table" 
-                                               style="width: 140px;" 
-                                               oninput="formatAndSync(this, {{ item.id }}, true)" 
-                                               placeholder="0" 
-                                               required>
+                                    <div style="display: flex; flex-direction: column; gap: 8px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                            <span style="font-size: 0.88rem; font-weight: 700; color: #334155;">Đơn giá (VNĐ):</span>
+                                            <input type="text" 
+                                                   name="m_price_{{ item.id }}" 
+                                                   id="m_price_{{ item.id }}" 
+                                                   value="{{ item.don_gia|comma_num }}" 
+                                                   class="price-input-table" 
+                                                   style="width: 140px;" 
+                                                   oninput="formatAndSyncPrice(this, {{ item.id }}, true)" 
+                                                   placeholder="0">
+                                        </div>
+                                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                            <span style="font-size: 0.88rem; font-weight: 700; color: #6d28d9;">Giá CM (VNĐ):</span>
+                                            <input type="text" 
+                                                   name="m_cm_price_{{ item.id }}" 
+                                                   id="m_cm_price_{{ item.id }}" 
+                                                   value="{{ item.gia_cm|comma_num }}" 
+                                                   class="price-input-table" 
+                                                   style="width: 140px; border-color: #c4b5fd; color: #6d28d9;" 
+                                                   oninput="formatAndSyncCmPrice(this, {{ item.id }}, true)" 
+                                                   placeholder="0">
+                                        </div>
                                     </div>
 
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -314,7 +336,7 @@
                                             Tổng tiền: {{ item.tong_tien|comma_num }} đ
                                         </div>
                                         <button type="button" class="btn-save-single" onclick="saveSinglePrice({{ item.id }})">
-                                            💾 Lưu giá này
+                                            💾 Lưu dòng này
                                         </button>
                                     </div>
                                 </div>
@@ -331,6 +353,7 @@
                             <input type="hidden" name="action" value="update_single">
                             <input type="hidden" name="product_color_id" id="single_color_id">
                             <input type="hidden" name="don_gia" id="single_don_gia">
+                            <input type="hidden" name="gia_cm" id="single_gia_cm">
                         </form>
 
                     </div>
@@ -341,41 +364,48 @@
 
     <script>
         // Tự động định dạng dấu phẩy mỗi 3 chữ số khi người dùng gõ
-        function formatAndSync(input, colorId, fromMobile) {
-            let raw = input.value.replace(/[^0-9]/g, '');
-            if (raw === '') {
-                input.value = '';
-                syncPriceInput(colorId, '', fromMobile);
-                return;
-            }
+        function formatNumberString(rawVal) {
+            let raw = (rawVal || '').replace(/[^0-9]/g, '');
+            if (raw === '') return '';
             let num = parseInt(raw, 10);
-            let formatted = num.toLocaleString('en-US'); // thêm dấu phẩy mỗi 3 số: 150,000
-            input.value = formatted;
-            syncPriceInput(colorId, formatted, fromMobile);
+            return num.toLocaleString('en-US'); // 150,000
         }
 
-        // Đồng bộ 2 chiều giữa ô nhập Desktop và Mobile
-        function syncPriceInput(colorId, val, fromMobile) {
+        function formatAndSyncPrice(input, colorId, fromMobile) {
+            let formatted = formatNumberString(input.value);
+            input.value = formatted;
             if (fromMobile) {
                 const dInput = document.getElementById('price_' + colorId);
-                if (dInput) dInput.value = val;
+                if (dInput) dInput.value = formatted;
             } else {
                 const mInput = document.getElementById('m_price_' + colorId);
-                if (mInput) mInput.value = val;
+                if (mInput) mInput.value = formatted;
+            }
+        }
+
+        function formatAndSyncCmPrice(input, colorId, fromMobile) {
+            let formatted = formatNumberString(input.value);
+            input.value = formatted;
+            if (fromMobile) {
+                const dInput = document.getElementById('cm_price_' + colorId);
+                if (dInput) dInput.value = formatted;
+            } else {
+                const mInput = document.getElementById('m_cm_price_' + colorId);
+                if (mInput) mInput.value = formatted;
             }
         }
 
         // Lưu đơn lẻ cho 1 dòng
         function saveSinglePrice(colorId) {
-            let input = document.getElementById('price_' + colorId);
-            if (!input || !input.value) {
-                input = document.getElementById('m_price_' + colorId);
-            }
-            if (!input) return;
+            let pInput = document.getElementById('price_' + colorId) || document.getElementById('m_price_' + colorId);
+            let cmInput = document.getElementById('cm_price_' + colorId) || document.getElementById('m_cm_price_' + colorId);
 
-            const val = input.value.trim();
+            const pVal = pInput ? pInput.value.trim() : '0';
+            const cmVal = cmInput ? cmInput.value.trim() : '0';
+
             document.getElementById('single_color_id').value = colorId;
-            document.getElementById('single_don_gia').value = val;
+            document.getElementById('single_don_gia').value = pVal;
+            document.getElementById('single_gia_cm').value = cmVal;
             document.getElementById('singlePriceForm').submit();
         }
     </script>

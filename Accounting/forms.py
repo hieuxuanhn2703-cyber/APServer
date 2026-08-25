@@ -78,6 +78,12 @@ class PriceUpdateForm(forms.Form):
     don_gia = forms.IntegerField(
         label="Đơn giá (VNĐ)",
         min_value=0,
-        required=True,
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'numeric-input', 'style': 'text-align: right;'})
+    )
+    gia_cm = forms.IntegerField(
+        label="Giá CM (VNĐ)",
+        min_value=0,
+        required=False,
         widget=forms.NumberInput(attrs={'class': 'numeric-input', 'style': 'text-align: right;'})
     )

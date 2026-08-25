@@ -744,17 +744,17 @@
                     </button>
                     <div class="header-title-box">
                         <h1 class="header-title">Báo Cáo Doanh Thu Tổ / Xưởng Theo Ngày</h1>
-                        <span class="header-subtitle">Tính toán số tiền làm được = Sản lượng Ra Chuyền × Đơn giá mã hàng</span>
+                        <span class="header-subtitle">Tính toán số tiền làm được = Sản lượng Ra Chuyền × Giá CM mã hàng</span>
                     </div>
                 </div>
                 <div class="header-right">
-                    <a href="{% url 'accounting:price_management' %}" class="btn-act btn-act-gray" style="font-size:0.82rem;" title="Kiểm tra và cập nhật bảng đơn giá">
+                    <a href="{% url 'accounting:price_management' %}" class="btn-act btn-act-gray" style="font-size:0.82rem;" title="Kiểm tra và cập nhật bảng giá (Đơn giá & Giá CM)">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"></circle>
                             <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
                             <path d="M12 6v2m0 8v2"></path>
                         </svg>
-                        Bảng Đơn Giá
+                        Bảng Đơn Giá & Giá CM
                     </a>
                 </div>
             </header>
@@ -969,7 +969,7 @@
                                                 <th style="width: 25%;">Mã Hàng</th>
                                                 <th style="width: 20%;">Màu Sắc</th>
                                                 <th style="width: 15%;" class="number-col">Số Lượng Ra Chuyền</th>
-                                                <th style="width: 15%;" class="number-col">Đơn Giá (VNĐ)</th>
+                                                <th style="width: 15%;" class="number-col">Giá CM (VNĐ)</th>
                                                 <th style="width: 20%;" class="number-col">Thành Tiền (VNĐ)</th>
                                             </tr>
                                         </thead>
@@ -982,10 +982,10 @@
                                                 <td class="number-col" style="font-weight:700; color:#1e293b;">{{ item.so_luong|comma_num }}</td>
                                                 <td class="number-col">
                                                     {% if item.has_price %}
-                                                        <span style="color:#475569; font-weight:600;">{{ item.don_gia|comma_num }}</span>
+                                                        <span style="color:#6d28d9; font-weight:700;">{{ item.gia_cm|comma_num }}</span>
                                                     {% else %}
-                                                        <a href="{% url 'accounting:price_management' %}" class="badge-no-price" title="Nhấn để cập nhật đơn giá">
-                                                            ⚠️ Chưa có giá
+                                                        <a href="{% url 'accounting:price_management' %}" class="badge-no-price" title="Nhấn để cập nhật giá CM">
+                                                            ⚠️ Chưa có giá CM
                                                         </a>
                                                     {% endif %}
                                                 </td>
