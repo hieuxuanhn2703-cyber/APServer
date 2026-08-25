@@ -113,13 +113,17 @@
         .table-price-wrap {
             border: 1px solid #e2e8f0;
             border-radius: 12px;
-            overflow: hidden;
+            overflow: auto;
+            max-height: calc(100vh - 240px);
+            min-height: 350px;
             background: #ffffff;
             margin-top: 16px;
+            -webkit-overflow-scrolling: touch;
         }
         .table-price-wrap table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
         }
         .table-price-wrap th {
             background: #f8fafc;
@@ -129,11 +133,18 @@
             color: #475569;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 2px solid #cbd5e1;
+            border-right: 1px solid #f1f5f9;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: inset 0 -1px 0 #cbd5e1;
+            white-space: nowrap;
         }
         .table-price-wrap td {
             padding: 12px 16px;
             border-bottom: 1px solid #f1f5f9;
+            border-right: 1px solid #f1f5f9;
             font-size: 0.95rem;
             vertical-align: middle;
         }

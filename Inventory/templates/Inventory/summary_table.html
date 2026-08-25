@@ -1,10 +1,23 @@
+<style>
+    .inventory-summary-table thead tr:first-child th {
+        position: sticky;
+        top: 0;
+        z-index: 15;
+    }
+    .inventory-summary-table thead tr:nth-child(2) th {
+        position: sticky;
+        top: 38px;
+        z-index: 14;
+    }
+</style>
+
 <div class="mobile-scroll-hint">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     <span>Vuốt ngang bảng để xem đủ Thực nhận / Thực xuất / Còn lại và Xuất kho</span>
 </div>
 
-<div class="table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-    <table class="inventory-summary-table" data-table-type="summary" style="width: 100%; border-collapse: collapse; min-width: 900px;">
+<div class="table-wrapper" style="overflow: auto; max-height: calc(100vh - 210px); min-height: 350px; -webkit-overflow-scrolling: touch;">
+    <table class="inventory-summary-table" data-table-type="summary" style="width: 100%; border-collapse: separate; border-spacing: 0; min-width: 900px;">
         <thead>
             <tr>
                 <th rowspan="2" style="border: 1px solid #cbd5e1; padding: 10px 8px; text-align: center; background-color: #f1f5f9; font-weight: 700; color: #1e293b;">

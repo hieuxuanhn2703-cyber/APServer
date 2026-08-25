@@ -288,8 +288,11 @@
             border-radius: 12px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-            overflow-x: auto;
+            overflow: auto;
+            max-height: calc(100vh - 240px);
+            min-height: 350px;
             width: 100%;
+            -webkit-overflow-scrolling: touch;
         }
         .table-wrapper table {
             width: 100%;
@@ -312,6 +315,10 @@
             border-left: none;
             border-right: none;
             white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: inset 0 -1px 0 #e2e8f0;
         }
         .table-wrapper td {
             padding: 13px 18px;

@@ -23,12 +23,15 @@
                 padding: 18px !important;
             }
             .table-wrapper {
-                overflow-x: auto;
+                overflow: auto !important;
+                max-height: calc(100vh - 210px) !important;
+                min-height: 350px !important;
             }
             table {
                 width: 100% !important;
                 font-size: 13px !important;
-                border-collapse: collapse !important;
+                border-collapse: separate !important;
+                border-spacing: 0 !important;
             }
             th, td {
                 padding: 6px 3px !important;
@@ -38,6 +41,22 @@
             th {
                 font-size: 12px !important;
                 font-weight: 600 !important;
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 10 !important;
+                background: #e2e8f0 !important;
+            }
+            thead tr:first-child th {
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 15 !important;
+                background: #e2e8f0 !important;
+            }
+            thead tr:nth-child(2) th {
+                position: sticky !important;
+                top: 29px !important;
+                z-index: 14 !important;
+                background: #f1f5f9 !important;
             }
             .diagonal-cell {
                 width: 70px !important;

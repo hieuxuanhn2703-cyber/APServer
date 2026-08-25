@@ -226,15 +226,19 @@
         .table-dash-wrap {
             border: 1px solid #cbd5e1;
             border-radius: 10px;
-            overflow-x: auto;
+            overflow: auto;
+            max-height: calc(100vh - 240px);
+            min-height: 380px;
             background: #ffffff;
             margin-top: 12px;
             width: 100%;
+            -webkit-overflow-scrolling: touch;
         }
 
         .table-dash-wrap table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
         .table-dash-wrap th {
@@ -244,17 +248,33 @@
             color: #334155;
             letter-spacing: 0.3px;
             border-bottom: 1px solid #cbd5e1;
+            border-right: 1px solid #cbd5e1;
             vertical-align: middle;
             text-align: center;
             box-sizing: border-box;
             white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table-dash-wrap thead tr:first-child th {
+            position: sticky;
+            top: 0;
+            z-index: 15;
+        }
+
+        .table-dash-wrap thead tr:nth-child(2) th {
+            position: sticky;
+            top: 33px;
+            z-index: 14;
         }
 
         .th-main { background: #f8fafc; color: #1e293b; }
-        .th-group-dh { background: #f1f5f9; color: #1e3a8a; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; }
-        .th-group-xuat { background: #f0fdf4; color: #065f46; border-right: 1px solid #cbd5e1; }
-        .th-group-ton { background: #fffbeb; color: #92400e; border-right: 1px solid #cbd5e1; }
-        .th-group-pay { background: #f5f3ff; color: #5b21b6; border-right: 1px solid #cbd5e1; }
+        .th-group-dh { background: #f1f5f9; color: #1e3a8a; }
+        .th-group-xuat { background: #f0fdf4; color: #065f46; }
+        .th-group-ton { background: #fffbeb; color: #92400e; }
+        .th-group-pay { background: #f5f3ff; color: #5b21b6; }
 
         .table-dash-wrap td {
             padding: 9px 8px;

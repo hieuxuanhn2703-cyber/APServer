@@ -414,25 +414,35 @@
         /* Items Sub-table inside Daily Group */
         .items-table-wrap {
             width: 100%;
-            overflow-x: auto;
+            overflow: auto;
+            max-height: 400px;
+            -webkit-overflow-scrolling: touch;
         }
 
         .items-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             font-size: 0.88rem;
         }
 
         .items-table th {
-            background: #ffffff;
+            background: #f8fafc;
             color: #475569;
             font-weight: 700;
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.3px;
             padding: 10px 16px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 2px solid #e2e8f0;
+            border-top: none;
+            border-left: none;
+            border-right: none;
             text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: inset 0 -1px 0 #e2e8f0;
         }
 
         .items-table td {
@@ -505,9 +515,50 @@
         .summary-table-wrap {
             border: 1px solid #cbd5e1;
             border-radius: 10px;
-            overflow-x: auto;
+            overflow: auto;
+            max-height: calc(100vh - 260px);
+            min-height: 300px;
             -webkit-overflow-scrolling: touch;
             margin-top: 12px;
+        }
+
+        .summary-table-wrap table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .summary-table-wrap th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            padding: 11px 12px;
+            border-bottom: 2px solid #cbd5e1;
+            border-right: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: inset 0 -1px 0 #cbd5e1;
+            white-space: nowrap;
+        }
+
+        .summary-table-wrap td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            border-right: 1px solid #f1f5f9;
+            color: #1e293b;
+            font-size: 0.88rem;
+        }
+
+        .summary-table-wrap tr.total-row td {
+            background: #f8fafc;
+            font-weight: 800;
+            color: #0f172a;
+            border-top: 2px solid #cbd5e1;
+            border-bottom: none;
         }
 
         /* Mobile Cards for Tab 2 & Tab 3 */
