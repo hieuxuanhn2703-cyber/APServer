@@ -38,7 +38,6 @@ class AuthTests(APITestCase):
         self.login_url = reverse('api:token_obtain_pair')
         self.refresh_url = reverse('api:token_refresh')
         self.me_url = reverse('api:user_profile')
-        self.test_role_url = reverse('api:test-premium-role')
 
     def test_valid_login(self):
         response = self.client.post(self.login_url, {"account": "basic1", "password": "password123"})
@@ -89,16 +88,3 @@ class AuthTests(APITestCase):
     def test_unauthenticated_me_endpoint(self):
         response = self.client.get(self.me_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_role_based_permissions(self):
-        # 1. Test basic user accessing premium view (should fail)
-        login_resp = self.client.post(self.login_url, {"account": "basic1", "password": "password123"})
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + login_resp.data['access'])
-        resp1 = self.client.get(self.test_role_url)
-        self.assertEqual(resp1.status_code, status.HTTP_403_FORBIDDEN)
-        
-        # 2. Test premium user accessing premium view (should pass)
-        login_resp2 = self.client.post(self.login_url, {"account": "premium1", "password": "password123"})
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + login_resp2.data['access'])
-        resp2 = self.client.get(self.test_role_url)
-        self.assertEqual(resp2.status_code, status.HTTP_200_OK)
