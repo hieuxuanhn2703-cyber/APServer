@@ -15,4 +15,7 @@ urlpatterns = [
     
     # Accounting API
     path('accounting/', include('Accounting.api.urls')),
+    
+    # Working API
+    path('working/', include('Working.api.urls')),
 ]
