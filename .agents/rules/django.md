@@ -9,8 +9,9 @@
 - **Templates:** Use existing templates in `Working/templates/` as references for structure.
 - **Static files:** Placed in `Working/static/working/`.
 - **Authentication:** The project uses a custom `AppUser` model with specific roles (`BASIC`, `HOAN_THIEN`, `KCS`, `NHA_CAT`, `QUAN_LY`, `PREMIUM`). Do not change authentication behavior or bypass this model without explicit approval.
-- **APIs:** No distinct API framework (e.g., DRF) is currently implemented. The project uses standard Django form submissions.
-- **Migrations:** Located in `Working/migrations/`.
+- **APIs:** No distinct API framework (e.g., DRF) is currently implemented. The project uses standard Django form submissions. Do NOT create APIs unless explicitly instructed as part of the React Migration.
+- **Migrations:** Located in `Working/migrations/`, `Accounting/migrations/`, and `Inventory/migrations/`.
+- **Testing:** Existing tests run via `python manage.py test`. Ensure 23+ tests pass successfully after modifications.
 
 ## Rules
 

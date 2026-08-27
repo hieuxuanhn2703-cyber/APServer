@@ -7,21 +7,16 @@ This project is a Process Monitoring application for a manufacturing environment
 - **Python version:** 3.12
 - **Django version:** 6.0.6
 - **Database:** MySQL
-- **Frontend technologies:** Django Templates, Vanilla HTML, Vanilla CSS, Vanilla JavaScript
-- **API framework:** Not determined from the existing codebase (Standard Django request-response cycle is used).
+- **Frontend technologies:** Django Templates, Vanilla HTML, Vanilla CSS, Vanilla JavaScript (Targeting React migration in the future).
+- **API framework:** Not determined from the existing codebase (Standard Django request-response cycle is used). Target: Django REST Framework (NOT IMPLEMENTED YET).
 - **Deployment technologies:** ASGI / Twisted / Daphne present in requirements, indicating potential async deployment.
 
 ## Project Structure
 
 - `ProcessMonitoring/`: The main Django project configuration directory containing `settings.py`, `urls.py`, and `asgi.py`.
-- `Working/`: The primary Django application containing the business logic.
-  - `models.py`: Defines the database schema.
-  - `views.py`: Contains the logic for processing requests and rendering templates.
-  - `forms.py`: Django forms for data entry.
-  - `urls.py`: App-level routing.
-  - `templates/`: Contains all HTML templates.
-  - `static/`: Contains all static assets (CSS, JS, images).
-  - `templatetags/`: Custom template tags for UI logic.
+- `Working/`: The primary Django application handling users, products, and core production tracking (Cut, KCS, Finishing).
+- `Accounting/`: The financial application handling pricing, exports, and payments.
+- `Inventory/`: The warehouse application handling material receipts and issues.
 - `.agents/`: Agent instruction system directory.
 
 ## General Coding Rules

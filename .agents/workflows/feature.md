@@ -1,12 +1,12 @@
 # Feature Implementation Workflow
 
-Use this process when implementing a new feature in this project.
+Use this process when implementing a new feature in this project. The process MUST follow: Analyze → Plan → Implement → Test → Review.
 
-## Phase 1 — Understand
+## Phase 1 — Analyze
 
 1. Read the user's request.
 2. Identify the expected behavior.
-3. Inspect the relevant existing code.
+3. Inspect the relevant existing code (dependencies between `Working`, `Accounting`, `Inventory`).
 4. Find related models, views, URLs, templates, JavaScript and CSS.
 5. Identify existing functionality that can be reused.
 

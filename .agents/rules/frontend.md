@@ -1,11 +1,20 @@
-# Frontend Instructions
+---
+trigger: always_on
+---
+
+# Current Frontend Instructions
+
+**Status**: CURRENT IMPLEMENTATION
+
+> This file describes the existing Django Template frontend.
+> These rules remain applicable until the corresponding functionality is migrated to React.
 
 ## Frontend Stack
 
 - **HTML:** Django Templates
 - **CSS:** Vanilla CSS (primarily using custom files like `premium.css` located in `Working/static/working/css/`)
 - **JavaScript:** Vanilla JS (`cascade_select.js`, `numeric_input.js`)
-- **Frameworks:** No modern JS frameworks (React, Vue, Angular) or utility-first CSS frameworks (Tailwind, Bootstrap) are detected in the repository.
+- **Frameworks:** Currently uses no modern JS frameworks or utility-first CSS frameworks. (Note: React is the planned target architecture, see `react.md`).
 
 ## Rules
 
@@ -24,7 +33,7 @@
 - Preserve existing functionality.
 - Maintain visual consistency.
 - Reuse existing components/styles.
-- Do not introduce a new UI framework unless explicitly requested.
+- Do not introduce a CSS/UI framework to the Django templates.
 - Do not rewrite unrelated pages.
 - Keep responsive behavior intact.
 - Prefer reusable components over duplicated markup.

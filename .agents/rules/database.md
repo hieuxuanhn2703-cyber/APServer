@@ -26,7 +26,7 @@ Agents MUST NOT perform the following unless explicitly requested:
 
 If a model change is required:
 1. Explain the intended schema change.
-2. Identify affected models.
+2. Identify affected models. Pay special attention to cross-app relationships (e.g., `Accounting` and `Inventory` models using `ForeignKey` to `Working.AppUser` or `Working.ProductColor`).
 3. Identify migration impact.
 4. Implement only after the task requires it.
 5. Run the appropriate Django validation/migration checks (`python manage.py makemigrations`, `python manage.py check`).
