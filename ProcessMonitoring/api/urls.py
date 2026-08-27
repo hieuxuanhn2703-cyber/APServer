@@ -12,4 +12,7 @@ urlpatterns = [
     
     # Inventory API
     path('inventory/', include('Inventory.api.urls', namespace='inventory_api')),
+    
+    # Accounting API
+    path('accounting/', include('Accounting.api.urls')),
 ]
