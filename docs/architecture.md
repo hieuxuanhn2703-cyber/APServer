@@ -19,5 +19,17 @@ It utilizes the Model-Template-View (MTV) pattern.
 
 In the future, the architecture will migrate to a decoupled SPA (Single Page Application):
 1. **Database**: MySQL (Unchanged).
-2. **Backend API**: Django + Django REST Framework providing JSON endpoints.
-3. **Frontend**: React application communicating with the backend via REST API.
+2. **Backend API**: Django + Django REST Framework providing JSON endpoints under `/api/v1/`.
+3. **Authentication**: Custom JWT Authentication mapping exactly to the `AppUser` model.
+4. **Frontend**: React application communicating with the backend via REST API.
+
+### Django Application Dependencies
+The Django backend relies heavily on the `Working` app, forming this exact dependency tree:
+```mermaid
+graph TD;
+    Accounting --> Working;
+    Inventory --> Working;
+    ProcessMonitoring --> Working;
+    ProcessMonitoring --> Accounting;
+    ProcessMonitoring --> Inventory;
+```
