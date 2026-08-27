@@ -1,5 +1,11 @@
 # Backend Documentation
 
+## Tech Stack
+- Python 3.14 (or compatible)
+- Django 6.0.6
+- Django REST Framework 3.18.0
+- django-cors-headers 4.9.0
+
 ## Core Framework
 - Django 6.0.6
 

@@ -15,13 +15,21 @@ It utilizes the Model-Template-View (MTV) pattern.
    - `Inventory`: Warehouse module (Receipts, Issues).
 
 ## Target Architecture (React Migration)
-**Status**: NOT IMPLEMENTED YET.
+**Status**: 
+- **IMPLEMENTED**: DRF Foundation installed. `/api/v1/` namespace created.
+- **NOT IMPLEMENTED YET**: JWT Auth, API endpoints, React frontend.
 
-In the future, the architecture will migrate to a decoupled SPA (Single Page Application):
+In the future, the architecture will migrate to a decoupled SPA (Single Page Application).
+During the migration, BOTH architectures coexist:
+```text
+Browser
+   ├── Django Templates (Legacy UI)
+   └── REST API (New React UI)
+```
 1. **Database**: MySQL (Unchanged).
-2. **Backend API**: Django + Django REST Framework providing JSON endpoints under `/api/v1/`.
-3. **Authentication**: Custom JWT Authentication mapping exactly to the `AppUser` model.
-4. **Frontend**: React application communicating with the backend via REST API.
+2. **Backend API**: Django + Django REST Framework 3.18.0 providing JSON endpoints under `/api/v1/`.
+3. **Authentication**: **IMPLEMENTED (Phase 3B-2)** - Custom JWT Authentication mapping exactly to the `AppUser` model without breaking legacy sessions.
+4. **Frontend**: React application communicating with the backend via REST API (Phase 3C - NOT STARTED).
 
 ### Django Application Dependencies
 The Django backend relies heavily on the `Working` app, forming this exact dependency tree:

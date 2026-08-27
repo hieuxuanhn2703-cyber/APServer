@@ -21,12 +21,13 @@ class LoginRequiredMiddleware:
                 reverse("login"),
                 reverse("register"),
                 reverse("logout"),
+                reverse("api:health-check"),
             ]
         except NoReverseMatch:
             public_paths = ["/login/", "/register/", "/logout/"]
         
-        # Cho phép các file tĩnh (static) và các đường dẫn công khai
-        if path.startswith("/static/") or path in public_paths:
+        # Cho phép các file tĩnh (static), API v1, và các đường dẫn công khai
+        if path.startswith("/static/") or path.startswith("/api/v1/") or path in public_paths:
             return self.get_response(request)
             
         user_id = request.session.get(SESSION_KEY)

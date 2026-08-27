@@ -4,21 +4,47 @@
 
 Currently, there are no REST APIs. All data exchanges occur via standard HTML form submissions and server-rendered HTML responses.
 
-## Future API Architecture (Planned)
-**Status**: NOT IMPLEMENTED YET.
+## API Architecture (Foundation Phase)
+**Status**: 
+- **IMPLEMENTED**: DRF Foundation, `/api/v1/` namespace, Health Endpoint, Pagination config.
+- **NOT IMPLEMENTED YET**: Inventory API, Accounting API, Working API, React.
 
-- **Framework**: Django REST Framework (DRF).
+- **Framework**: Django REST Framework (DRF) v3.18.0.
 - **Format**: JSON.
 - **URL Prefix**: `/api/v1/`
-- **Authentication**: Custom JWT Authentication decoding the token and evaluating the custom `AppUser` model.
+- **Authentication**: Custom JWT Authentication (IMPLEMENTED). Currently `AllowAny` for the health endpoint.
+- **Pagination**: `PageNumberPagination` (page_size=20) (IMPLEMENTED).
 
-### Proposed Endpoints
-- **Auth**: `POST /api/v1/auth/login/`, `GET /api/v1/auth/me/`
-- **Inventory**: `GET /api/v1/inventory/summary/`, `CRUD /api/v1/inventory/receipts/`, `CRUD /api/v1/inventory/issues/`
-- **Accounting**: `GET /api/v1/accounting/dashboard/`, `CRUD /api/v1/accounting/payments/`, `CRUD /api/v1/accounting/prices/`
-- **Working**: `CRUD /api/v1/working/users/`, `CRUD /api/v1/working/process-reports/`
+### 1. Authentication (`/api/v1/auth/`)
+**Status:** IMPLEMENTED (Phase 3B-2)
 
-### Response Conventions
+Endpoints for JWT token generation and validation. Integrates seamlessly with the legacy `AppUser` model using a Custom DRF Authentication Class.
+
+- **`POST /api/v1/auth/token/`**
+  - **Purpose:** Obtain JWT access and refresh tokens.
+  - **Request Body:** `{"account": "...", "password": "..."}`
+  - **Response:** `{"access": "...", "refresh": "..."}`
+  - **Permissions:** AllowAny
+  - **Note:** Internally uses `verify_credentials` to ensure 100% compatibility with legacy passwords.
+
+- **`POST /api/v1/auth/token/refresh/`**
+  - **Purpose:** Refresh an expired access token using a valid refresh token.
+  - **Request Body:** `{"refresh": "..."}`
+  - **Response:** `{"access": "..."}`
+
+- **`GET /api/v1/auth/me/`**
+  - **Purpose:** Get details of the currently authenticated API user.
+  - **Response:** `{"id": 1, "account": "...", "name": "...", "role": "..."}`
+  - **Permissions:** IsAuthenticated
+
+### Endpoints
+- **Health (IMPLEMENTED)**: `GET /api/v1/health/` -> `{"status": "ok"}`
+- **Auth (IMPLEMENTED)**: `POST /api/v1/auth/token/`, `POST /api/v1/auth/token/refresh/`, `GET /api/v1/auth/me/`
+- **Inventory (PLANNED)**: `GET /api/v1/inventory/summary/`, `CRUD /api/v1/inventory/receipts/`, `CRUD /api/v1/inventory/issues/`
+- **Accounting (PLANNED)**: `GET /api/v1/accounting/dashboard/`, `CRUD /api/v1/accounting/payments/`, `CRUD /api/v1/accounting/prices/`
+- **Working (PLANNED)**: `CRUD /api/v1/working/users/`, `CRUD /api/v1/working/process-reports/`
+
+### Response Conventions (PLANNED)
 - **Success (200/201)**: `{ "data": ... }` or `{ "count": 100, "results": [...] }`
 - **Validation Errors (400)**: `{ "errors": { "field": ["error message"] } }`
 - **Permission Errors (403)**: `{ "error": "Chỉ quản lý mới có quyền chỉnh sửa phiếu nhập kho." }`
