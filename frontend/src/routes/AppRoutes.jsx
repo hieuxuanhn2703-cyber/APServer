@@ -8,7 +8,7 @@ import LoginPage from '../pages/LoginPage';
 import DashboardPlaceholder from '../pages/DashboardPlaceholder';
 import WorkingPlaceholder from '../pages/WorkingPlaceholder';
 import InventoryPlaceholder from '../pages/InventoryPlaceholder';
-import AccountingPlaceholder from '../pages/AccountingPlaceholder';
+import AccountingDashboardPage from '../pages/AccountingDashboardPage';
 import NotFoundPage from '../pages/NotFoundPage';
 
 /**
@@ -51,7 +51,7 @@ export function AppRoutes() {
         <Route path="/dashboard" element={<DashboardPlaceholder />} />
         <Route path="/working" element={<WorkingPlaceholder />} />
         <Route path="/inventory" element={<InventoryPlaceholder />} />
-        <Route path="/accounting" element={<AccountingPlaceholder />} />
+        <Route path="/accounting" element={<AccountingDashboardPage />} />
       </Route>
 
       {/* 404 Route */}
