@@ -112,3 +112,51 @@ class AccountingAPITests(TestCase):
         self.assertIn('team_summary_list', response.data)
         self.assertIn('date_summary_list', response.data)
         self.assertIn('kpi_tong_tien', response.data)
+
+    def test_payment_create_and_delete(self):
+        self.client.force_authenticate(user=self.accountant)
+        
+        # 1. Create a payment
+        pay_data = {
+            'ngay_thanh_toan': str(datetime.date.today()),
+            'product_color': self.color.id,
+            'so_tien': 150000,
+            'ghi_chu': 'Dot 2 test'
+        }
+        create_resp = self.client.post('/api/v1/accounting/payments/', pay_data)
+        self.assertEqual(create_resp.status_code, status.HTTP_201_CREATED)
+        new_pay_id = create_resp.data['id']
+        self.assertEqual(create_resp.data['so_tien'], 150000)
+        self.assertEqual(create_resp.data['product_name'], 'Ao-Polo')
+        
+        # 2. Verify dashboard reflects updated paid amount (200000 + 150000 = 350000)
+        dash_resp = self.client.get('/api/v1/accounting/dashboard/')
+        self.assertEqual(dash_resp.status_code, status.HTTP_200_OK)
+        row = dash_resp.data['rows'][0]
+        self.assertEqual(row['tien_da_thanh_toan'], 350000)
+        
+        # 3. Delete the newly created payment
+        del_resp = self.client.delete(f'/api/v1/accounting/payments/{new_pay_id}/')
+        self.assertEqual(del_resp.status_code, status.HTTP_204_NO_CONTENT)
+        
+        # 4. Verify dashboard returns to previous state (200000)
+        dash_resp2 = self.client.get('/api/v1/accounting/dashboard/')
+        self.assertEqual(dash_resp2.status_code, status.HTTP_200_OK)
+        row2 = dash_resp2.data['rows'][0]
+        self.assertEqual(row2['tien_da_thanh_toan'], 200000)
+
+    def test_payment_permissions(self):
+        # Worker cannot create or delete payments (HTTP 403)
+        self.client.force_authenticate(user=self.worker)
+        
+        pay_data = {
+            'ngay_thanh_toan': str(datetime.date.today()),
+            'product_color': self.color.id,
+            'so_tien': 100000
+        }
+        create_resp = self.client.post('/api/v1/accounting/payments/', pay_data)
+        self.assertEqual(create_resp.status_code, status.HTTP_403_FORBIDDEN)
+        
+        del_resp = self.client.delete(f'/api/v1/accounting/payments/{self.payment.id}/')
+        self.assertEqual(del_resp.status_code, status.HTTP_403_FORBIDDEN)
+

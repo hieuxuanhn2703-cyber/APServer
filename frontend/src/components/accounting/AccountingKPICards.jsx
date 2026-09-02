@@ -57,7 +57,7 @@ export function AccountingKPICards({ kpi = {} }) {
           </div>
           <div className="kpi-sub">
             <span>Thu hồi tiền xuất:</span>
-            <strong>{tyLeThuHoi}%</strong>
+            <strong style={{ color: '#6d28d9' }}>{tyLeThuHoi}%</strong>
           </div>
         </div>
 

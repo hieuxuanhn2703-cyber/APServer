@@ -66,6 +66,7 @@ export function PaymentModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setErrorMessage('');
     setSuccessMessage('');
 
@@ -102,6 +103,8 @@ export function PaymentModal({
   };
 
   const handleDelete = async (paymentId) => {
+    if (isDeletingId !== null) return;
+
     if (!window.confirm('Bạn có chắc chắn muốn xóa đợt thanh toán này không?')) {
       return;
     }

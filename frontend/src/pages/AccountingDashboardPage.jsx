@@ -45,9 +45,8 @@ export function AccountingDashboardPage() {
         if (isMounted && Array.isArray(prodList)) {
           setProducts(prodList);
         }
-      } catch (err) {
+      } catch {
         // Non-blocking fallback: products will be extracted from rows if this fails
-        console.warn('Could not load products list for filter:', err);
       }
     }
 
@@ -70,15 +69,14 @@ export function AccountingDashboardPage() {
         const data = await getAccountingDashboard(selectedMaHang);
         setDashboardData(data || { rows: [], kpi: {}, payments_by_pc: {} });
 
-        // If active modal is open, refresh the active row with latest data
-        if (activePaymentRow && data?.rows) {
+        // If active modal is open, refresh the active row with latest data safely via functional updater
+        setActivePaymentRow((prev) => {
+          if (!prev || !data?.rows) return prev;
           const updatedRow = data.rows.find(
-            (r) => r.product_color_id === activePaymentRow.product_color_id
+            (r) => r.product_color_id === prev.product_color_id
           );
-          if (updatedRow) {
-            setActivePaymentRow(updatedRow);
-          }
-        }
+          return updatedRow || prev;
+        });
       } catch (err) {
         if (err.status === 403) {
           setPermissionDenied(true);
@@ -89,7 +87,7 @@ export function AccountingDashboardPage() {
         if (showLoading) setIsLoading(false);
       }
     },
-    [isPermitted, selectedMaHang, activePaymentRow]
+    [isPermitted, selectedMaHang]
   );
 
   // Fetch whenever selectedMaHang changes
