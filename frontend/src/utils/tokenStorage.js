@@ -59,6 +59,10 @@ export const tokenStorage = {
 
   hasAccessToken: () => {
     return Boolean(tokenStorage.getAccessToken());
+  },
+
+  hasRefreshToken: () => {
+    return Boolean(tokenStorage.getRefreshToken());
   }
 };
 

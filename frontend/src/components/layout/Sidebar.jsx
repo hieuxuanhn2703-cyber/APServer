@@ -13,12 +13,31 @@ export function Sidebar({ isOpen, isCollapsed, onCloseSidebar }) {
   const canSeeWorking = hasAnyRole(['PREMIUM', 'QUAN_LY', 'NHA_CAT', 'BASIC', 'KCS', 'HOAN_THIEN']);
   const canSeeInventory = hasAnyRole(['PREMIUM', 'QUAN_LY', 'KE_TOAN', 'KHO']);
 
+  // Keyboard accessibility: Close drawer on Escape when open
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onCloseSidebar();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onCloseSidebar]);
+
+  const handleLogout = () => {
+    if (onCloseSidebar) onCloseSidebar();
+    logout();
+  };
+
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
 
   return (
     <aside
       className={`app-sidebar ${isCollapsed ? 'collapsed' : ''} ${isOpen ? 'open' : ''}`}
       id="appSidebar"
+      role="navigation"
+      aria-label="Điều hướng chính"
     >
       {/* Brand Header */}
       <div className="sidebar-brand">
@@ -118,7 +137,7 @@ export function Sidebar({ isOpen, isCollapsed, onCloseSidebar }) {
           <button
             type="button"
             className="quick-action-btn logout-btn"
-            onClick={logout}
+            onClick={handleLogout}
             title="Đăng xuất khỏi hệ thống"
           >
             <span>Đăng xuất</span>

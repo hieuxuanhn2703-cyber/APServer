@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
 
-export function Topbar({ onToggleSidebar, title = 'Tổng Quan Hệ Thống' }) {
+export function Topbar({ onToggleSidebar, isSidebarOpen = true, title = 'Tổng Quan Hệ Thống' }) {
   const { user } = useAuth();
 
   return (
@@ -11,7 +11,9 @@ export function Topbar({ onToggleSidebar, title = 'Tổng Quan Hệ Thống' }) 
           type="button"
           className="sidebar-toggle-btn"
           onClick={onToggleSidebar}
-          aria-label="Thu gọn/Mở rộng menu"
+          aria-label="Thu gọn hoặc mở rộng thanh điều hướng"
+          aria-controls="appSidebar"
+          aria-expanded={isSidebarOpen}
           title="Thu gọn/Mở rộng menu"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

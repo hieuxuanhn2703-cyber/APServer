@@ -25,7 +25,12 @@ function HomeRedirect() {
     return <Navigate to="/inventory" replace />;
   }
 
-  return <Navigate to="/working" replace />;
+  if (hasAnyRole(['BASIC', 'NHA_CAT', 'KCS', 'HOAN_THIEN'])) {
+    return <Navigate to="/working" replace />;
+  }
+
+  // Safe fallback for any unknown or unassigned role
+  return <Navigate to="/dashboard" replace />;
 }
 
 export function AppRoutes() {

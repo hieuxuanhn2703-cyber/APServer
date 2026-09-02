@@ -86,7 +86,17 @@ export async function apiClient(endpoint, options = {}) {
 
   // Inject Authorization header unless skipAuth is true
   if (!skipAuth) {
-    const token = tokenStorage.getAccessToken();
+    let token = tokenStorage.getAccessToken();
+    if (!token && tokenStorage.hasRefreshToken() && !endpoint.includes('/auth/token/')) {
+      try {
+        if (!refreshTokenPromise) {
+          refreshTokenPromise = refreshAccessToken();
+        }
+        token = await refreshTokenPromise;
+      } catch {
+        // Handled by refreshAccessToken
+      }
+    }
     if (token) {
       requestHeaders['Authorization'] = `Bearer ${token}`;
     }
@@ -137,14 +147,21 @@ export async function apiClient(endpoint, options = {}) {
   if (!response.ok) {
     let errorMessage = `Yêu cầu thất bại (${response.status})`;
     if (typeof data === 'object' && data !== null) {
-      if (data.detail) {
-        errorMessage = data.detail;
-      } else if (data.error) {
+      if (data.error) {
         errorMessage = data.error;
+      } else if (data.detail) {
+        errorMessage = data.detail;
       } else if (data.message) {
         errorMessage = data.message;
       } else if (data.non_field_errors) {
         errorMessage = Array.isArray(data.non_field_errors) ? data.non_field_errors.join(', ') : data.non_field_errors;
+      } else {
+        const fieldErrors = Object.entries(data)
+          .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+          .join('; ');
+        if (fieldErrors) {
+          errorMessage = fieldErrors;
+        }
       }
     }
     throw new ApiError(errorMessage, response.status, data);

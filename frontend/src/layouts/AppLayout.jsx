@@ -48,6 +48,20 @@ export function AppLayout() {
     setIsMobileOpen(false);
   }, [location.pathname]);
 
+  // Prevent body scrolling when mobile drawer is open
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileOpen]);
+
+  const isSidebarOpen = isMobileOpen || !isCollapsed;
+
   return (
     <div className="app-wrapper">
       {/* Mobile Drawer Backdrop */}
@@ -66,8 +80,12 @@ export function AppLayout() {
 
       {/* Main Content Area */}
       <div className="main-wrapper">
-        <Topbar onToggleSidebar={handleToggleSidebar} title={currentTitle} />
-        <main className="main-content">
+        <Topbar
+          onToggleSidebar={handleToggleSidebar}
+          isSidebarOpen={isSidebarOpen}
+          title={currentTitle}
+        />
+        <main className="main-content" id="mainContent">
           <Outlet />
         </main>
       </div>

@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
    * Fetch current user profile using stored JWT
    */
   const refreshUser = useCallback(async () => {
-    if (!tokenStorage.hasAccessToken()) {
+    if (!tokenStorage.hasAccessToken() && !tokenStorage.hasRefreshToken()) {
       setUser(null);
       setIsLoading(false);
       return null;
