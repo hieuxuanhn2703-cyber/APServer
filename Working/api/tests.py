@@ -154,3 +154,58 @@ class WorkingAPITestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + admin_token)
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_appuser_security(self):
+        admin_token = self._get_token('admin1', 'password123')
+        
+        # Test that user list does not expose passwords
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + admin_token)
+        url = reverse('api:users-list')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        
+        if len(resp.data.get('results', [])) > 0:
+            first_user = resp.data['results'][0]
+            self.assertNotIn('password', first_user)
+            
+        # Test modifying sensitive fields by non-admin
+        basic_token = self._get_token('basic1', 'password123')
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + basic_token)
+        url_detail = reverse('api:users-detail', args=[self.basic_user.id])
+        resp = self.client.patch(url_detail, {"role": "PREMIUM", "is_approved": True})
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN) # Basic cannot access users endpoint
+
+    def test_strict_role_isolation_for_creation(self):
+        basic_token = self._get_token('basic1', 'password123')
+        
+        # Basic worker tries to create CutReport (should fail, needs NHA_CAT)
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + basic_token)
+        url = reverse('api:reports-cut-list')
+        resp = self.client.post(url, {
+            "ngay_lam_viec": datetime.date.today(),
+            "ma_hang": "B",
+            "mau": "Blue",
+            "size": "M",
+            "cat_chinh": 10
+        })
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_nguoi_nhap_spoofing(self):
+        cut_token = self._get_token('cut1', 'password123')
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + cut_token)
+        url = reverse('api:reports-cut-list')
+        resp = self.client.post(url, {
+            "ngay_lam_viec": datetime.date.today(),
+            "ma_hang": "C",
+            "mau": "Green",
+            "size": "M",
+            "cat_chinh": 10,
+            "nguoi_nhap": self.admin_user.id if hasattr(self, 'admin_user') else self.premium_user.id
+        })
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        cut_report_id = resp.data['id']
+        
+        # Verify nguoi_nhap is the actual authenticated user, NOT the spoofed one
+        report = CutReport.objects.get(id=cut_report_id)
+        self.assertEqual(report.nguoi_nhap.id, self.cut_user.id)
+
