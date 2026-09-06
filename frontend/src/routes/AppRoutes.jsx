@@ -7,7 +7,7 @@ import AppLayout from '../layouts/AppLayout';
 import LoginPage from '../pages/LoginPage';
 import DashboardPlaceholder from '../pages/DashboardPlaceholder';
 import WorkingPlaceholder from '../pages/WorkingPlaceholder';
-import InventoryPlaceholder from '../pages/InventoryPlaceholder';
+import InventoryDashboardPage from '../pages/InventoryDashboardPage';
 import AccountingDashboardPage from '../pages/AccountingDashboardPage';
 import NotFoundPage from '../pages/NotFoundPage';
 
@@ -50,7 +50,7 @@ export function AppRoutes() {
         <Route path="/" element={<HomeRedirect />} />
         <Route path="/dashboard" element={<DashboardPlaceholder />} />
         <Route path="/working" element={<WorkingPlaceholder />} />
-        <Route path="/inventory" element={<InventoryPlaceholder />} />
+        <Route path="/inventory" element={<InventoryDashboardPage />} />
         <Route path="/accounting" element={<AccountingDashboardPage />} />
       </Route>
 
