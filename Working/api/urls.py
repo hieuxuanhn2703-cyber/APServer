@@ -14,7 +14,8 @@ from Working.api.views import (
     DashboardCutAPIView,
     DashboardProcessAPIView,
     DashboardKcsAPIView,
-    DashboardFinishingAPIView
+    DashboardFinishingAPIView,
+    DashboardTrackingAPIView
 )
 
 router = DefaultRouter()
@@ -35,4 +36,5 @@ urlpatterns = [
     path('dashboards/process/', DashboardProcessAPIView.as_view(), name='dashboard-process'),
     path('dashboards/kcs/', DashboardKcsAPIView.as_view(), name='dashboard-kcs'),
     path('dashboards/finishing/', DashboardFinishingAPIView.as_view(), name='dashboard-finishing'),
+    path('dashboards/tracking/', DashboardTrackingAPIView.as_view(), name='dashboard-tracking'),
 ]

@@ -5,7 +5,7 @@ import ProtectedRoute from './ProtectedRoute';
 import AppLayout from '../layouts/AppLayout';
 
 import LoginPage from '../pages/LoginPage';
-import DashboardPlaceholder from '../pages/DashboardPlaceholder';
+import ProductionDashboardPage from '../pages/ProductionDashboardPage';
 import WorkingPlaceholder from '../pages/WorkingPlaceholder';
 import InventoryDashboardPage from '../pages/InventoryDashboardPage';
 import AccountingDashboardPage from '../pages/AccountingDashboardPage';
@@ -48,7 +48,14 @@ export function AppRoutes() {
         }
       >
         <Route path="/" element={<HomeRedirect />} />
-        <Route path="/dashboard" element={<DashboardPlaceholder />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['PREMIUM', 'QUAN_LY', 'KE_TOAN']}>
+              <ProductionDashboardPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/working" element={<WorkingPlaceholder />} />
         <Route path="/inventory" element={<InventoryDashboardPage />} />
         <Route path="/accounting" element={<AccountingDashboardPage />} />

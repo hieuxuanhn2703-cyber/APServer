@@ -12,6 +12,17 @@ class IsAdminOrManager(permissions.BasePermission):
             request.user.role in ['PREMIUM', 'QUAN_LY']
         )
 
+class IsProductionDashboardViewer(permissions.BasePermission):
+    """
+    Quyền truy cập xem Dashboard và Tracking sản xuất.
+    Cho phép PREMIUM, QUAN_LY, KE_TOAN.
+    """
+    def has_permission(self, request, view):
+        return bool(
+            request.user and hasattr(request.user, 'role') and
+            request.user.role in ['PREMIUM', 'QUAN_LY', 'KE_TOAN']
+        )
+
 class IsBasicWorker(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(

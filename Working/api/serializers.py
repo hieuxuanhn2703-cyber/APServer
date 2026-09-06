@@ -59,6 +59,21 @@ class CutReportSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['nguoi_nhap', 'created_at', 'updated_at']
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if self.context.get('with_totals'):
+            cumulative_map = self.context.get('cumulative_map', {})
+            color_map = self.context.get('color_map', {})
+            totals = cumulative_map.get(instance.id, {})
+            data['cumulative'] = {
+                'cat_chinh': totals.get('cat_chinh', instance.cat_chinh or 0),
+                'cat_lot': totals.get('cat_lot', instance.cat_lot or 0),
+                'cat_mex': totals.get('cat_mex', instance.cat_mex or 0),
+                'cat_bong': totals.get('cat_bong', instance.cat_bong or 0),
+            }
+            data['tong_don_hang'] = color_map.get((instance.ma_hang, instance.mau), 0)
+        return data
+
 class ProcessReportSerializer(serializers.ModelSerializer):
     nguoi_nhap_name = serializers.CharField(source='nguoi_nhap.name', read_only=True)
 
@@ -72,6 +87,24 @@ class ProcessReportSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['nguoi_nhap', 'created_at', 'updated_at']
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if self.context.get('with_totals'):
+            cumulative_map = self.context.get('cumulative_map', {})
+            color_map = self.context.get('color_map', {})
+            totals = cumulative_map.get(instance.id, {})
+            data['cumulative'] = {
+                'nhan_btp': totals.get('nhan_btp', instance.nhan_btp or 0),
+                'vao_chuyen': totals.get('vao_chuyen', instance.vao_chuyen or 0),
+                'giua_chuyen': totals.get('giua_chuyen', instance.giua_chuyen or 0),
+                'ra_chuyen': totals.get('ra_chuyen', instance.ra_chuyen or 0),
+                'thu_hoa': totals.get('thu_hoa', instance.thu_hoa or 0),
+                'la_thanh_pham': totals.get('la_thanh_pham', instance.la_thanh_pham or 0),
+                'nhap_hoan_thien': totals.get('nhap_hoan_thien', instance.nhap_hoan_thien or 0),
+            }
+            data['tong_don_hang'] = color_map.get((instance.ma_hang, instance.mau), 0)
+        return data
+
 class KcsReportSerializer(serializers.ModelSerializer):
     nguoi_nhap_name = serializers.CharField(source='nguoi_nhap.name', read_only=True)
 
@@ -84,6 +117,21 @@ class KcsReportSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['nguoi_nhap', 'created_at', 'updated_at']
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if self.context.get('with_totals'):
+            cumulative_map = self.context.get('cumulative_map', {})
+            color_map = self.context.get('color_map', {})
+            totals = cumulative_map.get(instance.id, {})
+            data['cumulative'] = {
+                'qua_tay': totals.get('qua_tay', instance.qua_tay or 0),
+                'dat': totals.get('dat', instance.dat or 0),
+                'loi': totals.get('loi', instance.loi or 0),
+                'tong_dat': totals.get('tong_dat', instance.tong_dat or 0),
+            }
+            data['tong_don_hang'] = color_map.get((instance.ma_hang, instance.mau), 0)
+        return data
+
 class FinishingReportSerializer(serializers.ModelSerializer):
     nguoi_nhap_name = serializers.CharField(source='nguoi_nhap.name', read_only=True)
 
@@ -95,6 +143,22 @@ class FinishingReportSerializer(serializers.ModelSerializer):
             'nguoi_nhap', 'nguoi_nhap_name', 'created_at', 'updated_at'
         ]
         read_only_fields = ['nguoi_nhap', 'created_at', 'updated_at']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if self.context.get('with_totals'):
+            cumulative_map = self.context.get('cumulative_map', {})
+            color_map = self.context.get('color_map', {})
+            prod_nhap_totals_map = self.context.get('prod_nhap_totals_map', {})
+            totals = cumulative_map.get(instance.id, {})
+            data['cumulative'] = {
+                'the_bai': totals.get('the_bai', instance.the_bai or 0),
+                'gap_hang': totals.get('gap_hang', instance.gap_hang or 0),
+                'treo_dong_thung': totals.get('treo_dong_thung', instance.treo_dong_thung or 0),
+            }
+            data['tong_don_hang'] = color_map.get((instance.ma_hang, instance.mau), 0)
+            data['tong_nhap_hoan_thien'] = prod_nhap_totals_map.get((instance.ma_hang, instance.mau), 0)
+        return data
 
 class DefectReceiveLogSerializer(serializers.ModelSerializer):
     nguoi_nhap_name = serializers.CharField(source='nguoi_nhap.name', read_only=True)

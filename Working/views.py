@@ -794,57 +794,9 @@ def delete_report_view(request, row_id):
     return redirect("list")
 
 def get_tracking_data(filter_ma_hang=None, filter_mau=None):
-    """Hàm phụ trợ để lấy và tính toán dữ liệu tracking có hỗ trợ lọc."""
-    products = Product.objects.prefetch_related('colors').all()
-    if filter_ma_hang:
-        products = products.filter(name__in=filter_ma_hang)
-    
-    # Tính tổng tất cả các công đoạn cho từng (Mã hàng, Màu)
-    report_sums = ProcessReport.objects.values('ma_hang', 'mau').annotate(
-        t_nhan_btp=Sum('nhan_btp'),
-        t_vao_chuyen=Sum('vao_chuyen'),
-        t_giua_chuyen=Sum('giua_chuyen'),
-        t_ra_chuyen=Sum('ra_chuyen'),
-        t_thu_hoa=Sum('thu_hoa'),
-        t_la_thanh_pham=Sum('la_thanh_pham'),
-        t_nhap_hoan_thien=Sum('nhap_hoan_thien')
-    )
-    
-    sum_map = {(r['ma_hang'], r['mau']): r for r in report_sums}
-    tracking_data = []
-    
-    for product in products:
-        for color in product.colors.all():
-            if filter_mau and color.name not in filter_mau:
-                continue
-            key = (product.name, color.name)
-            stats = sum_map.get(key, {})
-            qty = color.quantity
-            
-            def get_val(field_name):
-                return stats.get(field_name) or 0
-                
-            tracking_data.append({
-                'ma_hang': product.name,
-                'mau': color.name,
-                'so_luong': qty,
-                'nhan_btp_nhap': get_val('t_nhan_btp'),
-                'nhan_btp_con': qty - get_val('t_nhan_btp'),
-                'vao_chuyen_vao': get_val('t_vao_chuyen'),
-                'vao_chuyen_con': qty - get_val('t_vao_chuyen'),
-                'giua_chuyen_ra': get_val('t_giua_chuyen'),
-                'giua_chuyen_con': qty - get_val('t_giua_chuyen'),
-                'ra_chuyen_ra': get_val('t_ra_chuyen'),
-                'ra_chuyen_con': qty - get_val('t_ra_chuyen'),
-                'thu_hoa_thu': get_val('t_thu_hoa'),
-                'thu_hoa_con': qty - get_val('t_thu_hoa'),
-                'la_thanh_pham_lam': get_val('t_la_thanh_pham'),
-                'la_thanh_pham_con': qty - get_val('t_la_thanh_pham'),
-                'nhap_hoan_thien_nhap': get_val('t_nhap_hoan_thien'),
-                'nhap_hoan_thien_con': qty - get_val('t_nhap_hoan_thien'),
-            })
-            
-    return tracking_data
+    """Hàm phụ trợ để lấy và tính toán dữ liệu tracking có hỗ trợ lọc (sử dụng service chung)."""
+    from Working.services import get_tracking_dashboard_data
+    return get_tracking_dashboard_data(filter_ma_hang=filter_ma_hang, filter_mau=filter_mau)
 
 @login_required
 def tracking_view(request):
@@ -1224,112 +1176,27 @@ def finishing_export_excel_view(request):
 
 
 def _calculate_cumulative_totals_finishing():
-    """
-    Tính tổng lũy kế cho từng báo cáo Hoàn thiện theo thứ tự thời gian nhập (created_at, id).
-    Trả về dict: report.id -> {'total_the_bai': int, 'total_gap_hang': int, 'total_treo_dong_thung': int}
-    """
-    running = defaultdict(lambda: {'the_bai': 0, 'gap_hang': 0, 'treo_dong_thung': 0})
-    cumulative_map = {}
-    for r in FinishingReport.objects.select_related('nguoi_nhap').order_by('created_at', 'id'):
-        key = (r.ma_hang, r.mau)
-        running[key]['the_bai'] += (r.the_bai or 0)
-        running[key]['gap_hang'] += (r.gap_hang or 0)
-        running[key]['treo_dong_thung'] += (r.treo_dong_thung or 0)
-        cumulative_map[r.id] = {
-            'total_the_bai': running[key]['the_bai'],
-            'total_gap_hang': running[key]['gap_hang'],
-            'total_treo_dong_thung': running[key]['treo_dong_thung'],
-        }
-    return cumulative_map
+    """Tính tổng lũy kế cho từng báo cáo Hoàn thiện (ủy quyền qua services.py)."""
+    from Working.services import calculate_cumulative_totals_finishing
+    return calculate_cumulative_totals_finishing()
 
 
 def _calculate_cumulative_totals_kcs():
-    """
-    Tính tổng lũy kế cho từng báo cáo KCS theo thứ tự thời gian nhập (created_at, id).
-    Trả về dict: report.id -> {'total_qua_tay': int, 'total_dat': int, 'total_loi': int, 'total_tong_dat': int}
-    """
-    running = defaultdict(lambda: {'qua_tay': 0, 'dat': 0, 'loi': 0, 'tong_dat': 0})
-    cumulative_map = {}
-    for r in KcsReport.objects.select_related('nguoi_nhap').order_by('created_at', 'id'):
-        key = (r.ma_hang, r.mau)
-        running[key]['qua_tay'] += (r.qua_tay or 0)
-        running[key]['dat'] += (r.dat or 0)
-        running[key]['loi'] += (r.loi or 0)
-        running[key]['tong_dat'] += (r.tong_dat or 0)
-        cumulative_map[r.id] = {
-            'total_qua_tay': running[key]['qua_tay'],
-            'total_dat': running[key]['dat'],
-            'total_loi': running[key]['loi'],
-            'total_tong_dat': running[key]['tong_dat'],
-        }
-    return cumulative_map
+    """Tính tổng lũy kế cho từng báo cáo KCS (ủy quyền qua services.py)."""
+    from Working.services import calculate_cumulative_totals_kcs
+    return calculate_cumulative_totals_kcs()
 
 
 def _calculate_cumulative_totals_cut():
-    """
-    Tính tổng lũy kế cho từng báo cáo Cắt theo thứ tự thời gian nhập (created_at, id).
-    Trả về dict: report.id -> {'total_cat_chinh': int, 'total_cat_lot': int, 'total_cat_mex': int, 'total_cat_bong': int}
-    """
-    running = defaultdict(lambda: {'cat_chinh': 0, 'cat_lot': 0, 'cat_mex': 0, 'cat_bong': 0})
-    cumulative_map = {}
-    for r in CutReport.objects.select_related('nguoi_nhap').order_by('created_at', 'id'):
-        key = (r.ma_hang, r.mau)
-        running[key]['cat_chinh'] += (r.cat_chinh or 0)
-        running[key]['cat_lot'] += (r.cat_lot or 0)
-        running[key]['cat_mex'] += (r.cat_mex or 0)
-        running[key]['cat_bong'] += (r.cat_bong or 0)
-        cumulative_map[r.id] = {
-            'total_cat_chinh': running[key]['cat_chinh'],
-            'total_cat_lot': running[key]['cat_lot'],
-            'total_cat_mex': running[key]['cat_mex'],
-            'total_cat_bong': running[key]['cat_bong'],
-        }
-    return cumulative_map
+    """Tính tổng lũy kế cho từng báo cáo Cắt (ủy quyền qua services.py)."""
+    from Working.services import calculate_cumulative_totals_cut
+    return calculate_cumulative_totals_cut()
 
 
 def _calculate_cumulative_totals_prod():
-    """
-    Tính tổng lũy kế cho từng báo cáo Sản xuất theo thứ tự thời gian nhập (created_at, id).
-    Tổng lũy kế được gom nhóm theo (mã hàng, màu, xưởng, tổ).
-    Trả về dict: report.id -> {
-        'total_nhan_btp': int,
-        'total_vao_chuyen': int,
-        'total_giua_chuyen': int,
-        'total_ra_chuyen': int,
-        'total_thu_hoa': int,
-        'total_la_thanh_pham': int,
-        'total_nhap_hoan_thien': int,
-    }
-    """
-    running = defaultdict(lambda: {
-        'nhan_btp': 0,
-        'vao_chuyen': 0,
-        'giua_chuyen': 0,
-        'ra_chuyen': 0,
-        'thu_hoa': 0,
-        'la_thanh_pham': 0,
-        'nhap_hoan_thien': 0,
-    })
-    cumulative_map = {}
-    for r in ProcessReport.objects.select_related('nguoi_nhap').order_by('created_at', 'id'):
-        key = (r.ma_hang, r.mau, r.xuong, r.to)
-        running[key]['nhan_btp'] += (r.nhan_btp or 0)
-        running[key]['vao_chuyen'] += (r.vao_chuyen or 0)
-        running[key]['giua_chuyen'] += (r.giua_chuyen or 0)
-        running[key]['ra_chuyen'] += (r.ra_chuyen or 0)
-        running[key]['thu_hoa'] += (r.thu_hoa or 0)
-        running[key]['la_thanh_pham'] += (r.la_thanh_pham or 0)
-        running[key]['nhap_hoan_thien'] += (r.nhap_hoan_thien or 0)
-        cumulative_map[r.id] = {
-            'total_nhan_btp': running[key]['nhan_btp'],
-            'total_vao_chuyen': running[key]['vao_chuyen'],
-            'total_giua_chuyen': running[key]['giua_chuyen'],
-            'total_ra_chuyen': running[key]['ra_chuyen'],
-            'total_thu_hoa': running[key]['thu_hoa'],
-            'total_la_thanh_pham': running[key]['la_thanh_pham'],
-            'total_nhap_hoan_thien': running[key]['nhap_hoan_thien'],
-        }
-    return cumulative_map
+    """Tính tổng lũy kế cho từng báo cáo Sản xuất (ủy quyền qua services.py)."""
+    from Working.services import calculate_cumulative_totals_prod
+    return calculate_cumulative_totals_prod()
 
 
 
